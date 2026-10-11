@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "entries": [
     {
       "id": "company-position-recovery",
@@ -84,11 +84,11 @@
     },
     {
       "id": "maps",
-      "category": "always",
+      "category": "beta",
       "titleRu": "Большие случайные карты",
       "titleEn": "Larger random maps",
-      "bodyRu": "Добавлены два размера: 1024×1024 и 1152×1152. Они доступны постоянно, без отдельного переключателя. Большая карта даёт больше пространства для исследования и развёртывания армий, но дольше создаётся и требует больше ресурсов компьютера.\n\nНа самой большой карте, 1152×1152, игра работает на пределе своих возможностей и особенно склонна к вылетам. Для более надёжной игры выбирайте меньший размер.",
-      "bodyEn": "Two sizes are added: 1024×1024 and 1152×1152. They are always available without a separate switch. Larger maps provide more room for exploration and armies, but take longer to generate and require more system resources.\n\nOn the largest map, 1152×1152, the game runs at the limits of its capabilities and is particularly prone to crashes. Choose a smaller size for more reliable play."
+      "bodyRu": "Размеры карт до 2048×2048: добавлены 1280, 1408, 1536, 1664, 1792, 1920 и 2048. Увеличена вместимость объектов карты. При размере от 1536×1536 и частоте странствующих рот ×2/×4 перед запуском появляется предупреждение о возможных задержках. Значки миникарты уменьшаются на больших картах. Сохранения новых матчей этого выпуска требуют версии 0.4.1 или совместимой с ней; старые сохранения поддерживаются.",
+      "bodyEn": "Map sizes up to 2048×2048: adds 1280, 1408, 1536, 1664, 1792, 1920 and 2048. Increases map object capacity. Maps of at least 1536×1536 with ×2/×4 roaming frequency show a performance warning before starting. Minimap markers scale down on large maps. Saves of new matches started with this release require version 0.4.1 or a compatible version; existing saves remain supported."
     },
     {
       "id": "dvorak",
