@@ -35,6 +35,10 @@ def extra_changelog_transform(entries):
     """Allow explicitly requested editorial corrections to recent notes."""
     return entries
 
+def extra_feed_transform(feed):
+    """Apply explicitly scoped guide/metadata additions for a later beta."""
+    return feed
+
 def prepare(a):
     stage=a.stage.resolve();out=stage/'publication';helpers=stage/'beta-helpers'
     assert not (out/'preparation.json').exists(),'Use a fresh publication folder'
@@ -95,6 +99,7 @@ def prepare(a):
     bodies=read(REPO/('docs/release-patch-'+VERSION+'.json'))
     note=dict(category='patch',version=VERSION,publishedAt=RELEASE_DATE,mods=['arcane-wars'],channel='beta',title={c:'Paw’s Patch '+VERSION for c in bodies},body=bodies)
     final['changelog']=extra_changelog_transform([note]+final['changelog']);final['publishedAt']=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ');final['patchGuide']['version']=VERSION
+    final=extra_feed_transform(final)
     write(out/'final/beta.json',sign(final,private))
     # The standalone history has independently curated older entries. Do not
     # replace those with a catalog's historical copy during a runtime release.

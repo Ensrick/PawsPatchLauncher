@@ -11,7 +11,11 @@ using System.Threading;
 
 internal static class ReleaseStartup
 {
+#if LOCAL_LARGE_MAPS || LARGE_MAPS
+    internal const string TemplateDataHash = LargeMapsLocal.TemplateHash;
+#else
     internal const string TemplateDataHash = "DFD1B5E15507D9FE70DA7CAEDE5874DD0FC2E420B467BD662C5DDDE8DF6655E8";
+#endif
 #if LOBBY_COMPATIBILITY
     internal const string Build = "beta." + PawLobbyCompatibility.Version + "-1372-city-policy23-transfer-r2-lobby1-quiet";
 #elif FAST_SAVE_TRANSFER
@@ -101,6 +105,9 @@ internal static class ReleaseStartup
                 // still intact. The r8 terrain and random-map payloads are unchanged.
                 TerrainPatch.Validate(memory, address);
                 RandomMapPatch.Validate(memory, address);
+#if LOCAL_LARGE_MAPS || LARGE_MAPS
+                LargeMapsPatch.Validate(memory, address);
+#endif
 #if FOUNDATION_COUNTS
                 FoundationCountsPatch.Validate(memory, address);
 #endif
@@ -143,6 +150,9 @@ internal static class ReleaseStartup
                     TerrainPatch.Call(address + TerrainPatch.HookRva, terrain));
                 TerrainPatch.Expect(memory, terrain, TerrainPatch.Stub(address, terrain));
                 RandomMapPatch.Verify(memory, address, map);
+#if LOCAL_LARGE_MAPS || LARGE_MAPS
+                LargeMapsPatch.Install(memory, address, log);
+#endif
 #if FOUNDATION_COUNTS
                 FoundationCountsPatch.Install(memory, address, log);
 #endif

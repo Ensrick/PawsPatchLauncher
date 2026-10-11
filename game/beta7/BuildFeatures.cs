@@ -106,7 +106,12 @@ internal static class BuildFeatures
 #else
         const string nightmare="";
 #endif
-        Console.WriteLine("{\"colors\":" + colors.ToString().ToLowerInvariant() +
+#if LARGE_MAPS
+        const string largeMaps=",\"largeMapsRevision\":1,\"maximumMapSide\":2048,\"objectRegistryCapacity\":262143,\"terrainHashRevision\":1,\"largeMapWarningRevision\":1,\"minimapMarkerScaleRevision\":2";
+#else
+        const string largeMaps="";
+#endif
+        Console.WriteLine("{\"colors\":" + colors.ToString().ToLowerInvariant() + largeMaps +
             ",\"bypass\":" + bypass.ToString().ToLowerInvariant() + syncDiagnostics +
             ",\"hostility\":" + hostility.ToString().ToLowerInvariant() +
             ",\"commonFixes\":" + commonFixes.ToString().ToLowerInvariant() + ",\"quiet\":true,\"cityAssistant\":" + cityAssistant.ToString().ToLowerInvariant() +

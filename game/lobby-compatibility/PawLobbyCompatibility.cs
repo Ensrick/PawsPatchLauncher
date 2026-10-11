@@ -15,7 +15,9 @@ using System.Web.Script.Serialization;
 // Included in the eight Arcane Wars helpers. No network or UI polling.
 internal static class PawLobbyCompatibility
 {
-#if PAW_PURE_EXTENDED
+#if LOCAL_LARGE_MAPS || LARGE_MAPS
+    internal const string Version = LargeMapsLocal.PatchVersion;
+#elif PAW_PURE_EXTENDED
     internal const string Version = PawPureFixes.PureChannel.PatchVersion;
 #else
     internal const string Version = "0.4.0-beta.1";
@@ -84,6 +86,9 @@ internal static class PawLobbyCompatibility
             lines.Add("setting="+key+":"+Text(settings,key).ToLowerInvariant());
         // Game message language follows game text, never affects the identity.
         russian=Flag(settings,"russianLocalization");
+#if LOCAL_LARGE_MAPS || LARGE_MAPS
+        LargeMapsPatch.ConfigureWarning(Text(settings,"roamingSpawnMode"),PawGameText.Language==""?(russian?1u:0u):PawGameText.LanguageId);
+#endif
         return "PWLC1|1.3.72|"+mode+"|"+modVersion+"|"+Version+"|"+Hash(Encoding.UTF8.GetBytes(String.Join("\n",lines)));
     }
     private static string InstalledIdentity(string root,out bool russian) {

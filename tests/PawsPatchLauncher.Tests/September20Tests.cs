@@ -29,6 +29,7 @@ public static class September20Tests
         var old=Feed(Path.Combine(stage,"publication/previous/stable.json"),config.PublicKeyPem);
         var beta=Feed(Path.Combine(stage,"publication/test-feeds/beta.json"),config.PublicKeyPem);
         bool promoted=feed.PatchGuide?.Version=="0.4.0";
+        bool largeMaps=beta.PatchGuide?.Version=="0.4.1";
         bool observerInput=promoted||beta.PatchGuide?.Version=="0.4.0-beta.10";
         bool september24=observerInput||beta.PatchGuide?.Version is "0.4.0-beta.3" or "0.4.0-beta.4" or "0.4.0-beta.5" or "0.4.0-beta.6" or "0.4.0-beta.7" or "0.4.0-beta.8" or "0.4.0-beta.9";
         string[] hotkeyPaths={"data/Localization/Hotkeys/hotkeys_favorites.txt","Local_base_ru/Localization/Hotkeys/hotkeys_favorites.txt","Local_ru/Localization/Hotkeys/hotkeys_favorites.txt"};
@@ -36,8 +37,8 @@ public static class September20Tests
         bool nightmare=september24||beta.PatchGuide?.Version=="0.4.0-beta.2";
         Require(feed.Channel=="stable"&&feed.PatchGuide!.Version==(promoted?"0.4.0":"0.3.3"),"Wrong release identity");
         if(promoted) {
-            Require(beta.PatchGuide?.Version=="0.4.0","Beta still advertises the old Arcane build");
-            Require(!ModChannelSelection.HasDistinctBeta(GameMod.ArcaneWars,feed,beta),"Promoted Arcane still appears as a separate beta");
+            Require(beta.PatchGuide?.Version==(largeMaps?"0.4.1":"0.4.0"),"Unexpected Arcane beta identity");
+            Require(ModChannelSelection.HasDistinctBeta(GameMod.ArcaneWars,feed,beta)==largeMaps,"Arcane beta visibility differs from its packages");
             foreach(string mod in new[]{GameMod.Vanilla,GameMod.Immortals})
                 Require(ModChannelSelection.HasDistinctBeta(mod,feed,beta),"Pure beta disappeared");
         }
@@ -109,6 +110,10 @@ public static class September20Tests
             if(scenario.Exe!="k2.exe")Require(winners.ContainsKey(scenario.Exe),"Missing selected helper: "+scenario.Exe);
             if(scenario.Settings.DataOnly)GameCompatibilityPolicy.ValidateDataModules(scenario.Packages.Select(p=>modules[p.Sha256]));
             if(scenario.Settings.PawPatchEnabled&&!scenario.Settings.DataOnly){
+                if(largeMaps) {
+                    string expected=scenario.Settings.Channel=="beta"?"339307F847E16C4197986D834526ED946D33062FF13F889EC19B88AF10480D9E":"DFD1B5E15507D9FE70DA7CAEDE5874DD0FC2E420B467BD662C5DDDE8DF6655E8";
+                    Require(winners["data\\templates\\template_rmc_k2.tgi"].Sha256==expected,"Map template shadowed or leaked across channels");
+                }
                 string source=Path.Combine(stage,scenario.Settings.Channel+"-helpers",scenario.Exe);
                 Require(winners[scenario.Exe].Sha256==helperHashes[source],"Stale helper wins an overlay");
                 Require(winners.Keys.Count(n=>n.StartsWith("skins\\",StringComparison.OrdinalIgnoreCase)&&n.EndsWith("\\Background.tga",StringComparison.OrdinalIgnoreCase))==18,"Missing minimap frames");
@@ -125,7 +130,9 @@ public static class September20Tests
                     if(settings.PawPatchEnabled&&!settings.DataOnly){
                         foreach(var row in JsonDocument.Parse(File.ReadAllText(Path.Combine(repo,"game/foundation-placement/data/manifest.json"))).RootElement.EnumerateArray()){
                             string path=CryptoAndIO.NormalizeRelativePath(row.GetProperty("path").GetString()!);
-                            Require(winners[path].Sha256.Equals(row.GetProperty("after").GetString(),StringComparison.OrdinalIgnoreCase),"Foundation data shadowed: "+path);
+                            string expected=largeMaps&&settings.Channel=="beta"&&path.Equals("data\\templates\\template_rmc_k2.tgi",StringComparison.OrdinalIgnoreCase)
+                                ?"339307F847E16C4197986D834526ED946D33062FF13F889EC19B88AF10480D9E":row.GetProperty("after").GetString()!;
+                            Require(winners[path].Sha256.Equals(expected,StringComparison.OrdinalIgnoreCase),"Foundation data shadowed: "+path);
                         }
                         Require(winners.ContainsKey("data\\ui\\game\\pawgoldsound.png"),"Missing sound button");
                         if(september24) Require(winners.ContainsKey("data\\audio\\paws_gold_button.tgi"),"Missing overlapping button audio");
@@ -168,6 +175,11 @@ public static class September20Tests
             var s=EffectiveSettings.ForFeed(raw,channel);var desired=new Dictionary<string,InstalledModule>();
             foreach(var p in GamePackageSelector.Select(channel,s,s.RussianLocalization,s.CustomPlayerColors))desired[p.Id]=await Prepare(p);
             await installer.ReconcileAsync(desired,settings:s);Require((await installer.VerifyAsync()).Count==0,"Installed file verification failed");transitions++;
+            if(largeMaps&&s.PawPatchEnabled&&!s.DataOnly) {
+                string expected=channel==beta?"339307F847E16C4197986D834526ED946D33062FF13F889EC19B88AF10480D9E":"DFD1B5E15507D9FE70DA7CAEDE5874DD0FC2E420B467BD662C5DDDE8DF6655E8";
+                Require(await CryptoAndIO.Sha256Async(Path.Combine(root,"data/Templates/template_rmc_k2.tgi"))==expected,"Installed map template did not follow channel transition");
+                Require((await File.ReadAllLinesAsync(Path.Combine(root,"paws_patch_versions.ini"))).Contains("PawPatch="+channel.PatchGuide!.Version),"Installed patch identity differs from channel");
+            }
             bool current=channel==feed||channel==beta;
             if(observerInput&&(channel==beta||promoted&&current)&&s.PawPatchEnabled&&!s.DataOnly)
                 foreach(string path in hotkeyPaths)
