@@ -1,4 +1,4 @@
-# Shared crash guards, revision 2
+# Shared crash guards, revision 3
 
 Opt-in `-EngineCrashFixes` for the full Arcane Wars helper build. This does not
 publish a release or alter game assets. For a helper launched outside the game
@@ -45,6 +45,25 @@ existing active-client count. Keep the original result for all valid entries
 and continue through the list. Do not change membership, packets, loading state,
 kingdom ownership, saves, simulation or the optional desync bypass.
 
+## Assertion dialogs
+
+A failed engine assertion logs `ASSERT: %s` and then opens a system-modal
+"TG Assert" Abort/Retry/Ignore box on the thread that failed. In multiplayer
+that thread can hold a lock the main thread needs; the main thread then stops
+with "timeout waiting for mutex" (C++ exception) while the box waits, often
+unseen behind the game. On 1.3.68 test copies where the host left a player in
+the lobby, 4 of 18 client runs crashed this way, each right after one
+`ASSERT: _data<_n_possibilities`; none of the 14 clean runs had an assertion.
+With the stock `IgnoreAsserts` command run at startup, 3 of 3 runs survived,
+one of them through the same assertion.
+
+Revision 3 sets the byte that command stores (RVA `60294C`, written by its
+handler at `13FC82`). The handler at `301A3E` checks it after logging and
+returns Ignore, exactly what a player could click. Both instructions and their
+absolute operand are verified before any change; the original byte is restored
+on rollback. This is a data write: no game code changes, and the `ASSERT` line
+stays in the log for diagnosis. It does not fix the failed condition itself.
+
 ## Installation and diagnostics
 
 All hooks have exact instruction/context checks before mutation. The code page
@@ -72,8 +91,10 @@ The diagnostic counter is `observerTeamCommandsIgnored`.
 - `test_native.py`: 537 instruction-level cases across three ASLR bases. Uses
   stock loop instructions with controlled objects and mocked type/update callees;
   compares valid behavior, one bad controller among 27, and client counts 0–7.
-- `TransactionTests.cs`: 817 checks including the real Windows API resolver,
-  relocation, identity rejection, partial writes, rollback and uncertain rollback.
+- `TransactionTests.cs`: 1060 checks including the real Windows API resolver,
+  relocation, identity rejection, partial writes, rollback and uncertain rollback;
+  the assertion byte is set on success, restored after every injected failure,
+  and an already-set byte stays set.
 - `ProbeWindowsTests.cs`: 52 checks in a disposable x86 Windows process. Executes
   the generated probe and real exception dispatcher with inaccessible target and
   vtable pages, page-boundary reads, unaffected valid probes, unrelated-exception

@@ -8,6 +8,12 @@ internal static class EngineCrashFixesPatch
 {
     static int pid; static uint data; static DateTime next;
     static byte[] last; static Action<string> logger;
+    // The stock IgnoreAsserts script command (handler RVA 13FC6D) stores this byte at 13FC82. The assertion handler
+    // logs "ASSERT: %s" first and, at 301A3E, returns Ignore instead of opening its system-modal Abort/Retry/Ignore box
+    // when the byte is set. Data write only: no game code changes.
+    internal const uint AssertFlag=0x60294C,AssertStore=0x13FC82,AssertCheck=0x301A3E;
+    internal static byte[] AssertStoreCode(uint image){return TerrainPatch.Hex("0F9505").Concat(BitConverter.GetBytes(image+AssertFlag)).ToArray();}
+    internal static byte[] AssertCheckCode(uint image){return TerrainPatch.Hex("803D").Concat(BitConverter.GetBytes(image+AssertFlag)).Concat(new byte[]{0}).ToArray();}
     internal static void Validate(IMemory m,uint image)
     {
         for(int i=0;i<EngineCrashPayload.Sites.Length;i++)
@@ -16,6 +22,8 @@ internal static class EngineCrashFixesPatch
         TerrainPatch.Expect(m,image+0x31EB1A,TerrainPatch.Hex("8B7508468975083B7738"));
         TerrainPatch.Expect(m,image+0x14C03F,TerrainPatch.Hex("8B068D4A018B7604"));
         TerrainPatch.Expect(m,image+0x14C04E,TerrainPatch.Hex("0F44CA8BD185F675E8"));
+        TerrainPatch.Expect(m,image+AssertStore,AssertStoreCode(image));
+        TerrainPatch.Expect(m,image+AssertCheck,AssertCheckCode(image));
     }
     internal static uint ResolveHandlerRegistration(Process game)
     {
@@ -32,9 +40,10 @@ internal static class EngineCrashFixesPatch
     internal static uint Install(IMemory m,uint image,uint addHandler,Action<string> log)
     {
         if(addHandler==0)throw new ArgumentException("Missing Windows registration entry");
-        Validate(m,image);uint cave=0;int attempted=-1;bool safe=true;
+        Validate(m,image);uint cave=0;int attempted=-1;bool safe=true;byte[] assertFlag=null;
         try
         {
+            assertFlag=m.Read(image+AssertFlag,1);
             cave=m.Allocate(EngineCrashPayload.Allocation);
             byte[] code=EngineCrashPayload.Build(image,cave);
             m.Write(cave,code);TerrainPatch.Expect(m,cave,code);
@@ -50,12 +59,20 @@ internal static class EngineCrashFixesPatch
                 Buffer.BlockCopy(jump,0,hook,0,jump.Length);
                 attempted=i;safe=false;m.WriteCode(site,hook);TerrainPatch.Expect(m,site,hook);m.Flush(site,hook.Length);
             }
-            log("ENGINE_CRASH_FIXES r2; shared animation target guard; missing network client guard; observer team-command guards; cave=0x"+cave.ToString("X8"));
+            attempted=EngineCrashPayload.Sites.Length;
+            m.Write(image+AssertFlag,new byte[]{1});TerrainPatch.Expect(m,image+AssertFlag,new byte[]{1});
+            log("ENGINE_CRASH_FIXES r3; shared animation target guard; missing network client guard; observer team-command guards; assertion dialogs ignored (logged); cave=0x"+cave.ToString("X8"));
             return cave;
         }
         catch
         {
             safe=true;
+            if(attempted==EngineCrashPayload.Sites.Length)
+            {
+                try{m.Write(image+AssertFlag,assertFlag);TerrainPatch.Expect(m,image+AssertFlag,assertFlag);}
+                catch(Exception e){safe=false;log("ENGINE_CRASH_ROLLBACK_UNCERTAIN "+e.Message);}
+                attempted--;
+            }
             for(int i=attempted;i>=0;i--)try
             {
                 byte[] b=EngineCrashPayload.Original(i,image);

@@ -17,6 +17,8 @@ internal static class EngineCrashTests {
    for(int i=0;i<EngineCrashPayload.Sites.Length;i++)Seed(image+EngineCrashPayload.Sites[i],EngineCrashPayload.Original(i,image));
    Seed(image+0x31EAAC,TerrainPatch.Hex("85C974368B018B4004FFD0"));Seed(image+0x31EB1A,TerrainPatch.Hex("8B7508468975083B7738"));
    Seed(image+0x14C03F,TerrainPatch.Hex("8B068D4A018B7604"));Seed(image+0x14C04E,TerrainPatch.Hex("0F44CA8BD185F675E8"));
+   Seed(image+EngineCrashFixesPatch.AssertStore,EngineCrashFixesPatch.AssertStoreCode(image));Seed(image+EngineCrashFixesPatch.AssertCheck,EngineCrashFixesPatch.AssertCheckCode(image));
+   Seed(image+EngineCrashFixesPatch.AssertFlag,new byte[]{0});
   }
   public byte[] Read(uint a,int n){Op();var result=new byte[n];for(int i=0;i<n;i++){uint p=a+(uint)i;if(p>=0x60000000&&p<0x60000000+allocated.Length)result[i]=allocated[p-0x60000000];else bytes.TryGetValue(p,out result[i]);}return result;}
   public void Write(uint a,byte[] b){Seed(a,b.Take(2).ToArray());Op();Seed(a,b);}
@@ -32,6 +34,13 @@ internal static class EngineCrashTests {
  foreach(uint image in new uint[]{0x460000,0xf20000,0x18000000}){
   var success=new Memory(image);uint cave=EngineCrashFixesPatch.Install(success,image,0x76543210,delegate{});int operations=success.Operations;
   Check(success.Allocated);Check(success.Read(cave+4096,44).All(b=>b==0));Check(BitConverter.ToUInt32(success.Read(cave+4140,4),0)==0x76543210);
+  Check(success.Read(image+EngineCrashFixesPatch.AssertFlag,1)[0]==1);
+  Check(success.Read(image+EngineCrashFixesPatch.AssertStore,7).SequenceEqual(EngineCrashFixesPatch.AssertStoreCode(image)));
+  Check(success.Read(image+EngineCrashFixesPatch.AssertCheck,7).SequenceEqual(EngineCrashFixesPatch.AssertCheckCode(image)));
+  // A flag already set (an +IgnoreAsserts launch option) keeps its value when the last step fails.
+  var preset=new Memory(image){FailAt=operations};preset.Seed(image+EngineCrashFixesPatch.AssertFlag,new byte[]{1});
+  bool presetThrew=false;try{EngineCrashFixesPatch.Install(preset,image,0x76543210,delegate{});}catch(IOException){presetThrew=true;}
+  Check(presetThrew&&!preset.Allocated&&preset.Read(image+EngineCrashFixesPatch.AssertFlag,1)[0]==1);
   for(int i=0;i<EngineCrashPayload.Sites.Length;i++){
    uint site=image+EngineCrashPayload.Sites[i];byte[] bytes=success.Read(site,EngineCrashPayload.Originals[i].Length/2);
    Check(bytes[0]==0xe9);Check(unchecked(site+5+BitConverter.ToUInt32(bytes,1))==cave+EngineCrashPayload.Offsets[i]);
@@ -39,8 +48,9 @@ internal static class EngineCrashTests {
   for(int fault=1;fault<=operations;fault++){
    var m=new Memory(image){FailAt=fault};bool threw=false;try{EngineCrashFixesPatch.Install(m,image,0x76543210,delegate{});}catch(IOException){threw=true;}
    Check(threw&&!m.Allocated);for(int i=0;i<EngineCrashPayload.Sites.Length;i++)Check(m.Read(image+EngineCrashPayload.Sites[i],EngineCrashPayload.Originals[i].Length/2).SequenceEqual(EngineCrashPayload.Original(i,image)));
+   Check(m.Read(image+EngineCrashFixesPatch.AssertFlag,1)[0]==0);
   }
-  foreach(uint site in EngineCrashPayload.Sites.Concat(new uint[]{0x31eaac,0x31eb1a,0x14c03f,0x14c04e})){
+  foreach(uint site in EngineCrashPayload.Sites.Concat(new uint[]{0x31eaac,0x31eb1a,0x14c03f,0x14c04e,EngineCrashFixesPatch.AssertStore,EngineCrashFixesPatch.AssertCheck})){
    var m=new Memory(image);m.Seed(image+site,new byte[]{0xcc});bool rejected=false;try{EngineCrashFixesPatch.Install(m,image,0x76543210,delegate{});}catch(InvalidOperationException){rejected=true;}Check(rejected&&!m.Allocated);
   }
   var noapi=new Memory(image);try{EngineCrashFixesPatch.Install(noapi,image,0,delegate{});}catch(ArgumentException){}Check(!noapi.Allocated&&noapi.Operations==0);
