@@ -50,7 +50,9 @@ not the contents, so a writer must only give equal stamps to equal contents.
 
 ## Evidence
 
-On a Windows PC with the Steam release of game version 1.3.68 (no game process involved, archives only read):
+On a Windows PC with the Steam release of game version 1.3.68 (no game process involved, archives only read). The
+1.3.72 Steam `beta` branch (build 25068126) ships the same `Data.rwd` and `Music.rwd` byte for byte (equal SHA-256),
+so these results hold for 1.3.72 too:
 
 - `verify` reads all 10,526 files (385,157,324 bytes) of the retail `Data.rwd` and all 31 files (86,957,244 bytes)
   of `Music.rwd`.
