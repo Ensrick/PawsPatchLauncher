@@ -2,6 +2,27 @@
   "stable": [
     {
       "category": "launcher",
+      "version": "0.9.6",
+      "publishedAt": "2026-10-13",
+      "title": {
+        "ru": "Paw’s Launcher 0.9.6",
+        "en": "Paw’s Launcher 0.9.6",
+        "de": "Paw’s Launcher 0.9.6",
+        "fr": "Paw’s Launcher 0.9.6",
+        "cs": "Paw’s Launcher 0.9.6",
+        "uk": "Paw’s Launcher 0.9.6"
+      },
+      "body": {
+        "ru": "- Значки лаунчера стали ярче и получили единый золотой цвет, включая Discord и кнопки окна.",
+        "en": "- Launcher icons now use a brighter, consistent gold colour, including Discord and the window controls.",
+        "de": "- Die Launcher-Symbole haben jetzt eine hellere, einheitliche Goldfarbe, einschließlich Discord und Fenstersteuerung.",
+        "fr": "- Les icônes du lanceur utilisent désormais une couleur dorée plus lumineuse et uniforme, y compris Discord et les boutons de la fenêtre.",
+        "cs": "- Ikony launcheru mají nyní jasnější, jednotnou zlatou barvu, včetně Discordu a tlačítek okna.",
+        "uk": "- Значки лаунчера стали яскравішими та отримали єдиний золотий колір, зокрема Discord і кнопки вікна."
+      }
+    },
+    {
+      "category": "launcher",
       "version": "0.9.5",
       "publishedAt": "2026-10-13",
       "title": {
@@ -1129,6 +1150,27 @@
     }
   ],
   "beta": [
+    {
+      "category": "launcher",
+      "version": "0.9.6",
+      "publishedAt": "2026-10-13",
+      "title": {
+        "ru": "Paw’s Launcher 0.9.6",
+        "en": "Paw’s Launcher 0.9.6",
+        "de": "Paw’s Launcher 0.9.6",
+        "fr": "Paw’s Launcher 0.9.6",
+        "cs": "Paw’s Launcher 0.9.6",
+        "uk": "Paw’s Launcher 0.9.6"
+      },
+      "body": {
+        "ru": "- Значки лаунчера стали ярче и получили единый золотой цвет, включая Discord и кнопки окна.",
+        "en": "- Launcher icons now use a brighter, consistent gold colour, including Discord and the window controls.",
+        "de": "- Die Launcher-Symbole haben jetzt eine hellere, einheitliche Goldfarbe, einschließlich Discord und Fenstersteuerung.",
+        "fr": "- Les icônes du lanceur utilisent désormais une couleur dorée plus lumineuse et uniforme, y compris Discord et les boutons de la fenêtre.",
+        "cs": "- Ikony launcheru mají nyní jasnější, jednotnou zlatou barvu, včetně Discordu a tlačítek okna.",
+        "uk": "- Значки лаунчера стали яскравішими та отримали єдиний золотий колір, зокрема Discord і кнопки вікна."
+      }
+    },
     {
       "category": "patch",
       "version": "0.4.2-beta.1",

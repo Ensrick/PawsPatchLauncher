@@ -15,6 +15,15 @@ DOWNLOAD = 'https://github.com/VasiliyPaw/PawsPatchLauncher/releases/download/'
 ALLOWED = {'launcher', 'publishedAt', 'changelog', 'newsTitle', 'newsBody'}
 
 
+def public_root():
+    # Raw main URLs can briefly serve the previous catalog after a successful
+    # push. Compare against the current remote commit without weakening the
+    # unchanged-baseline check or relying on cache-busting query parameters.
+    ref = subprocess.check_output(['git', 'ls-remote', 'origin', 'refs/heads/main'], cwd=ROOT, text=True).split()
+    assert len(ref) == 2 and ref[1] == 'refs/heads/main'
+    return RAW.replace('/main/', '/' + ref[0] + '/')
+
+
 def scoped(before, after):
     assert {k: v for k, v in before.items() if k not in ALLOWED} == {
         k: v for k, v in after.items() if k not in ALLOWED}, 'Game catalog changed'
@@ -28,6 +37,7 @@ def check_bytes(data, record):
 def stage(a):
     out = a.out
     assert not out.exists(), 'Use a fresh staging directory'
+    remote = public_root()
     tag = 'v' + a.version
     release = json.loads(fetch(API + '/releases/tags/' + tag))
     assert not release['draft'] and not release['prerelease']
@@ -63,7 +73,7 @@ def stage(a):
     before_hashes = {}
     for name, path in FEEDS.items():
         raw = (ROOT / path).read_bytes()
-        assert normalize(fetch(RAW + path + '?launcher=' + a.version)) == normalize(raw), 'Public catalog changed: ' + name
+        assert normalize(fetch(remote + path)) == normalize(raw), 'Public catalog changed: ' + name
         before = verify(json.loads(raw), key())
         assert before['launcher']['version'] == a.previous
         assert not any(n['category'] == 'launcher' and n['version'] == a.version for n in before['changelog'])
@@ -91,12 +101,13 @@ def stage(a):
 
 def promote(a):
     proof = read(a.out / 'preparation.json')
+    remote = public_root()
     assert proof['version'] == a.version
     assert proof['notesSha256'] == sha(ROOT / ('docs/release-' + a.version + '.json'))
     assert proof['historyBefore'] == sha(ROOT / 'feed/changelog.history.json')
     for name, path in FEEDS.items():
         assert proof['before'][name] == sha(ROOT / path), 'Catalog changed: ' + name
-        assert normalize(fetch(RAW + path + '?promote=' + a.version)) == normalize((ROOT / path).read_bytes())
+        assert normalize(fetch(remote + path)) == normalize((ROOT / path).read_bytes())
         after = verify(read(a.out / 'signed' / (name + '.json')), key())
         scoped(verify(read(ROOT / path), key()), after)
         assert after['launcher'] == proof['launcher']
