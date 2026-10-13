@@ -156,11 +156,11 @@ thread MAIN caught unhandled exception - Access Violation (C0000005) trapped at 
 ## 8. Re-checked on 1.3.72 (2026-10-13)
 
 The flow above was ported to 1.3.72 and tested with two copies of the game on one PC (LAN). The module and the test
-rig are in a separate pull request (`game/multiplayer-recovery`, `tools/MultiplayerRig`). What differs from 1.3.68:
+rig are in a separate pull request (`game/multiplayer-recovery`, `tools/MultiplayerRig`). Findings:
 
-- **The simulation has its own thread** (`thread SIM` in the log, `[determinism] sim-thread FP control word`). Orders
-  such as `GameSave`, and the leave decree, run on that thread. Code that 1.3.68 ran on the main thread can
-  therefore run on `SIM` on 1.3.72. A client's save copy written there took 31 ms on the rig.
+- **The simulation runs on its own thread** (`thread SIM` in the log), in 1.3.68 as in 1.3.72. Orders such as
+  `GameSave`, and the leave decree, run there and not on the main thread. A client's save copy written there took
+  31 ms on the rig.
 - **A deliberate quit looks like a crash.** A client that leaves through the in-game menu (`RequestLeaveGame`,
   logged as `RequestLeave() - BECOMING PRIVATE HOST`) closes its connection without a `ClientDisconnectRequest`. On
   LAN the host logs the same as for a killed client: `Error on receive: 10054`, `PlayerLeave()`, then "<name> quit
