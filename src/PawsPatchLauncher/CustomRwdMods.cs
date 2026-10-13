@@ -46,7 +46,9 @@ public sealed class CustomRwdMods(string gameRoot)
     public CustomRwdMod Import(string path, CancellationToken ct = default)
     {
         if (!Path.GetExtension(path).Equals(".rwd", StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Choose an RWD archive.");
-        RemovalSafety.CheckNoLinks(path);
+        // The user-selected source is read through one file handle and copied
+        // before validation. Its parent may be a relocated Downloads/Steam
+        // directory; no writes or removals are performed through that path.
         var cache = Path.GetDirectoryName(Cache(new string('0', 64)))!;
         RemovalSafety.CheckNoLinks(cache);
         Directory.CreateDirectory(cache);

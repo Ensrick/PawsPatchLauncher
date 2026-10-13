@@ -5,6 +5,18 @@ using System.Text;
 using System.Text.Json;
 
 TestProcessErrorMode.Enable();
+if(args.Length==1&&args[0]=="--rwd")
+{
+    var rwdRoot = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "PawsRwdTests", Guid.NewGuid().ToString("N")));
+    Directory.CreateDirectory(rwdRoot);
+    try { Console.WriteLine($"RWD TOTAL PASS {RwdRelocatedPathsTests.Run(rwdRoot) + RwdArchiveTests.Run(rwdRoot) + await CustomRwdModTests.RunAsync(rwdRoot)}"); }
+    finally
+    {
+        var parent = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "PawsRwdTests")) + Path.DirectorySeparatorChar;
+        if (rwdRoot.StartsWith(parent, StringComparison.OrdinalIgnoreCase)) Directory.Delete(rwdRoot, true);
+    }
+    return;
+}
 if(args.Length==3&&args[0]=="--verify-installed-rwd") {await CustomRwdModTests.VerifyInstalledAsync(args[1],args[2]);return;}
 if(args.Length==5&&args[0]=="--stage-custom-rwd") {await CustomRwdModTests.StageAsync(args[1],args[2],args[3],args[4]=="on");return;}
 if(args.Length==4&&args[0]=="--verify-pure-030") {await Pure030Tests.RunAsync(args[1],args[2],args[3]);return;}
@@ -213,6 +225,7 @@ try
     passed += await WindowsClipboardTests.RunAsync();
     passed += DiagnosticArchiveHistoryTests.Run(root);
     passed += RwdArchiveTests.Run(root);
+    passed += RwdRelocatedPathsTests.Run(root);
     passed += await CustomRwdModTests.RunAsync(root);
     passed += await GameDiagnosticsTests.RunAsync(root);
     passed += await LauncherEvolutionTests.RunAsync(root);

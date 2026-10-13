@@ -161,9 +161,10 @@ internal static class RwdArchiveTests
             var linked = Path.Combine(root, "linked.rwd"); RwdArchive.Write(linked, new[] { F("linked/probe.txt", "overwrite") });
             check(Throws(() => RwdOperations.Extract(linked, output, true)), "Extraction followed a directory junction.");
             check(File.ReadAllText(Path.Combine(outside, "probe.txt")) == "sentinel", "Extraction modified a junction target.");
-            check(Throws(() => RwdOperations.Extract(packed, link, true)), "Extraction root junction accepted.");
+            check(RwdOperations.Extract(packed, link, true) == (1, 0), "Explicit extraction root junction rejected.");
             check(Throws(() => RwdOperations.Pack(output, Path.Combine(root, "linked-pack.rwd"))), "Packing followed an input junction.");
-            check(Throws(() => RwdArchive.Write(Path.Combine(link, "escape.rwd"), one)), "Writer followed an output parent junction.");
+            RwdArchive.Write(Path.Combine(link, "chosen.rwd"), one);
+            check(File.Exists(Path.Combine(outside, "chosen.rwd")), "Writer rejected the selected output parent junction.");
             Directory.Delete(link); // Only the fixture junction itself, never its target.
             check(File.ReadAllText(Path.Combine(outside, "probe.txt")) == "sentinel", "Junction cleanup affected its target.");
             var hardLink = Path.Combine(output, "hard.txt");

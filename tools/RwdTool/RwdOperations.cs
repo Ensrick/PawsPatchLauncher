@@ -5,8 +5,9 @@ public static class RwdOperations
     public static (int Written, int Kept) Extract(string archivePath, string folder, bool overwrite = false)
     {
         using var archive = RwdArchive.Open(archivePath);
-        var root = Path.GetFullPath(folder);
-        using var rootGuard = RwdFileSystem.LockDirectory(root, create: true);
+        using var rootGuard = RwdFileSystem.LockRoot(folder, create: true);
+        var root = rootGuard.DirectoryPath;
+        var source = archive.PhysicalPath;
         var targets = archive.Entries.Select(e => (Entry: e, Path: Destination(root, e.Name))).ToList();
         // Validate all existing components before extracting any payload. Also
         // reject file/directory collisions rather than fail halfway through.
@@ -23,7 +24,7 @@ public static class RwdOperations
                     throw new InvalidDataException("Archive file/directory collision: " + prefix);
             }
             if (Directory.Exists(target)) throw new InvalidDataException("Entry targets a directory: " + entry.Name);
-            if (string.Equals(Path.GetFullPath(archivePath), target, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(source, target, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Cannot extract over the input archive.");
         }
         int written = 0, kept = 0;
@@ -45,8 +46,10 @@ public static class RwdOperations
 
     public static (int Files, uint Stamp) Pack(string folder, string archivePath, uint? stamp = null)
     {
-        var root = Path.GetFullPath(folder); var output = Path.GetFullPath(archivePath);
-        using var rootGuard = RwdFileSystem.LockDirectory(root);
+        using var rootGuard = RwdFileSystem.LockRoot(folder);
+        var root = rootGuard.DirectoryPath; var selectedOutput = Path.GetFullPath(archivePath);
+        using var outputGuard = RwdFileSystem.LockRoot(Path.GetDirectoryName(selectedOutput)!, create: true);
+        var output = Path.Combine(outputGuard.DirectoryPath, Path.GetFileName(selectedOutput));
         var files = new List<KeyValuePair<string, string>>(); var pending = new Stack<string>(); pending.Push(root);
         int directories = 0;
         while (pending.Count != 0)
@@ -69,6 +72,6 @@ public static class RwdOperations
                 }
             }
         }
-        return (files.Count, RwdArchive.WriteFiles(output, files, stamp));
+        return (files.Count, RwdArchive.WriteFiles(output, files, stamp, treeSources: true));
     }
 }

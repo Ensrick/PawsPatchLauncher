@@ -62,6 +62,28 @@ internal static class CustomRwdModTests
         RwdArchive.Write(sourceA, new Dictionary<string, byte[]> { ["test/sample.tgi"] = [1, 2, 3] });
         RwdArchive.Write(sourceB, new Dictionary<string, byte[]> { ["test/sample.tgi"] = [4, 5, 6] });
         var a = library.Import(sourceA); var b = library.Import(sourceB);
+        if (OperatingSystem.IsWindows())
+        {
+            var alias = Path.Combine(root, "relocated mod downloads");
+            var originals = Path.Combine(root, "physical mod downloads"); Directory.CreateDirectory(originals);
+            File.Copy(sourceA, Path.Combine(originals, "Named A.rwd"));
+            using (RwdRelocatedPathsTests.Junction(alias, originals))
+            {
+                var imported = library.Import(Path.Combine(alias, "Named A.rwd"));
+                Check(imported == a, "import through a relocated source folder keeps archive identity");
+                Check(File.Exists(Path.Combine(originals, "Named A.rwd")), "relocated import keeps the source");
+                await File.WriteAllTextAsync(Path.Combine(originals, "broken.rwd"), "invalid");
+                await Reject(() => { library.Import(Path.Combine(alias, "broken.rwd")); return Task.CompletedTask; }, "invalid relocated archive");
+            }
+            var linkedGame = Path.Combine(root, "cache-link-game"); Directory.CreateDirectory(linkedGame);
+            var cacheTarget = Path.Combine(root, "cache-link-target"); Directory.CreateDirectory(cacheTarget);
+            var marker = Path.Combine(cacheTarget, "sentinel.txt"); await File.WriteAllTextAsync(marker, "sentinel");
+            using (RwdRelocatedPathsTests.Junction(Path.Combine(linkedGame, ".pawpatch"), cacheTarget))
+            {
+                await Reject(() => { new CustomRwdMods(linkedGame).Import(sourceA); return Task.CompletedTask; }, "link in managed cache");
+                Check(Directory.GetFiles(cacheTarget).Length == 1 && await File.ReadAllTextAsync(marker) == "sentinel", "cache link cannot redirect an import write");
+            }
+        }
         Check(!a.Enabled && !b.Enabled, "import requires explicit enable");
         Check(a.Files == 1 && a.Name == "Named A" && b.Name == "Другой мод", "names and counts");
         Check(File.Exists(sourceA) && File.Exists(sourceB), "sources preserved");

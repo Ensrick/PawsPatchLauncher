@@ -1,6 +1,7 @@
 # Custom RWD mods: local prototype, 2026-10-13
 
-Not published. The settings gear now has **Game settings** and **Custom mods** tabs.
+This records the initial local prototype; see the 0.9.3 release follow-up below for its subsequent publication.
+The settings gear has **Game settings** and **Custom mods** tabs.
 The test build excludes the cancelled Documents-depot scan and report UI experiment.
 
 ## Behavior
@@ -37,7 +38,8 @@ Private game copy and private Documents profile; the normal game remains unchang
 Fixture includes the 1.3.72 options-dialog correction already shipped by the launcher.
 Without it, stock Data.rwd alone fails at `AutoSaveOptionsPanel`.
 
-Two test archives replace the same main-menu label. Observed in real game windows:
+Two test archives replace the same main-menu label, registered through `adddepot`.
+Observed in real game windows:
 
 | Registration order | Observed label |
 |---|---|

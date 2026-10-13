@@ -32,7 +32,7 @@ GitHub's **Build and test** workflow runs the same checks for pull requests.
 | Mod/channel selection | `GameMod.cs`, `GamePackageSelector.cs`, `EffectiveSettings.cs` |
 | Installation and verification | `ModuleInstaller.cs`, `CryptoAndIO.cs`, `FeedClient.cs`, `Models.cs` |
 | ZIP module packaging | `tools/PawsPatchPublisher/Program.cs` (`pack`) |
-| RWD archives (standalone, not used by the launcher) | `tools/RwdTool/` and its README |
+| RWD archives and custom mods | `tools/RwdTool/`, `src/PawsPatchLauncher/CustomRwdMods.cs`, `docs/custom-rwd-mods-local.md` |
 | Social features | `Account*Service*.cs`, `CommunityChat.cs`, `MainWindow.Community*.cs` |
 | Local game configuration | `GameUserSettings.cs`, `GameResolution.cs` |
 | Reading game activity | `KohanActivityReader.cs`, `GameActivity.cs`, `GameActivityClock.cs` |

@@ -37,6 +37,7 @@ public sealed class RwdArchive : IDisposable
     readonly Dictionary<string, RwdEntry> byName = new(StringComparer.OrdinalIgnoreCase);
 
     public string Path { get; }
+    internal string PhysicalPath => OperatingSystem.IsWindows() ? RwdFileSystem.FinalPath(stream.SafeFileHandle) : System.IO.Path.GetFullPath(Path);
     public uint Version { get; }
     public uint Stamp { get; }
     public string GameId { get; }
@@ -56,7 +57,7 @@ public sealed class RwdArchive : IDisposable
 
     public static RwdArchive Open(string path)
     {
-        var stream = RwdFileSystem.OpenRead(path);
+        var stream = RwdFileSystem.OpenRead(path, allowLinkedParents: true);
         try
         {
             var length = stream.Length;
@@ -80,7 +81,7 @@ public sealed class RwdArchive : IDisposable
                 var name = rawName[..nul];
                 var offset = reader.ReadInt64();
                 var size = reader.ReadInt64();
-                reader.ReadUInt64(); // Retail writers left non-semantic filler here.
+                reader.ReadUInt64(); // Two retail section-table fields; their meaning is unconfirmed. Our writer uses zeros.
                 var repeatedSize = reader.ReadInt64();
                 if (offset < 12 || size < 0 || offset > tableOffset || size > tableOffset - offset)
                     throw new InvalidDataException($"{path}: section \"{name}\" lies outside the archive.");
@@ -162,7 +163,7 @@ public sealed class RwdArchive : IDisposable
 
     static string ReadGameId(byte[] header)
     {
-        // u32 2, u16 n, UTF-16 game id; anything else is reported as unknown rather than rejected
+        // Decode the length-prefixed UTF-16 game id; Open rejects non-K2 ids and unsupported header fields.
         if (header.Length < 6) return "";
         int chars = BitConverter.ToUInt16(header, 4);
         return 6 + chars * 2 <= header.Length - 4 ? Encoding.Unicode.GetString(header, 6, chars * 2) : "";
@@ -276,15 +277,18 @@ public sealed class RwdArchive : IDisposable
     sealed record Source(string Name, long Length, Func<Stream> Open);
 
     public static uint WriteFiles(string path, IEnumerable<KeyValuePair<string, string>> files, uint? stamp = null)
+        => WriteFiles(path, files, stamp, treeSources: false);
+
+    internal static uint WriteFiles(string path, IEnumerable<KeyValuePair<string, string>> files, uint? stamp, bool treeSources)
     {
         var sources = new List<Source>(); var seen = new HashSet<string>(StringComparer.Ordinal); long total = 0;
         foreach (var f in files)
         {
             var name = NormalizeName(f.Key).ToLowerInvariant(); var full = System.IO.Path.GetFullPath(f.Value);
-            using var input = RwdFileSystem.OpenRead(full);
+            using var input = RwdFileSystem.OpenRead(full, allowLinkedParents: !treeSources);
             if (sources.Count == MaxEntries || !seen.Add(name) || input.Length > MaxPayloadBytes - total)
                 throw new InvalidDataException("Duplicate or excessive input files.");
-            total += input.Length; sources.Add(new(name, input.Length, () => RwdFileSystem.OpenRead(full)));
+            total += input.Length; sources.Add(new(name, input.Length, () => RwdFileSystem.OpenRead(full, allowLinkedParents: !treeSources)));
         }
         return WriteSources(path, sources.OrderBy(s => s.Name, StringComparer.Ordinal).ToList(), stamp);
     }
@@ -304,7 +308,10 @@ public sealed class RwdArchive : IDisposable
         if (4L + sorted.Sum(f => 26L + Encoding.Unicode.GetByteCount(f.Name)) > MaxMetadataBytes)
             throw new InvalidDataException("Archive metadata exceeds the limit.");
         uint value = 0;
-        RwdFileSystem.AtomicWrite(path, true, output =>
+        var full = System.IO.Path.GetFullPath(path);
+        using var destination = RwdFileSystem.LockRoot(System.IO.Path.GetDirectoryName(full)!, create: true);
+        var target = System.IO.Path.Combine(destination.DirectoryPath, System.IO.Path.GetFileName(full));
+        RwdFileSystem.AtomicWrite(target, true, output =>
         {
             using var writer = new BinaryWriter(output, Encoding.UTF8, true);
             writer.Write("TGCK"u8);
