@@ -42,6 +42,8 @@ internal static class GameUserSettingsTests
                 var expected = source.Replace("0.309220", "0.25").Replace("true", "false")
                     .Replace("}\r\n", "\tflag\tMinimapColorByKingdom = true\r\n}\r\n");
                 Check(doc.Edit(new Dictionary<string, string> { ["AudioMainVolume"] = "0.25", ["ViewShowElapsedGameTime"] = "false", ["MinimapColorByKingdom"] = "true" }).SequenceEqual(Enc(expected)), "mixed edit/insert preserves rest");
+                Check(doc.Flag("WidescreenUniformUI") is null && doc.Edit(new Dictionary<string, string> { ["WidescreenUniformUI"] = "true" })
+                    .SequenceEqual(Enc(source.Replace("}\r\n", "\tflag\tWidescreenUniformUI = true\r\n}\r\n"))), "widescreen uniform UI flag inserted");
                 var backup = doc.Save(resolution, () => false);
                 Check(backup is not null && File.ReadAllBytes(backup).SequenceEqual(original), "exact backup");
                 Check(File.ReadAllBytes(path).SequenceEqual(Enc(source.Replace("2560", "1920").Replace("1440", "1080"))), "atomic replacement");
