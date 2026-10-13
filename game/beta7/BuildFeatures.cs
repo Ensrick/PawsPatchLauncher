@@ -111,7 +111,12 @@ internal static class BuildFeatures
 #else
         const string largeMaps="";
 #endif
-        Console.WriteLine("{\"colors\":" + colors.ToString().ToLowerInvariant() + largeMaps +
+#if PAW_UNIFORM_UI
+        string uniformUi=commonFixes ? ",\"widescreenUniformUiRevision\":1" : "";
+#else
+        const string uniformUi="";
+#endif
+        Console.WriteLine("{\"colors\":" + colors.ToString().ToLowerInvariant() + largeMaps + uniformUi +
             ",\"bypass\":" + bypass.ToString().ToLowerInvariant() + syncDiagnostics +
             ",\"hostility\":" + hostility.ToString().ToLowerInvariant() +
             ",\"commonFixes\":" + commonFixes.ToString().ToLowerInvariant() + ",\"quiet\":true,\"cityAssistant\":" + cityAssistant.ToString().ToLowerInvariant() +

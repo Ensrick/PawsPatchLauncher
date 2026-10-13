@@ -16,7 +16,7 @@ public sealed class GameUserSettings
         ["ResolutionX"]="int", ["ResolutionY"]="int", ["FrameRateLimit"]="float",
         ["AudioMainVolume"]="float", ["Audio2DVolume"]="float", ["Audio3DVolume"]="float",
         ["AudioSpeechVolume"]="float", ["AudioMusicVolume"]="float",
-        ["ViewShowElapsedGameTime"]="flag", ["MinimapColorByKingdom"]="flag", ["WidescreenUniformUI"]="flag"
+        ["ViewShowElapsedGameTime"]="flag", ["MinimapColorByKingdom"]="flag"
     };
     private readonly byte[]? _original;
     private readonly Encoding _encoding;

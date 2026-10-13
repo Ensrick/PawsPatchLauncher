@@ -86,6 +86,8 @@ status, and the [privacy policy](docs/PRIVACY.md) for accounts, chat and diagnos
   [foundation of match recovery after a disconnection](game/reconnect-test/THIRD_PARTY.md).
   The recovery flow saves the match and returns to the lobby so players can rejoin
   and resume from that save. Thank you for sharing your work and collaborating!
+  Also contributed the gold launcher icon styling and identified Kohan II's
+  native widescreen interface option, integrated into Paw's Patch.
 - **Darquan Mortis** — Arcane Wars; **MartialDoctor** — Immortals. These are
   independent mods by their respective authors.
 

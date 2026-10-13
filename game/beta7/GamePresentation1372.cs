@@ -12,6 +12,19 @@ using System.Threading;
 internal static class PawGamePresentation
 {
     const int Size=4096;
+    // Ensrick identified the stock WidescreenUniformUI path. Use that layout
+    // calculation only for opted-in patch builds, without changing/saving UVars.
+    // RVA 141649 loads flag #58; bypass just its JE, keeping positive-dimension
+    // checks and the engine's normal resolution/layout invalidation intact.
+    const int UniformGuardSite=0x141649;
+    static readonly byte[] UniformGuard={0x8b,0x80,0xe8,0,0,0,0x80,0x38,0,0x74,0x39};
+    // The helper can attach after the first resolution calculation. The stock
+    // layout-change detector must see our effective setting too, so its normal
+    // main-thread invalidation runs once. The stored user flag stays untouched.
+    const int UniformPollSite=0x13c856;
+    static readonly byte[] UniformPollGuard={0x8b,0x80,0xe8,0,0,0,0x8a,0};
+    const int UniformClampSite=0x141688;
+    static readonly byte[] UniformClampGuard={0xf3,0x0f,0x11,0x4d,0xfc};
     static readonly int[] Sites={0xBF99F,0xFA979,0xC772E,0xC88BD,0x2BFA43};
     static readonly int[] Targets={0,0x400,0x600,0xa00,0xb00};
     static readonly byte[][] Expected={
@@ -185,6 +198,23 @@ internal static class PawGamePresentation
         var timer=System.Diagnostics.Stopwatch.StartNew();
         int firstSite=menuOnly?1:0;
         int lastSite=soundButton?Sites.Length:2;
+#if PAW_UNIFORM_UI
+        bool uniform=!menuOnly || pureBeta;
+#else
+        bool uniform=false;
+#endif
+        if(uniform)
+        {
+            foreach(var guard in new[]{Tuple.Create(UniformGuardSite,UniformGuard),Tuple.Create(UniformPollSite,UniformPollGuard),Tuple.Create(UniformClampSite,UniformClampGuard)})
+            while(true)
+            {
+                byte[] found=new byte[guard.Item2.Length]; IntPtr done; uint exitCode;
+                if(ReadProcessMemory(process,Add(image,guard.Item1),found,found.Length,out done) && done.ToInt64()==found.Length && Equal(found,guard.Item2)) break;
+                if(timer.ElapsedMilliseconds>60000 || !GetExitCodeProcess(process,out exitCode) || exitCode!=259)
+                    throw new InvalidOperationException("Uniform UI signature mismatch; no UI patch applied");
+                Thread.Sleep(20);
+            }
+        }
         for(int i=firstSite;i<lastSite;i++)
         {
             while(true)
@@ -199,14 +229,39 @@ internal static class PawGamePresentation
         IntPtr cave=VirtualAllocEx(process,IntPtr.Zero,Size,0x3000,0x40);
         if(cave==IntPtr.Zero) throw new Win32Exception();
         int attempted=firstSite;
+        bool uniformAttempted=false;
+        bool uniformPollAttempted=false;
+        bool uniformClampAttempted=false;
         try
         {
             byte[] payload=Relocate((uint)image.ToInt64(),(uint)cave.ToInt64());
             byte[] label=Encoding.Unicode.GetBytes(suffix+"\0");
             if(label.Length>0x200) throw new InvalidDataException("Version labels too long");
             Buffer.BlockCopy(label,0,payload,0x800,label.Length);
+            if(uniform)
+            {
+                // Preserve the stock 1024-wide layout on 5:4 and narrower
+                // screens. Wider layouts use the stock aspect calculation.
+                // XMM1 is already the new width; preserve all other registers.
+                for(int i=0xc00;i<0xc12;i++) if(payload[i]!=0) throw new InvalidDataException("Uniform UI cave overlaps common UI payload");
+                byte[] clamp={0xf3,0x0f,0x5f,0x0d,0,0,0,0,0xf3,0x0f,0x11,0x4d,0xfc,0xe9,0,0,0,0};
+                Buffer.BlockCopy(BitConverter.GetBytes(unchecked((uint)image.ToInt64()+0x4b2e38)),0,clamp,4,4);
+                Buffer.BlockCopy(BitConverter.GetBytes(unchecked((int)(image.ToInt64()+UniformClampSite+5-cave.ToInt64()-0xc12))),0,clamp,14,4);
+                Buffer.BlockCopy(clamp,0,payload,0xc00,clamp.Length);
+            }
             Write(process,cave,payload);
             if(!FlushInstructionCache(process,cave,Size)) throw new Win32Exception();
+            if(uniform)
+            {
+                uniformAttempted=true;
+                Patch(process,Add(image,UniformGuardSite+9),new byte[]{0x90,0x90});
+                byte[] clampJump={0xe9,0,0,0,0};
+                Buffer.BlockCopy(BitConverter.GetBytes(unchecked((int)(cave.ToInt64()+0xc00-image.ToInt64()-UniformClampSite-5))),0,clampJump,1,4);
+                uniformClampAttempted=true;
+                Patch(process,Add(image,UniformClampSite),clampJump);
+                uniformPollAttempted=true;
+                Patch(process,Add(image,UniformPollSite+6),new byte[]{0xb0,1});
+            }
             for(int i=firstSite;i<lastSite;i++)
             {
                 byte[] branch=new byte[Expected[i].Length]; branch[0]=(byte)(i==1?0xe9:0xe8);
@@ -216,11 +271,14 @@ internal static class PawGamePresentation
                 attempted=i+1; Patch(process,Add(image,Sites[i]),branch);
             }
             File.AppendAllText(logPath,DateTime.Now.ToString("O")+(menuOnly?" MENU_ONLY r1; versions=":" COMMON_UI r1; versions=")+suffix.Replace('\n',';')+
-                "; negativeZero="+(menuOnly?"untouched":"display-only")+"; goldSoundButton="+soundButton+"; goldSoundTitleOnlyHover="+soundButton+"; simulationUntouched=true; cave=0x"+cave.ToInt64().ToString("X8")+Environment.NewLine);
+                "; negativeZero="+(menuOnly?"untouched":"display-only")+"; goldSoundButton="+soundButton+"; goldSoundTitleOnlyHover="+soundButton+"; uniformUi="+uniform+"; simulationUntouched=true; cave=0x"+cave.ToInt64().ToString("X8")+Environment.NewLine);
         }
         catch
         {
             bool restored=true;
+            if(uniformPollAttempted) try { Patch(process,Add(image,UniformPollSite+6),new byte[]{0x8a,0}); } catch { restored=false; }
+            if(uniformClampAttempted) try { Patch(process,Add(image,UniformClampSite),UniformClampGuard); } catch { restored=false; }
+            if(uniformAttempted) try { Patch(process,Add(image,UniformGuardSite+9),new byte[]{0x74,0x39}); } catch { restored=false; }
             for(int i=attempted-1;i>=firstSite;i--) try { Patch(process,Add(image,Sites[i]),ExpectedAt(i,(uint)image.ToInt64())); } catch { restored=false; }
             if(restored) VirtualFreeEx(process,cave,0,0x8000);
             throw;

@@ -2,7 +2,7 @@
 
 ## Current status
 
-Launcher 0.9.5 is **not Authenticode signed**. SignPath Foundation
+Launcher 0.9.6 is **not Authenticode signed**. SignPath Foundation
 admission and production signing are not yet approved. Preparing a signing
 workflow does not change the trust status of existing downloads.
 

@@ -28,6 +28,9 @@ namespace PawPureFixes
                 + ",\"companyPositionRecoveryRevision\":1,\"exhaustionRecoveryRevision\":1"
                 + ",\"bulkBotLobbyRevision\":3,\"aiPolicyRevision\":39,\"aiPolicyProfile\":\"pure\",\"aiPolicyCompatibilityRevision\":1,\"aiImprovementsSelectable\":true"
                 + ",\"lobbyCompatibilityProtocol\":1,\"observerTeamCommandGuardRevision\":1"
+#if PAW_UNIFORM_UI
+                + ",\"widescreenUniformUiRevision\":1"
+#endif
 #if PAW_PURE_MULTIPLAYER_SAVES
                 + ",\"multiplayerSavesRevision\":2,\"multiplayerAutosaveMinutes\":5,\"clientSaveCopies\":true"
 #endif

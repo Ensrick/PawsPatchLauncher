@@ -190,10 +190,7 @@ public partial class MainWindow
         foreach (var (key, title) in new[]
         {
             ("ViewShowElapsedGameTime", T("Показывать таймер матча", "Show match timer")),
-            ("MinimapColorByKingdom", T("Цвета игроков на миникарте", "Player colors on the minimap")),
-            // Stock 1.3.72 setting, off by default: on a non-4:3 screen the HUD keeps its proportions instead of
-            // stretching sideways (minimap, control panel art); the world still fills the screen.
-            ("WidescreenUniformUI", T("Не растягивать интерфейс на широком экране", "Don't stretch the interface on widescreen"))
+            ("MinimapColorByKingdom", T("Цвета игроков на миникарте", "Player colors on the minimap"))
         })
         {
             var check = new CheckBox { Content = title, IsChecked = file.Flag(key), Margin = new Thickness(0, 2, 0, 8) };

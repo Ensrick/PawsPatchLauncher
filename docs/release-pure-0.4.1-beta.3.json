@@ -1,0 +1,26 @@
+{
+  "category": "patch",
+  "version": "0.4.1-beta.3",
+  "publishedAt": "2026-10-13",
+  "title": {
+    "ru": "Paw’s Patch 0.4.1-beta.3 — Vanilla / Immortals",
+    "en": "Paw’s Patch 0.4.1-beta.3 — Vanilla / Immortals",
+    "de": "Paw’s Patch 0.4.1-beta.3 — Vanilla / Immortals",
+    "fr": "Paw’s Patch 0.4.1-beta.3 — Vanilla / Immortals",
+    "cs": "Paw’s Patch 0.4.1-beta.3 — Vanilla / Immortals",
+    "uk": "Paw’s Patch 0.4.1-beta.3 — Vanilla / Immortals"
+  },
+  "body": {
+    "ru": "- Интерфейс игры сохраняет пропорции на широком экране.\n- Возвращены оригинальные рамки миникарты. Исправление встроено в Paw’s Patch и не требует отдельного включения.",
+    "en": "- The in-game interface preserves its proportions on widescreen displays.\n- Restored the original minimap frames. This improvement is built into Paw’s Patch and needs no separate switch.",
+    "de": "- Die Spieloberfläche behält ihre Proportionen auf Breitbildschirmen bei.\n- Die ursprünglichen Minikartenrahmen wurden wiederhergestellt. Die Verbesserung ist in Paw’s Patch integriert und benötigt keinen separaten Schalter.",
+    "fr": "- L’interface du jeu conserve ses proportions sur les écrans larges.\n- Les cadres d’origine de la minicarte ont été rétablis. Cette amélioration est intégrée à Paw’s Patch et ne nécessite aucune activation séparée.",
+    "cs": "- Herní rozhraní zachovává své proporce na širokoúhlých obrazovkách.\n- Obnoveny původní rámečky minimapy. Vylepšení je součástí Paw’s Patch a nevyžaduje samostatné zapnutí.",
+    "uk": "- Інтерфейс гри зберігає пропорції на широкому екрані.\n- Повернуто оригінальні рамки мінікарти. Виправлення вбудовано в Paw’s Patch і не потребує окремого ввімкнення."
+  },
+  "mods": [
+    "vanilla",
+    "immortals"
+  ],
+  "channel": "beta"
+}

@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$OutputDirectory, [switch]$CityAssistant, [string]$LegacyWorkDirectory, [switch]$LobbyCompatibility, [string]$NativeCompiler, [switch]$LairWoundedTest, [switch]$LairRecovery, [switch]$CameraZoom, [switch]$CompanyPositionRecovery, [switch]$ExhaustionRecovery, [switch]$AiPolicy, [switch]$BotLobby, [switch]$FractionalKingdomPoints, [switch]$GraphicsDiagnostics, [switch]$SettlementSlots, [switch]$AllyEconomy, [switch]$EngineCrashFixes, [switch]$FoundationCounts, [switch]$NightmareDifficulty, [string]$PatchVersion, [string]$LocalLargeMapsSource, [switch]$LargeMaps, [string]$GameExecutable)
+param([Parameter(Mandatory=$true)][string]$OutputDirectory, [switch]$CityAssistant, [string]$LegacyWorkDirectory, [switch]$LobbyCompatibility, [string]$NativeCompiler, [switch]$LairWoundedTest, [switch]$LairRecovery, [switch]$CameraZoom, [switch]$CompanyPositionRecovery, [switch]$ExhaustionRecovery, [switch]$AiPolicy, [switch]$BotLobby, [switch]$FractionalKingdomPoints, [switch]$GraphicsDiagnostics, [switch]$SettlementSlots, [switch]$AllyEconomy, [switch]$EngineCrashFixes, [switch]$FoundationCounts, [switch]$NightmareDifficulty, [string]$PatchVersion, [string]$LocalLargeMapsSource, [switch]$LargeMaps, [string]$GameExecutable, [switch]$UniformUi)
 $ErrorActionPreference = 'Stop'
 if($LairWoundedTest){$LairRecovery=$true}
 $out = [IO.Path]::GetFullPath($OutputDirectory)
@@ -295,14 +295,14 @@ if($GraphicsDiagnostics){
 }
 if($LargeMaps){
     if(!$CityAssistant -or !$LobbyCompatibility -or !$NativeCompiler -or !$PatchVersion -or !$GameExecutable -or $LocalLargeMapsSource){throw 'Large maps require a full versioned Arcane build, native compiler and verified game executable.'}
-    $largeMaps=Join-Path $PSScriptRoot '../large-maps'
+    $largeMapsDirectory=Join-Path $PSScriptRoot '../large-maps'
     $registryNative=Join-Path $out 'registry-native'
-    & $python (Join-Path $largeMaps 'build_registry.py') --legacy $work --out $registryNative --compiler $NativeCompiler --exe $GameExecutable
+    & $python (Join-Path $largeMapsDirectory 'build_registry.py') --legacy $work --out $registryNative --compiler $NativeCompiler --exe $GameExecutable
     if($LASTEXITCODE -ne 0){throw 'Large-map native build failed'}
-    & $python (Join-Path $largeMaps 'test_registry.py') --legacy $work --native $registryNative --exe $GameExecutable
+    & $python (Join-Path $largeMapsDirectory 'test_registry.py') --legacy $work --native $registryNative --exe $GameExecutable
     if($LASTEXITCODE -ne 0){throw 'Large-map native regressions failed'}
     $registryTests=Join-Path $out 'RegistryInstallerTests.exe'
-    & $compiler /nologo /target:exe /platform:x86 /r:System.Core.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll "/out:$registryTests" (Join-Path $PSScriptRoot 'TerrainRuntime.cs') (Join-Path $largeMaps 'ExtendedRegistryPatch.cs') (Join-Path $largeMaps 'InstallerTests.cs') (Join-Path $registryNative 'ExtendedRegistryPayload.cs')
+    & $compiler /nologo /target:exe /platform:x86 /r:System.Core.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll "/out:$registryTests" (Join-Path $PSScriptRoot 'TerrainRuntime.cs') (Join-Path $largeMapsDirectory 'ExtendedRegistryPatch.cs') (Join-Path $largeMapsDirectory 'InstallerTests.cs') (Join-Path $registryNative 'ExtendedRegistryPayload.cs')
     if($LASTEXITCODE -ne 0){throw 'Registry installer test compilation failed'}
     & $registryTests
     if($LASTEXITCODE -ne 0){throw 'Registry installer regressions failed'}
@@ -321,7 +321,8 @@ foreach ($variant in $variants.PSObject.Properties) {
     $arguments = @('/nologo','/target:winexe','/platform:x86','/optimize+',
         '/r:System.Core.dll','/r:System.Windows.Forms.dll','/r:System.Drawing.dll',
         ("/define:" + $variant.Value + $(if($CityAssistant){';CITY_ASSISTANT;FAST_SAVE_TRANSFER'}else{''}) + $(if($LobbyCompatibility){';LOBBY_COMPATIBILITY'}else{''}) + $(if($LairWoundedTest){';LAIR_RECOVERY_TEST'}else{''}) + $(if($LairRecovery){';LAIR_RECOVERY'}else{''})), ("/out:" + $exe))
-    if($LargeMaps){$arguments += '/define:LARGE_MAPS'; $arguments += $largeMapsIdentity,(Join-Path $largeMaps 'ExtendedRegistryPatch.cs'),(Join-Path $registryNative 'ExtendedRegistryPayload.cs')}
+    if($UniformUi){$arguments += '/define:PAW_UNIFORM_UI'}
+    if($LargeMaps){$arguments += '/define:LARGE_MAPS'; $arguments += $largeMapsIdentity,(Join-Path $largeMapsDirectory 'ExtendedRegistryPatch.cs'),(Join-Path $registryNative 'ExtendedRegistryPayload.cs')}
     if($LocalLargeMapsSource){$arguments += '/define:LOCAL_LARGE_MAPS'; $arguments += [IO.Path]::GetFullPath($LocalLargeMapsSource)}
     if($CompanyPositionRecovery){$arguments += '/define:COMPANY_POSITION_RECOVERY';$arguments += (Join-Path $company 'CompanyPositionPatch.cs'),(Join-Path $companyNative 'CompanyPositionPayload.cs')}
     if($ExhaustionRecovery){$arguments += '/define:EXHAUSTION_RECOVERY';$arguments += (Join-Path $exhaustion 'ExhaustionRecoveryPatch.cs'),(Join-Path $exhaustionNative 'ExhaustionRecoveryPayload.cs')}
