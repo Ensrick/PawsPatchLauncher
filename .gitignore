@@ -6,6 +6,20 @@ release_workspace_*/
 .vs/
 *.user
 *.pdb
+# Local credentials and game-session artifacts are not contribution inputs.
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.dmp
+*.mdmp
+*.RSG
+*.rsg
+Preferences.rup
+UVars.tgi
 node_modules/
 __pycache__/
 *.py[cod]
