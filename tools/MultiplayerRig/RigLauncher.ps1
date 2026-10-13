@@ -53,8 +53,20 @@ public static class Launcher {
 }
 '@
 }
+# Every copy started, recorded the moment it exists (process id, creation time, executable), so a caller can stop
+# exactly its own copies even when its setup fails before Start-RigGame returns.
+$RigStarted = New-Object System.Collections.ArrayList
 function Start-RigGame([string] $Game, [string] $Arguments, [string] $Environment) {
     $id = [PawsRig.Launcher]::Start((Join-Path $Game 'k2.exe'), $Game, $Arguments, $Environment)
+    $p = Get-CimInstance Win32_Process -Filter "ProcessId=$id" -ErrorAction SilentlyContinue
+    if ($p) { [void]$RigStarted.Add(@{ Id = $id; Created = $p.CreationDate; Path = $p.ExecutablePath }) }
     foreach ($i in 1..60) { if ([PawsRig.Launcher]::Park($id) -gt 0) { break }; Start-Sleep -Milliseconds 500 }
     $id
+}
+# The recorded copies still running: same process id, creation time and executable as when they were started.
+function Get-RigCopies {
+    foreach ($s in $RigStarted) {
+        $p = Get-CimInstance Win32_Process -Filter "ProcessId=$($s.Id)" -ErrorAction SilentlyContinue
+        if ($p -and $p.CreationDate -eq $s.Created -and $p.ExecutablePath -eq $s.Path) { $s.Id }
+    }
 }

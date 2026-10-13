@@ -28,7 +28,8 @@ param(
     [int] $SaveAfter = 60,               # SaveCopy: seconds into the match before the host saves
     [string] $SaveName = 'Rig Test',
     [string] $LoadSave,                  # LoadCopy: the save the host loads (copied into its Save folder)
-    [int] $AutosaveMinutes = 1           # the module's autosave interval for this run (the helper uses 5)
+    [int] $AutosaveMinutes = 1,          # the module's autosave interval for this run (the helper uses 5)
+    [switch] $TestSetupFailure           # developer check of the rig itself: fail right after the host copy starts
 )
 $ErrorActionPreference = 'Stop'
 $logs = Join-Path $Game 'Logs'
@@ -65,6 +66,18 @@ foreach ($f in Get-ChildItem $logs -File) {
 }
 "game logs copied to $backup"
 
+# LoadCopy: read the save before anything below empties the rig's Save folders (it may be a copy from an earlier run
+# in one of them).
+$loadLeaf = $loadBytes = $null
+if ($Scenario -eq 'LoadCopy') {
+    if (-not $LoadSave -or -not (Test-Path -LiteralPath $LoadSave -PathType Leaf) -or [IO.Path]::GetExtension($LoadSave) -ne '.rsg') {
+        throw 'LoadCopy needs -LoadSave <a .RSG file>'
+    }
+    $loadLeaf = Split-Path $LoadSave -Leaf
+    $loadBytes = [IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $LoadSave).ProviderPath)
+    if ($loadBytes.Length -eq 0) { throw "$LoadSave is empty" }
+}
+
 # ---------------------------------------------------------------- the copies' own Documents folders
 $rigSettings = @'
 [Vars]
@@ -90,10 +103,7 @@ foreach ($copy in $copies.Keys) {
     }
 }
 
-if ($Scenario -eq 'LoadCopy') {
-    if (-not $LoadSave -or -not (Test-Path -LiteralPath $LoadSave)) { throw 'LoadCopy needs -LoadSave <a .RSG file>' }
-    Copy-Item -LiteralPath $LoadSave (Join-Path (Saves 'host') (Split-Path $LoadSave -Leaf))
-}
+if ($Scenario -eq 'LoadCopy') { [IO.File]::WriteAllBytes((Join-Path (Saves 'host') $loadLeaf), $loadBytes) }
 
 # ---------------------------------------------------------------- scripts
 $join = @"
@@ -171,6 +181,7 @@ function Start-Copy($copy, $script) {
     $envText = "K2_RIG_DOCUMENTS=$(Docs $copy)`0"
     if ($copy -ne 'host') { $envText += "K2_RIG_JOIN=127.0.0.1:$Port`0" }
     $id = Start-RigGame $Game "+Exec PawsRig/$script.txt" $envText
+    if ($TestSetupFailure) { throw "injected setup failure after starting the $copy copy (-TestSetupFailure)" }
     $log = Wait-NewLog $known 60
     $result = & $inject $id $copies[$copy] $AutosaveMinutes 2>&1
     Write-Host "$copy ($script): process $id, log $(Split-Path $log -Leaf); $($result -join ' ')"
@@ -180,6 +191,7 @@ function Start-Copy($copy, $script) {
 }
 
 $hostCopy = $clientCopy = $null
+$completed = $false
 try {
     $hostCopy = Start-Copy 'host' 'host'
     # The game buffers its log: readiness comes from Windows, the host listening on its port.
@@ -194,15 +206,15 @@ try {
     while ((Get-Process -Id $hostCopy.Id, $clientCopy.Id -ErrorAction SilentlyContinue) -and ((Get-Date) - $t0).TotalSeconds -lt $runLimit) {
         Start-Sleep -Milliseconds 250
     }
+    $completed = $true
 } finally {
-    # A copy can take minutes to close after ReallyQuit; the game folder must not keep the test files.
-    $ours = @($hostCopy, $clientCopy | Where-Object { $_ } | ForEach-Object { $_.Id })
-    $exitBy = (Get-Date).AddSeconds(300)
-    while ($ours -and (Get-Process -Id $ours -ErrorAction SilentlyContinue) -and (Get-Date) -lt $exitBy) { Start-Sleep -Seconds 2 }
-    foreach ($id in $ours) {
-        # only the rig's own copies: started by this run, with a rig script on their command line
-        $p = Get-CimInstance Win32_Process -Filter "ProcessId=$id" -ErrorAction SilentlyContinue
-        if ($p -and $p.Name -eq 'k2.exe' -and $p.CommandLine -match 'PawsRig/\w+\.txt') { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue; "stopped the rig's copy $id (still running after the wait)" }
+    # Only the copies this run started (recorded by Start-RigGame). After a normal run a copy can take minutes to close
+    # after ReallyQuit; after a failed setup they are stopped at once. The game folder must not keep the test files.
+    $exitBy = (Get-Date).AddSeconds($(if ($completed) { 300 } else { 0 }))
+    while (@(Get-RigCopies).Count -and (Get-Date) -lt $exitBy) { Start-Sleep -Seconds 2 }
+    foreach ($id in @(Get-RigCopies)) {
+        Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
+        "stopped the rig's copy $id ($(if ($completed) { 'still running after the wait' } else { 'the run did not complete' }))"
     }
     Start-Sleep -Seconds 3
     if (-not (Get-Process k2 -ErrorAction SilentlyContinue)) {
