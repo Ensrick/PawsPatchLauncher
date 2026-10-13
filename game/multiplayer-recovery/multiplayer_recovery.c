@@ -161,7 +161,7 @@ static DWORD lastTick;
 __declspec(dllexport) volatile LONG PawRecoveryInstallStatus;  /* 0 not run, 1 installed, -1 failed */
 __declspec(dllexport) volatile LONG PawRecoveryFeatures;       /* features actually on */
 __declspec(dllexport) volatile LONG PawRecoveryCopies, PawRecoveryCopiesSkipped, PawRecoveryAutosaves,
-    PawRecoveryDrops, PawRecoveryLobbySteps, PawRecoveryVotes, PawRecoveryTicks;
+    PawRecoveryDrops, PawRecoveryLobbySteps, PawRecoveryVotes, PawRecoveryTicks, PawRecoverySavesBlocked;
 
 /* ------------------------------------------------------------------ log */
 static void log_line(const char *format, ...) {
@@ -372,9 +372,16 @@ static void release_task(void *task) {
     if (!InterlockedDecrement((volatile LONG *)((char *)task + TASK_REFS)))
         ((DeletingDtor)(*(void ***)task)[0])(task, 0, 1);
 }
-/* The walk the save task starts with, read-only, so a copy is only attempted where the game's own code would not
+/* The walk the save task starts with, read-only, so a save is only attempted where the game's own code would not
  * fault: 0 ready, 1 a resource without create settings, 2 a source whose header is not loaded, 3 a chain too long,
- * -1 nothing to save. A client whose lobby first picked a saved game and then a random map faulted here on 1.3.68. */
+ * -1 nothing to save. A client whose lobby first picked a saved game and then a random map faulted here on 1.3.68.
+ * On 1.3.72, a player who received a saved match over the network has no header loaded for that save; when that
+ * player took over from a lost host and saved, the save task stopped at "source_res->IsHeaderLoaded()" on the ASYNC
+ * thread while holding a lock the main thread waits for, and the game ended with "timeout waiting for mutex"
+ * (rig, LoadCopy). Save copies, autosaves and drop recovery's save all check first. */
+static IsFromResource isFromResource;
+static const char *const sourceProblem[] = {"there is no world", "", "has no create settings", "is not loaded",
+    "is too deep"}; /* by sources_ready() + 1 */
 static int sources_ready(int *depthOut) {
     const void *world = pointer_at(worldGlobal), *res, *settings;
     int depth;
@@ -385,7 +392,7 @@ static int sources_ready(int *depthOut) {
         *depthOut = depth + 1;
         settings = FIELD(void *, res, RES_CREATE_SETTINGS);
         if (!settings) return 1;
-        if (!((IsFromResource)(image + 0x16bf8f))((void *)settings)) return 0;
+        if (!isFromResource((void *)settings)) return 0;
         res = FIELD(const void *, settings, SETTINGS_SOURCE);
         if (!res) return 1;
         if (!(FIELD(uint32_t, res, RES_FLAGS) & RES_HEADER_LOADED)) return 2;
@@ -435,10 +442,9 @@ static void on_client_save(void) {
     }
     ready = sources_ready(&depth);
     if (ready) {
-        static const char *const why[] = {"there is no world", "", "has no create settings", "is not loaded", "is too deep"};
         InterlockedIncrement(&PawRecoveryCopiesSkipped);
         log_line("save copy of \"%s\" skipped: the game's save code would stop at an assertion here (map source %d %s)",
-                 utf8(name, a, sizeof a), depth, why[ready + 1]);
+                 utf8(name, a, sizeof a), depth, sourceProblem[ready + 1]);
         return;
     }
     start = GetTickCount();
@@ -504,12 +510,14 @@ static const int hostSaveNeeds[] = {S_GAME_SAVE, S_HOST_SAVE_CALL, S_CREATE_SAVE
 
 /* ------------------------------------------------------------------ autosave */
 static DWORD autosaveSince; /* when the hosted match was first seen, then the last save; 0 = none */
-static int autosaveSlot;
+static int autosaveSlot, autosaveBlocked;
 static void autosave_tick(DWORD now) {
     static const wchar_t *const slots[] = {L"GameSave \"Save/MP Autosave A.RSG\"", L"GameSave \"Save/MP Autosave B.RSG\""};
+    int ready, depth;
     if (!hosting_match(pointer_at(adminGlobal), pointer_at(sessionGlobal), pointer_at(netNodeGlobal))) {
         if (autosaveSince) log_line("autosave: the match this PC hosted is over");
         autosaveSince = 0;
+        autosaveBlocked = 0;
         return;
     }
     if (!autosaveSince) {
@@ -517,14 +525,26 @@ static void autosave_tick(DWORD now) {
         log_line("autosave: hosting a match; first save in %lu minute(s)", (unsigned long)config.autosaveMinutes);
         return;
     }
-    if (now - autosaveSince < config.autosaveMinutes * 60000u || !run_script(slots[autosaveSlot])) return;
+    if (now - autosaveSince < config.autosaveMinutes * 60000u) return;
+    if ((ready = sources_ready(&depth)) != 0) {
+        autosaveSince = now ? now : 1;
+        if (!autosaveBlocked) {
+            InterlockedIncrement(&PawRecoverySavesBlocked);
+            log_line("autosave: not saving this match: the game's save code would stop at an assertion on this PC "
+                     "(map source %d %s)", depth, sourceProblem[ready + 1]);
+        }
+        autosaveBlocked = 1;
+        return;
+    }
+    if (!run_script(slots[autosaveSlot])) return;
     InterlockedIncrement(&PawRecoveryAutosaves);
     log_line("autosave: saving \"MP Autosave %c\"", autosaveSlot ? 'B' : 'A');
     autosaveSince = now ? now : 1;
     autosaveSlot ^= 1;
 }
 static const int autosaveNeeds[] = {S_SESSION_READ, S_FOR_EACH_CONNECTION, S_WANTED_PACKET, S_GAME_SAVE,
-    S_SCRIPT_READ, S_RUN_SCRIPT, S_STRING_CTOR, S_STRING_RELEASE, S_BACKUP_MODE, -1};
+    S_SCRIPT_READ, S_RUN_SCRIPT, S_STRING_CTOR, S_STRING_RELEASE, S_BACKUP_MODE, S_SOURCE_WALK, S_SOURCE_STEP,
+    S_SETTINGS_READ, S_SETTINGS_TYPE, S_WORLD_READ, -1};
 
 /* ------------------------------------------------------------------ drop recovery */
 static PlayerLeave originalPlayerLeave;
@@ -560,9 +580,17 @@ static void on_leave(DWORD now) {
     wchar_t command[96];
     char a[96];
     SYSTEMTIME t;
+    int ready, depth;
     if (!host_of_running_match(admin, session)) return; /* not the host, or a leave from the lobby */
     if (step != IDLE) {
         log_line("drop recovery: %ld more player(s) left (reason %ld); already handling a leave", (long)leaves, (long)reason);
+        return;
+    }
+    if ((ready = sources_ready(&depth)) != 0) {
+        InterlockedIncrement(&PawRecoverySavesBlocked);
+        log_line("drop recovery: %ld player(s) left the match (reason %ld); not saving: the game's save code would stop "
+                 "at an assertion on this PC (map source %d %s), so the match goes on as it is", (long)leaves,
+                 (long)reason, depth, sourceProblem[ready + 1]);
         return;
     }
     /* A new name per drop: a player who has an older file of the selected name would be asked to overwrite it. */
@@ -701,7 +729,8 @@ static void recovery_tick(DWORD now) {
     }
 }
 static const int dropNeeds[] = {S_LEAVE_DECREE, S_PLAYER_LEAVE, S_SESSION_READ, S_WANTED_PACKET, S_GAME_SAVE,
-    S_SCRIPT_READ, S_RUN_SCRIPT, S_STRING_CTOR, S_STRING_RELEASE, S_USER_DATA, S_BACKUP_MODE, -1};
+    S_SCRIPT_READ, S_RUN_SCRIPT, S_STRING_CTOR, S_STRING_RELEASE, S_USER_DATA, S_BACKUP_MODE, S_SOURCE_WALK,
+    S_SOURCE_STEP, S_SETTINGS_READ, S_SETTINGS_TYPE, S_WORLD_READ, -1};
 static const int lobbyNeeds[] = {S_END_MISSION, S_GAME_TYPE, S_LOAD_SAVE_CTOR, S_LOAD_SAVE_ISSUE, S_COUNTDOWN_READ,
     S_WORLD_READ, -1};
 static const int voteNeeds[] = {S_FOR_EACH_CONNECTION, S_NETCONN_ADMIN, S_KICK_VOTE, -1};
@@ -775,6 +804,7 @@ __declspec(dllexport) DWORD WINAPI PawInstall(void *raw) {
     personalGlobal = operand(0x1cb7fc, 2);
     worldGlobal = operand(0x16aa1c, 1);
     managerGlobal = operand(0x16aa67, 2);
+    isFromResource = (IsFromResource)(image + 0x16bf8f);
     /* Host saves are followed for the log and for drop recovery's lobby step. */
     if ((cfg->features & (FEATURE_SAVE_COPIES | FEATURE_DROP_RECOVERY)) &&
         signatures_match(image, imageSize, hostSaveNeeds, "host save tracking")) {
@@ -853,6 +883,21 @@ static void check(int ok, const char *what) {
 }
 static unsigned char admin[0x400], session[0x200], netNode[0x80], node1[8], node2[8], net1[0xb0], net2[0xb0],
     conn1[0xa0], conn2[0xa0], world[0x40], typeObject[0x10];
+/* a map resource chain for sources_ready(): world -> made -> settings -> source (-> settings2 -> made) */
+static unsigned char made[0x90], settings[0x60], source[0x90], settings2[0x60];
+static void *worldPointer, *adminPointer, *sessionPointer, *netNodePointer;
+static unsigned char __cdecl fake_is_from_resource(void *object) { return object == settings || object == settings2; }
+static void chain(void) {
+    memset(made, 0, sizeof made); memset(settings, 0, sizeof settings); memset(source, 0, sizeof source);
+    memset(settings2, 0, sizeof settings2); memset(world, 0, sizeof world);
+    worldPointer = world; worldGlobal = (uintptr_t)&worldPointer; isFromResource = fake_is_from_resource;
+    *(void **)(world + WORLD_RESOURCE) = made;
+    *(uint32_t *)(made + RES_FLAGS) = RES_MADE_FROM_OTHER;
+    *(void **)(made + RES_CREATE_SETTINGS) = settings;
+    *(void **)(settings + SETTINGS_SOURCE) = source;
+    *(uint32_t *)(source + RES_FLAGS) = RES_HEADER_LOADED;
+    *(void **)(source + RES_CREATE_SETTINGS) = typeObject; /* settings of another kind (a random map): the walk ends */
+}
 /* The game calls each hook as a thiscall: ECX = object, arguments pushed right to left, callee pops them. These
  * stand in for the original functions and record what reached them. */
 static void *seenSelf, *seenFirst;
@@ -953,6 +998,35 @@ int main(int argc, char **argv) {
               "a finished save task is reported and its reference released");
         *(void **)(session + SESSION_SAVE_TASK) = 0;
         check(thiscall1((void *)host_save_hook, session, 0) && hostSaves[0].state == 0, "no task, nothing handed over");
+    }
+    {
+        int depth;
+        chain(); check(sources_ready(&depth) == 0 && depth == 2, "a loaded source: the game's save code can save");
+        *(uint32_t *)(source + RES_FLAGS) = 0;
+        check(sources_ready(&depth) == 2 && depth == 1, "a source without its header: no save");
+        chain(); *(uint32_t *)(made + RES_FLAGS) = 0; check(sources_ready(&depth) == 0 && depth == 0, "not made from another resource");
+        chain(); *(void **)(made + RES_CREATE_SETTINGS) = 0; check(sources_ready(&depth) == 1, "no create settings");
+        chain(); *(void **)(made + RES_CREATE_SETTINGS) = typeObject; check(sources_ready(&depth) == 0, "settings of another kind end the walk");
+        chain(); *(void **)(settings + SETTINGS_SOURCE) = 0; check(sources_ready(&depth) == 1, "settings without a source");
+        chain(); *(void **)(source + RES_CREATE_SETTINGS) = settings2; *(void **)(settings2 + SETTINGS_SOURCE) = made;
+        *(uint32_t *)(made + RES_FLAGS) |= RES_HEADER_LOADED; check(sources_ready(&depth) == 3, "a looped chain ends");
+        chain(); *(void **)(world + WORLD_RESOURCE) = 0; check(sources_ready(&depth) == -1, "no world resource");
+        worldPointer = 0; check(sources_ready(&depth) == -1, "no world");
+        /* the module's own saves, blocked: nothing is run (run_script would need the game) and the block is counted */
+        reset(); chain(); *(uint32_t *)(source + RES_FLAGS) = 0;
+        adminPointer = admin; sessionPointer = session; netNodePointer = netNode;
+        adminGlobal = (uintptr_t)&adminPointer; sessionGlobal = (uintptr_t)&sessionPointer; netNodeGlobal = (uintptr_t)&netNodePointer;
+        config.autosaveMinutes = 1; autosaveSince = 0; PawRecoverySavesBlocked = 0;
+        autosave_tick(1000); autosave_tick(70000); autosave_tick(140000);
+        check(PawRecoverySavesBlocked == 1 && autosaveBlocked && autosaveSince == 140000 && PawRecoveryAutosaves == 0,
+              "autosave: a match this PC cannot save is not saved, and said once");
+        *(void **)(netNode + NETNODE_CONNECTIONS) = 0; autosave_tick(150000);
+        check(!autosaveSince && !autosaveBlocked, "autosave: a new match is checked again");
+        leavesPending = 1; lastReason = 5; step = IDLE;
+        on_leave(200000);
+        check(PawRecoverySavesBlocked == 2 && PawRecoveryDrops == 0 && step == IDLE && !leavesPending,
+              "drop recovery: a match this PC cannot save goes on unsaved and unpaused");
+        adminGlobal = sessionGlobal = netNodeGlobal = worldGlobal = 0;
     }
     for (i = 0; i < S_COUNT; i++) {
         const char *p = signatures[i].bytes;

@@ -16,6 +16,11 @@
 #                         Checks that the client is back in a match loaded from "MP Resume".
 #   -Scenario Abandon     like Rejoin, but the dropped client never comes back: the host launches "MP Resume" alone
 #                         after -RelaunchAfter. Checks that the host is back in a match loaded from it.
+#   -Scenario LoadCopy    the host hosts the match again from a player's save copy (-LoadSave, e.g. the client's
+#                         "Rig Test (copy).RSG" from a SaveCopy run, copied in as the host's only save); the client
+#                         joins without it and receives it; both launch. Checks that both are in a match from it.
+#                         The host quits first: checks that the client takes over without crashing (a player who
+#                         received the save cannot save it on 1.3.72; the module must not try).
 #   -Scenario HostLeaves  host: LAN lobby, quits once the client is in it. Checks whether the client survives (on 1.3.68
 #                         the client crashed in 4 of 18 such runs, after a failed assertion).
 #
@@ -24,12 +29,13 @@
 # and PawsRig\*.txt for the run; its Logs folder (the game keeps only about ten logs) is copied aside first.
 param(
     [Parameter(Mandatory = $true)][string] $RigBuild,  # tools/MultiplayerRig/build.ps1 -OutputDirectory
-    [ValidateSet('SaveCopy', 'Autosave', 'Drop', 'Rejoin', 'Abandon', 'HostLeaves')] [string] $Scenario = 'SaveCopy',
+    [ValidateSet('SaveCopy', 'Autosave', 'Drop', 'Rejoin', 'Abandon', 'LoadCopy', 'HostLeaves')] [string] $Scenario = 'SaveCopy',
     [string] $Game = 'C:\Program Files (x86)\Steam\steamapps\common\Kohan II',
     [int] $Port = 5860,                  # the first port the game tries for a LAN host (5860-5869)
     [int] $LaunchAfter = 90,             # seconds the host waits in its lobby for the client before launching
     [int] $SaveAfter = 60,               # SaveCopy: seconds into the match before the host saves
     [string] $SaveName = 'Rig Test',
+    [string] $LoadSave,                  # LoadCopy: the save the host loads (copied into its Save folder)
     [int] $AutosaveMinutes = 1,          # the module's autosave interval for this run (the helper uses 5)
     [ValidateSet('Client', 'Host')] [string] $DropWho = 'Client',
     [ValidateSet('Kill', 'Quit')] [string] $DropHow = 'Kill',
@@ -94,6 +100,11 @@ foreach ($copy in $copies.Keys) {
     }
 }
 
+if ($Scenario -eq 'LoadCopy') {
+    if (-not $LoadSave -or -not (Test-Path -LiteralPath $LoadSave)) { throw 'LoadCopy needs -LoadSave <a .RSG file>' }
+    Copy-Item -LiteralPath $LoadSave (Join-Path (Saves 'host') (Split-Path $LoadSave -Leaf))
+}
+
 # ---------------------------------------------------------------- scripts
 $join = @"
 RequestMultiplayer
@@ -139,6 +150,11 @@ switch ($Scenario) {
         $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`n$stay`nEcho rig: client end`nReallyQuit"
         $rejoinScript = "Wait 45`n$join`nEcho rig: rejoined client waiting`nWait 40`nStagingReady 0`nWait $(if ($Scenario -eq 'Rejoin') { 420 } else { 110 })`nEcho rig: rejoined client end`nReallyQuit"
     }
+    'LoadCopy' {
+        # The load dialog's Commit takes the save its list selects first: the host has only the copy.
+        $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType LOAD_SAVED_GAME`nWait 3`nCommit`nEcho rig: host waiting in its lobby`nWait $($LaunchAfter + 150)`nEcho rig: host launching`nStagingLaunch`nWait 30`nStagingLaunch`nWait 90`nEcho rig: host end`nReallyQuit"
+        $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWait 40`nStagingReady 0`nWait $($LaunchAfter + 230)`nEcho rig: client end`nReallyQuit"
+    }
     'HostLeaves' {
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait 95`nEcho rig: host leaving`nReallyQuit"
         $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`nWait 150`nEcho rig: client end`nReallyQuit"
@@ -152,7 +168,7 @@ Write-Script 'host' $hostScript
 Write-Script 'client' $clientScript.Replace('__NICK__', 'RigClient')
 if ($rejoinScript) { Write-Script 'rejoin' $rejoinScript.Replace('__NICK__', 'RigClient') }
 Copy-Item $rigShfolder $shfolderInGame -Force
-$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } 'HostLeaves' { 420 } 'Drop' { $DropAfter + 420 } 'Rejoin' { $DropAfter + 720 } 'Abandon' { $DropAfter + $RelaunchAfter + 420 } default { $LaunchAfter + $SaveAfter + 300 } }
+$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } 'HostLeaves' { 420 } 'Drop' { $DropAfter + 420 } 'Rejoin' { $DropAfter + 720 } 'Abandon' { $DropAfter + $RelaunchAfter + 420 } 'LoadCopy' { $LaunchAfter + 600 } default { $LaunchAfter + $SaveAfter + 300 } }
 
 # ---------------------------------------------------------------- starting a copy
 . (Join-Path $PSScriptRoot 'RigLauncher.ps1')
@@ -286,6 +302,23 @@ switch ($Scenario) {
             $checks['the dropped client got "MP Resume"'] = [bool](Get-ChildItem (Saves 'client') -Filter 'MP Resume *.RSG' -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*(copy)*' -and $_.LastWriteTime -gt $dropped })
             $checks['the dropped client is back in a match from "MP Resume"'] = $rjText.Contains('Loading File: <Save/MP Resume ')
         }
+    }
+    'LoadCopy' {
+        $leaf = Split-Path $LoadSave -Leaf
+        $clientLog = Final-Log $clientCopy.Log
+        $clientText = if ($clientLog) { Get-Content $clientLog.FullName -Raw } else { '' }
+        foreach ($pair in @(@('host', $hostText), @('client', $clientText))) {
+            $at = $pair[1].LastIndexOf("Loading File: <Save/$leaf>")
+            $checks["the $($pair[0]) is in a match loaded from the copy"] = $at -ge 0 -and $pair[1].IndexOf('ChangeToState(2,', $at) -gt 0
+        }
+        $checks['the client received the copy'] = Test-Path (Join-Path (Saves 'client') $leaf)
+        $clientModule = Module-Text 'client'
+        if ((Module-Text 'host') -match 'autosave: saving') {
+            $checks['the client skipped its copy (the game cannot save here)'] = $clientModule -match 'save copy of .* skipped: .* is not loaded'
+        }
+        $checks['the client took over when the host left'] = $clientText.Contains('has taken over as host')
+        $checks['the client module did not save after taking over'] = $clientModule -match 'drop recovery: .* not saving: .* is not loaded'
+        $checks['the client did not crash'] = $clientLog -and $clientLog.Name -like '*-ok.log' -and -not $clientText.Contains('timeout waiting for mutex')
     }
     'HostLeaves' {
         $clientLog = Final-Log $clientCopy.Log

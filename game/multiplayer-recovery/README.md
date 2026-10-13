@@ -55,10 +55,17 @@ Field offsets read: session `+68` (file), `+F0` (state), `+100` (networked), `+1
 from a lost host).
 
 Safety rules:
-- **Save copies:** checked against the save task's own source walk first, so a copy is skipped where the game's
-  save code would fault (a lobby that switched from a saved game to a random map, seen on 1.3.68).
-- **Drop recovery:** acts only on the original host of a running networked multiplayer match, outside backup
-  mode and the launch countdown. After a host takeover it saves and pauses but stays in the match.
+- **Every save the module makes** (copies, autosaves, `MP Resume`) is first checked against the save task's own
+  source walk (`KKC_ResourceManagerTaskSaveGame::SaveGame`, RVA `1C1A15`) and skipped where the game's save code
+  would stop at an assertion:
+  - a lobby that switched from a saved game to a random map (seen on 1.3.68);
+  - a player who received the saved match over the network (1.3.72): the save's header is not loaded on that PC.
+    The save task then asserts `source_res->IsHeaderLoaded()` on the `ASYNC` thread while holding a lock the main
+    thread waits for, and after 60 s the game ends with "timeout waiting for mutex". On the rig this happened when
+    the host of a match loaded from a save quit and the client that took over saved `MP Resume`.
+- **Drop recovery:** acts only on the host of a running networked multiplayer match, outside backup mode and the
+  launch countdown. After a host takeover it saves and pauses (if this PC can save the match) but stays in the
+  match.
 - **Names:** each drop gets a new `MP Resume` name, so no player is asked "A different version of this map exists -
   overwrite it?".
 - **Log:** `<game>\paws_multiplayer_recovery_1372.log`, with save names relative to the game's data folder and no
@@ -73,12 +80,14 @@ game/multiplayer-recovery/build.ps1 -OutputDirectory <native> -NativeCompiler <x
 Run it before `game/pure-fixes/build_beta.py --native <native>`, which embeds the DLL. It builds the DLL and
 then runs three checks:
 
-- `MultiplayerRecoveryTests.exe` (`-DPAW_TEST`), 78 offline checks:
+- `MultiplayerRecoveryTests.exe` (`-DPAW_TEST`), 90 offline checks:
   - plain-memory state decisions: host of a running match, End Mission allowed, connection down;
+  - the source walk on built resource chains, and that autosave and drop recovery run no save command where it
+    fails;
   - copy names, the lobby checksum and the signature table format;
   - every hook called the way the game calls it (thiscall: `ECX` + stack arguments popped by the callee). Each
     hook must pass its arguments to the original, keep the stack and saved registers, and record its event.
-- with `-MappedImage` (the hash-pinned 1.3.72 snapshot), 118 checks: all 35 signatures and all 5 call sites.
+- with `-MappedImage` (the hash-pinned 1.3.72 snapshot), 130 checks: all 35 signatures and all 5 call sites.
 - `MultiplayerRecoveryInstallerTests.exe`, 13 checks: the configuration block's layout and limits.
 
 ## Validation
@@ -103,8 +112,12 @@ then runs three checks:
 
 - **Host crash:** handled only partly. The player who takes over saves and pauses but keeps the match. Bringing the
   lost host back needs that player's lobby to be found, which is untested.
+- **Matches loaded from a save** (including a resumed `MP Resume`): only the host, who loaded the file from its own
+  disk, can save them. Other players write no copies there, and a player who takes over from a lost host neither
+  autosaves nor saves `MP Resume`; the module logs why and the match goes on. The host's own autosaves of that match
+  remain on the host's PC.
 - **Name of the copies:** they keep `(copy)` because they are not byte-identical to the host's save: on the rig a
   client's copy was about 24 bytes smaller, apparently per-PC data. The host's and the copies' lobby checksums are
-  logged. Loading a copy as host is a separate test (see the pull request).
+  logged. A copy loads as a hosted match: on the rig the host hosted a client's copy and the client joined it.
 - **Players without the module:** a player without it is not affected beyond the pauses for the host's saves, which
   every multiplayer save already causes.
