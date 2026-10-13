@@ -210,6 +210,7 @@ try
     passed += await GameLobbyPreferencesTests.RunAsync();
     passed += await WindowsClipboardTests.RunAsync();
     passed += DiagnosticArchiveHistoryTests.Run(root);
+    passed += RwdArchiveTests.Run(root);
     passed += await GameDiagnosticsTests.RunAsync(root);
     passed += await LauncherEvolutionTests.RunAsync(root);
     passed += ChannelPresentationTests.Run();
