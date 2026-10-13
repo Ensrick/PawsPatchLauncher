@@ -1088,6 +1088,31 @@
   ],
   "beta": [
     {
+      "category": "patch",
+      "version": "0.4.1-beta.1",
+      "publishedAt": "2026-10-13",
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.1 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.1 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.1-beta.1 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.1-beta.1 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.1-beta.1 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.1-beta.1 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "После отключения игрока хост сохраняет матч и открывает лобби с выбранным сохранением. Игрок может вернуться, получить сейв и продолжить вместе со всеми.\n\nПри потере первоначального хоста новый хост сохраняет матч и оставляет паузу; продолжить можно через ручную загрузку сейва в лобби.\n\nВосстановление работает через лобби, а не вход прямо в работающую симуляцию.",
+        "en": "After a client disconnects, the host saves the match and opens the lobby with that save selected. The player can reconnect, download the save and continue with everyone.\n\nIf the original host disconnects, the new host saves the match and leaves it paused; resume by manually loading the save in a lobby.\n\nRecovery uses the lobby, rather than joining directly into a running simulation.",
+        "de": "Nach dem Verbindungsabbruch eines Spielers speichert der Host die Partie und öffnet die Lobby mit diesem Spielstand. Der Spieler kann zurückkehren, den Spielstand herunterladen und mit allen weiterspielen.\n\nFällt der ursprüngliche Host aus, speichert der neue Host die Partie und pausiert sie. Zum Fortsetzen den Spielstand manuell in der Lobby laden.\n\nDie Wiederherstellung erfolgt über die Lobby; ein direkter Beitritt zur laufenden Simulation ist noch nicht möglich.",
+        "fr": "Après la déconnexion d’un joueur, l’hôte sauvegarde la partie et ouvre le salon avec cette sauvegarde sélectionnée. Le joueur peut revenir, télécharger la sauvegarde et reprendre avec les autres.\n\nSi l’hôte initial se déconnecte, le nouvel hôte sauvegarde la partie et la laisse en pause. Chargez manuellement la sauvegarde dans un salon pour reprendre.\n\nLa reprise passe par le salon ; rejoindre directement la simulation en cours n’est pas encore possible.",
+        "cs": "Po odpojení hráče hostitel uloží zápas a otevře lobby s vybranou uloženou hrou. Hráč se může vrátit, stáhnout uloženou hru a pokračovat s ostatními.\n\nPokud se odpojí původní hostitel, nový hostitel zápas uloží a ponechá pozastavený. Pokračovat lze ručním načtením uložené hry v lobby.\n\nObnovení probíhá přes lobby; přímé připojení do běžící simulace zatím není možné.",
+        "uk": "Після відключення гравця хост зберігає матч і відкриває лобі з вибраним збереженням. Гравець може повернутися, отримати сейв і продовжити разом з усіма.\n\nУ разі втрати початкового хоста новий хост зберігає матч і залишає паузу; продовжити можна через ручне завантаження сейва в лобі.\n\nВідновлення працює через лобі, а не через вхід прямо в активну симуляцію."
+      }
+    },
+    {
       "category": "launcher",
       "version": "0.9.3",
       "publishedAt": "2026-10-13",
