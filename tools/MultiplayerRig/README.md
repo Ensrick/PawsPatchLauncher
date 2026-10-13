@@ -11,11 +11,33 @@ vote path needs real PCs.
 
 ```powershell
 tools/MultiplayerRig/build.ps1 -OutputDirectory .local/rig -NativeCompiler <x86-tcc>
-tools/MultiplayerRig/Run-Rig.ps1 -RigBuild .local/rig -Scenario SaveCopy   # also Autosave, Drop, Rejoin, Abandon, HostLeaves
+tools/MultiplayerRig/Run-Rig.ps1 -RigBuild .local/rig -Scenario SaveCopy   # also Autosave, Drop, Rejoin, Abandon, LoadCopy, HostLeaves
 ```
 
 The exit code is the number of failed checks. The output lists both modules' logs, the relevant lines of both game
-logs and the checks.
+logs and the checks. `Run-Rig.ps1`'s header describes each scenario.
+
+Two more scripts use the same launcher (`RigLauncher.ps1`) and stand-in, one copy at a time:
+
+| Script | What it reports |
+| --- | --- |
+| `Test-Startup.ps1 -RigBuild .local/rig` | Starts the game as installed, waits for the main menu and quits: every `ERROR` line, failed assertion and warning from start-up. For checking an applied package without playing. |
+| `Probe-Precedence.ps1 -RigBuild .local/rig -RwdTool <RwdTool.exe>` | Which copy of a data file the game uses when several depots hold it (see below). Needs `tools/RwdTool` (pull request #1). |
+
+`Probe-Precedence.ps1` packs two one-file archives, mounts them with `addmod` from a startup script, and starts the
+game with `+Exec pawsprobe/order.txt`; each candidate copy of that script echoes its own source and quits. Result on
+1.3.72:
+
+| Depots holding `pawsprobe/order.txt` | The game used |
+| --- | --- |
+| `addmod A`, then `addmod B` | archive B |
+| `addmod B`, then `addmod A` | archive A |
+| both archives and `<game>\data` | the archive mounted last |
+| both archives, `<game>\data` and `Documents\Kohan2\data` | `Documents\Kohan2\data` |
+| only `<game>\data` (control) | `<game>\data` |
+
+So the archive mounted last wins over earlier archives and over the game's `data` folder, and the player's
+`Documents\Kohan2\data` wins over all of them. The probe ran twice with the same result.
 
 ## How it works
 

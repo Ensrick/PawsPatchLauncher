@@ -60,6 +60,9 @@ try {
     "addmod PawsRig/probeB.rwd`r`naddmod PawsRig/probeA.rwd`r`n" | Set-Content $startup -Encoding ascii -NoNewline
     Remove-Item -LiteralPath (Join-Path $userProbe 'order.txt'); Remove-Item -LiteralPath (Join-Path $gameProbe 'order.txt')
     Run-Case 'addmod B, then addmod A'
+    Remove-Item -LiteralPath $startup
+    "Echo pawsprobe: game data folder`r`nWait 30`r`nReallyQuit`r`n" | Set-Content (Join-Path $gameProbe 'order.txt') -Encoding ascii -NoNewline
+    Run-Case 'no archives, <game>\data only'
 } finally {
     foreach ($f in $startup, $shfolder, (Join-Path $gameProbe 'order.txt'), (Join-Path $archives 'probeA.rwd'), (Join-Path $archives 'probeB.rwd')) {
         if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f }
