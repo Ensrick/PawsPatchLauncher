@@ -77,3 +77,16 @@ cancellation, retry after a picker failure, and reentry. Existing game-settings
 checks: **42 PASS**. In the published local test EXE, both the native Cancel button
 and Escape returned to the unchanged mod list, and the error log did not grow.
 The local artifact was replaced; no public release was made.
+
+### Launcher 0.9.3 release follow-up, 2026-10-13
+
+The RWD manager and picker cancellation fix are now published in launcher 0.9.3.
+The release excludes the cancelled Documents-depot scan/report. Its source is
+`4de71c5edb4aa6771ded87dd69acbb23c6b1c26a`; signed launcher catalogs were published
+in `45ffd4594857475265ceb7650beedd50fcc0fbff` and read back from that commit.
+
+Final validation: 37,515 launcher assertions, 12,493 isolated database assertions,
+55 custom-mod UI checks in each of six languages, and 42 game-settings UI checks.
+All four shipping native helper preflights accepted an enabled custom RWD module.
+The module version uses a 40-character digest to fit the existing native field;
+the archive's full SHA-256 remains available for integrity verification.

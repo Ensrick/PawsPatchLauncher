@@ -15,6 +15,7 @@ static int Redirect(unsigned rva,void *fn){DWORD old,ignored;uintptr_t site=base
  memcpy((void*)(site+1),&rel,4);VirtualProtect((void*)site,5,old,&ignored);FlushInstructionCache(GetCurrentProcess(),(void*)site,5);return 1;}
 __declspec(dllexport) int __cdecl K2Plugin_Start(const Host *host){wchar_t join[80],*colon;unsigned n;
  if(!host||host->api!=1)return 1;base=host->exeBase;thread=GetCurrentThreadId();
+ {wchar_t flag[4];if(GetEnvironmentVariableW(L"PAWS_RIG_EXTERNAL_SCRIPT",flag,4)==1&&flag[0]==L'1')sent=1;}
  if(*(unsigned short*)(base+0x13df06)!=0x0d8b)return 1;
  consoleGlobal=*(uintptr_t*)(base+0x13df08);
  n=GetEnvironmentVariableW(L"PAWS_TEST_JOIN",join,80);

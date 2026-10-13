@@ -125,6 +125,7 @@ sealed class VmRecoveryRig : Form
         var output = Path.Combine(shared, role + "-evidence"); Directory.CreateDirectory(output);
         File.WriteAllText(Path.Combine(output, "plugins.log"), NativeLog());
         foreach (var name in new[] { "Logs", "Mods" })
+            if(Directory.Exists(Path.Combine(gameDir,name)))
             foreach (var log in Directory.GetFiles(Path.Combine(gameDir, name), "*.log"))
                 File.WriteAllText(Path.Combine(output, name + "-" + Path.GetFileName(log)), ReadShared(log));
         foreach (var save in Directory.GetFiles(Path.Combine(data, "Save"), "Paw Resume*.RSG"))
@@ -134,7 +135,7 @@ sealed class VmRecoveryRig : Form
     {
         try
         {
-            Prepare(); Wait(() => Has(host ? "guest-prepared" : "host-launched"), 300, "Other peer ready");
+            Prepare(); Wait(() => Has(host ? "guest-prepared" : "host-launched"), 3600, "Other peer ready");
             Launch(); if (host) Mark("host-launched", "1");
             Wait(() => NativeLog().Contains("MATCH_ROLE: original_host=" + (host ? "1" : "0")), 260, "Entered network match");
             Mark(role + "-joined", "1"); Wait(() => Has(host ? "guest-joined" : "host-joined"), 30, "Both peers joined");

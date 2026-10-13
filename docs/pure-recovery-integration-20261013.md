@@ -30,12 +30,31 @@ test launcher, profile shim or input plugin.
   Immortals, EN/RU/DE/FR/CS/UK, stable rollback and patch disabled.
 - The installed adapter and R2 readiness are required by the startup oracle.
 - All four native helper preflights accept an installed custom RWD module.
-- Full integrated multiplayer validation is pending; `PrepareRecoveryBeta.py`
-  requires a recorded successful result before signed-feed promotion.
+- Integrated two-peer LAN recovery passed for both Vanilla and Immortals:
+  initial match, terminated client, native save completion, host lobby return,
+  restarted client, save transfer, and both peers resuming the saved match.
+  Both remained running for the 20-second final observation; no native
+  out-of-sync, assertion or unhandled-exception markers were found in the logs.
+- Transferred saves matched byte-for-byte: Vanilla 221,396 bytes, SHA-256
+  `98421ff9bcdac425479a14fbf71eeb218a4115ae5d66d6eb3c75cbb30dd56f76`;
+  Immortals 222,844 bytes, SHA-256
+  `26e7791f4cd48d6d27ff9a904f839b46672b5426becddcf878d9760e1ef26dc0`.
+- All four installed helper hashes were checked against the release build in
+  both test installations. `release-validation.json` records these hashes and
+  gates signed-feed promotion. Both test games were stopped after collection.
 
 Earlier private r2 PC/VM recovery results do not substitute for testing this
-different shipping composition. `IntegratedVmRig.cs` uses the real packaged
-helper; `rig_input.c` supplies only fixed test menu commands and Direct IP input.
-Neither test component implements recovery or alters transfer behavior.
+different shipping composition. The current integrated tests used two isolated
+local processes. PC/VM could not be rerun because guest UI control was unavailable.
+`InstalledHarness.cs` invokes the unchanged packaged helper's preflight and
+composition methods while allowing two owned local game instances. Normal helper
+startup remains covered by the 16 separate menu launches. `rig_input.c` supplies
+only test menu commands and Direct IP input; neither test component implements
+recovery or alters transfer behavior. The shipping build has automatic timeout
+voting disabled; the test script issues one ordinary native disconnect vote.
+
+This confirms the tested save/lobby path, not Internet/Steam recovery acceptance,
+long-term deterministic synchronization, seamless hot join or automatic host
+migration. The earlier original-host-loss result remains a private-r2 test.
 
 Evidence directory: workspace `outputs/release-recovery-20261013/`.
