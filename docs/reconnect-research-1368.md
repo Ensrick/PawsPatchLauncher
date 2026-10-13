@@ -60,10 +60,10 @@ a feature: nothing here is enabled in a release or feed.
 
 ## 2. A deliberate quit versus a drop
 
-A player who leaves through the menu sends `ClientDisconnectRequest` (packet type 10). The host handles it at
-RVA 15171A and then removes the player with the "quit" reason. A drop sends nothing. The demonstrator counted a
-`PlayerLeave` within 3 s of that request as a deliberate quit, and anything else as a drop. That separated the two
-in offline tests; no real-peer run has tested it.
+The host handles a `ClientDisconnectRequest` (packet type 10) at RVA 15171A and then removes the player with the
+"quit" reason, the same reason a socket error gives. The 1.3.68 demonstrator assumed that leaving through the menu
+sends that request, and counted a `PlayerLeave` within 3 s of it as a deliberate quit. That was only tested offline.
+On 1.3.72 the menu leave does not send the request (section 8), so the host cannot tell a quit from a crash this way.
 
 ## 3. Back to staging with everyone still connected
 
@@ -152,6 +152,34 @@ thread MAIN caught unhandled exception - Access Violation (C0000005) trapped at 
 3. Prototype the save, staging and reload flow from sections 3 and 4 as an opt-in demonstrator, following the
    steps in [RWD, plugin API and reconnect](RWD_AND_RECONNECT.md). Host loss needs separate design (section 1,
    step 5).
+
+## 8. Re-checked on 1.3.72 (2026-10-13)
+
+The flow above was ported to 1.3.72 and tested with two copies of the game on one PC (LAN). The module and the test
+rig are in a separate pull request (`game/multiplayer-recovery`, `tools/MultiplayerRig`). What differs from 1.3.68:
+
+- **The simulation has its own thread** (`thread SIM` in the log, `[determinism] sim-thread FP control word`). Orders
+  such as `GameSave`, and the leave decree, run on that thread. Code that 1.3.68 ran on the main thread can
+  therefore run on `SIM` on 1.3.72. A client's save copy written there took 31 ms on the rig.
+- **A deliberate quit looks like a crash.** A client that leaves through the in-game menu (`RequestLeaveGame`,
+  logged as `RequestLeave() - BECOMING PRIVATE HOST`) closes its connection without a `ClientDisconnectRequest`. On
+  LAN the host logs the same as for a killed client: `Error on receive: 10054`, `PlayerLeave()`, then "<name> quit
+  the game". The quit-versus-drop test in section 2 does not hold on 1.3.72.
+- **`timeGetTime` is not a frame tick:** 1.3.72 calls it only in a start-up memory benchmark. The main loop's message
+  pump calls `PeekMessage` through a pointer (RVA `5D4314`) every frame.
+- **Same fields:** the backup-mode flag is still admin `+2F4` (`SetBackupMode`, RVA `14F89C`), and the `+300` host
+  kind is written at the same eight places as in 1.3.68.
+- **Addresses:** the ones used here were re-mapped by byte signature and compared with 1.3.68 instruction by
+  instruction: `LeaveDecree` `14ADA6`, `TGC_AdminNode::PlayerLeave` `14B7C5`, End Mission `C3EFB`,
+  `KKC_HostSetLoadSavedGameOrder` ctor / issue `121BD0` / `122822`, and the active-client count of section 6 at
+  `14C047` (the network guard's site). The full table is in `game/multiplayer-recovery/README.md`.
+- **Rig results:** two copies over LAN, the client killed mid-match.
+  1. The host saved "MP Resume", took everyone back to the lobby and selected it within 2 s.
+  2. The restarted client joined and received the 222 KB save through the stock transfer.
+  3. Both were back in the match from "MP Resume".
+  4. With the client not coming back, the host launched "MP Resume" alone.
+  5. Steam and real separate PCs are still untested; over LAN a drop is removed at once by the socket error, so the
+     vote path is unexercised.
 
 ## Anchors for re-mapping
 
