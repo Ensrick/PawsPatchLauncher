@@ -50,7 +50,7 @@ So in a match loaded from a save (including a resumed one), only the host, who l
 saves. Other players write no copies there, and a player who takes over from a lost host does not autosave. The
 module logs why.
 
-## Saves never overlap
+## Autosave waits for other saves
 
 Autosave queues `GameSave` only on the game's main thread, and only while nothing save-related is busy. A busy save
 defers the autosave to a later tick; it does not skip it. Immediately before queueing, it checks:
@@ -72,6 +72,14 @@ defers the autosave to a later tick; it does not skip it. Immediately before que
 - **Reading other modules:** this module lists the loaded modules each time. It holds each one with a reference while
   looking up and reading its export, and caches nothing. A valid export is a 4-byte aligned, committed, writable
   location inside the exporting module's image.
+
+Limits:
+- **Cooperating producers only.** The flags coordinate the automatic producers that follow this contract (this
+  module's autosave and the lobby module's match recovery). They are not an engine-wide lock. A manual save a player
+  starts is seen only once its task is in the session's slot; one queued in the moment before that is not.
+- **A timeout does not cancel.** When the module gives up on its own save (30 s without a task, 2 minutes in all), it
+  clears its flag, but a `GameSave` command already dispatched is not withdrawn. How a late command behaves then has
+  not been tested in a real game.
 
 The log is `<game>\paws_multiplayer_saves_1372.log`, with save names relative to the game's data folder and no user
 paths.
