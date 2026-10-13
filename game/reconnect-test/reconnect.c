@@ -28,6 +28,7 @@ typedef void* (FC *CtorFn)(void*,void*,void*);
 typedef void (FC *IssueFn)(void*,void*,int);
 typedef void* (FC *DtorFn)(void*,void*,int);
 typedef int (FC *WantedFn)(void*,void*);
+typedef unsigned char (__cdecl *FromResourceFn)(void*);
 typedef struct { uintptr_t player,admin,world; DWORD when; } Intent;
 typedef struct { uintptr_t admin,session,world,player; int reason,deliberate; } Leave;
 typedef struct { uintptr_t admin,session,world,net; int state,hostKind,type,host,backup,disconnecting,network,countdown; } Snapshot;
@@ -45,6 +46,7 @@ static LeaveFn g_leave;
 static RequestFn g_request;
 static CreateFn g_create;
 static WantedFn g_wanted;
+static FromResourceFn g_fromResource;
 
 enum { IDLE, SAVING, ENDING, SELECTING, CONFIRMING };
 static int g_step,g_tookOver,g_sends;
@@ -180,10 +182,27 @@ static void FC CreateHook(void *session,void *unused,int isMap) {
     task=Ptr((uintptr_t)session+0x134);if(!Readable(task,0x2c))return;
     InterlockedIncrement((LONG*)(task+4));g_task=task;Log("SAVE_TASK captured; waiting for native completion");
 }
+/* KKC_ResourceManagerTaskSaveGame::SaveGame (1c1a15) walks the world resource
+ * through its create settings to the source resource and asserts that each
+ * source header is loaded. A PC that received the match's save over the network
+ * has no such header: the assertion then waits on the ASYNC thread holding a lock
+ * the main thread needs, and the game ends with "timeout waiting for mutex"
+ * (issue #10). The same walk, read-only: 1 when the save task can run. */
+static int SaveSourcesReady(uintptr_t world) {
+    uintptr_t res=Ptr(world+0x28),settings;unsigned i;
+    if(!Readable(res,0x8c))return 0;if(!(Int(res+8)&0x10))return 1;
+    for(i=0;i<16;++i){
+        settings=Ptr(res+0x88);if(!Readable(settings,0x54))return 0;
+        if(!g_fromResource((void*)settings))return 1;
+        res=Ptr(settings+0x50);if(!Readable(res,0x8c)||!(Int(res+8)&2))return 0;
+    }return 0;
+}
 static void Reset(const char *why) {if(g_step!=IDLE)Log("recovery stopped: %s (step %d)",why,g_step);ReleaseTask();g_step=IDLE;g_name[0]=0;}
 static void Go(int step) {g_step=step;g_since=Now();}
 static void StartRecovery(const Snapshot *s,int reason) {
-    SYSTEMTIME t;wchar_t cmd[180];GetLocalTime(&t);
+    SYSTEMTIME t;wchar_t cmd[180];
+    if(!SaveSourcesReady(s->world)){Log("DROP: reason=%d; not saving: this PC received the match's save and the game cannot save it here; match continues",reason);return;}
+    GetLocalTime(&t);
     _snwprintf(g_name,128,L"Save/Paw Resume %04u-%02u-%02u %02u%02u%02u-%03u-%lu-%u.RSG",t.wYear,t.wMonth,t.wDay,t.wHour,t.wMinute,t.wSecond,t.wMilliseconds,GetCurrentProcessId(),++g_serial);
     _snwprintf(g_path,MAX_PATH,L"%ls\\%ls",g_data,g_name);g_path[MAX_PATH-1]=0;
     {wchar_t *p;for(p=g_path;*p;++p)if(*p==L'/')*p=L'\\';}
@@ -323,6 +342,7 @@ EXPORT int __cdecl K2Plugin_Start(const Host *host) {
     g_sessionGlobal=Ptr(g_base+0x15bbe3+1);g_consoleGlobal=Ptr(g_base+0x13df06+2);
     g_worldGlobal=Ptr(g_base+0x162ac1+1);g_app=Ptr(g_base+0xc3efb+14);
     g_leave=(LeaveFn)(g_base+0x14b7c5);g_request=(RequestFn)(g_base+0x151cb5);g_create=(CreateFn)(g_base+0x16a9f6);g_wanted=(WantedFn)(g_base+0x150009);
+    g_fromResource=(FromResourceFn)(g_base+0x16bf8f);
     InitializeCriticalSection(&g_lock);
     for(i=0;i<count;++i)if(CallTarget(g_base+hooks[i].site)!=g_base+hooks[i].target){Log("REFUSED: existing hook at %x",hooks[i].site);return 1;}
     for(i=0;i<count;++i){if(!Redirect(hooks[i].site,g_base+hooks[i].target,hooks[i].hook))break;++done;}
@@ -353,6 +373,15 @@ static int createCalls,leaveCalls,requestCalls;static uintptr_t expectedSelf,exp
 static void FC TestCreate(void *self,void *unused,int arg){(void)unused;CHECK((uintptr_t)self==expectedSelf);CHECK(arg==expectedArg);++createCalls;}
 static void FC TestLeave(void *self,void *unused,void *other,int arg){(void)unused;CHECK((uintptr_t)self==expectedSelf);CHECK((uintptr_t)other==expectedOther);CHECK(arg==expectedArg);++leaveCalls;}
 static void FC TestRequest(void *self,void *unused,void *other,int arg){(void)unused;CHECK((uintptr_t)self==expectedSelf);CHECK((uintptr_t)other==expectedOther);CHECK(arg==expectedArg);++requestCalls;}
+/* A resource chain as the save task walks it: world -> made -> settings -> source. */
+static unsigned char tWorld[0x40],tMade[0x90],tSettings[0x60],tSource[0x90],tSettings2[0x60],tOther[0x60];
+static unsigned char __cdecl TestFromResource(void *p){return p==tSettings||p==tSettings2;}
+static void Chain(void){
+    memset(tWorld,0,sizeof(tWorld));memset(tMade,0,sizeof(tMade));memset(tSettings,0,sizeof(tSettings));memset(tSource,0,sizeof(tSource));memset(tSettings2,0,sizeof(tSettings2));
+    g_fromResource=TestFromResource;*(uintptr_t*)(tWorld+0x28)=(uintptr_t)tMade;*(int*)(tMade+8)=0x10;
+    *(uintptr_t*)(tMade+0x88)=(uintptr_t)tSettings;*(uintptr_t*)(tSettings+0x50)=(uintptr_t)tSource;
+    *(int*)(tSource+8)=2;*(uintptr_t*)(tSource+0x88)=(uintptr_t)tOther; /* a random map's settings end the walk */
+}
 int main(void){
     unsigned i;Snapshot s;Bucket b;unsigned char admin[0x308]={0},conn[0x430]={0};
     InitializeCriticalSection(&g_lock);
@@ -405,6 +434,19 @@ int main(void){
         *(uintptr_t*)(node+12)=0;CHECK(count(node)==0);CHECK(count(0)==0);CHECK(!InstallClientGuard());
         VirtualFree(image,0,MEM_RELEASE);g_base=0;
     }
+    /* Issue #10: a source without its header blocks the recovery save; nothing is queued. */
+    Chain();CHECK(SaveSourcesReady((uintptr_t)tWorld));
+    *(int*)(tSource+8)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(int*)(tMade+8)=0;CHECK(SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tMade+0x88)=(uintptr_t)tOther;CHECK(SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tMade+0x88)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tSettings+0x50)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tSource+0x88)=(uintptr_t)tSettings2;*(uintptr_t*)(tSettings2+0x50)=(uintptr_t)tMade;*(int*)(tMade+8)|=2;
+    CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tWorld+0x28)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));CHECK(!SaveSourcesReady(0));
+    Chain();*(int*)(tSource+8)=0;memset(&s,0,sizeof(s));s.world=(uintptr_t)tWorld;g_step=IDLE;g_name[0]=0;
+    {unsigned serial=g_serial;StartRecovery(&s,5);CHECK(g_step==IDLE&&g_serial==serial); /* no save name made, nothing queued */
+     *(int*)(tSource+8)=2;StartRecovery(&s,5);CHECK(g_step==IDLE&&g_serial==serial+1);} /* control: a save is attempted (no console here) */
     printf("PASS %u native recovery checks (including x86 thiscall/fastcall hooks)\n",checks);return 0;
 }
 #endif
