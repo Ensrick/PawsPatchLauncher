@@ -45,24 +45,30 @@ existing active-client count. Keep the original result for all valid entries
 and continue through the list. Do not change membership, packets, loading state,
 kingdom ownership, saves, simulation or the optional desync bypass.
 
-## Assertion dialogs
+## Network enum-read assertion
 
-A failed engine assertion logs `ASSERT: %s` and then opens a system-modal
-"TG Assert" Abort/Retry/Ignore box on the thread that failed. In multiplayer
-that thread can hold a lock the main thread needs; the main thread then stops
-with "timeout waiting for mutex" (C++ exception) while the box waits, often
-unseen behind the game. On 1.3.68 test copies where the host left a player in
-the lobby, 4 of 18 client runs crashed this way, each right after one
-`ASSERT: _data<_n_possibilities`; none of the 14 clean runs had an assertion.
-With the stock `IgnoreAsserts` command run at startup, 3 of 3 runs survived,
-one of them through the same assertion.
+A network enum read (`Serialize.h`, 1.3.72 RVAs `6AD8C` and `6ADC5`) asserts
+`_data>=0` or `_data<_n_possibilities` when a received value is out of range.
+It runs on the simulation thread while that thread holds the session lock. The
+assertion box then waits, and the main thread gives up locking the session and
+stops the game with "timeout waiting for mutex".
 
-Revision 3 sets the byte that command stores (RVA `60294C`, written by its
-handler at `13FC82`). The handler at `301A3E` checks it after logging and
-returns Ignore, exactly what a player could click. Both instructions and their
-absolute operand are verified before any change; the original byte is restored
-on rollback. This is a data write: no game code changes, and the `ASSERT` line
-stays in the log for diagnosis. It does not fix the failed condition itself.
+Seen when a client waits in a LAN lobby and the host's game goes away, right
+after "<name> has taken over as host" (two game copies on one PC):
+- 1.3.68: 4 of 18 client runs crashed this way;
+- 1.3.72: 1 of 3 (`ASSERT: _data<_n_possibilities`, then `thread <MAIN>
+  timeout locking mutex <session> (owned by <SIM>)`);
+- 1.3.72 with revision 3: 8 of 8 survived. In 4 of them the assertion was
+  ignored here (`networkReadAssertionsIgnored=1`).
+
+Revision 3 redirects only these two calls of the assertion handler. Each
+returns Ignore (`AL=1`), exactly what clicking Ignore returns: the site stores
+it in its own flag and stops checking for this run. Each also increments
+`networkReadAssertionsIgnored`. After the check the stock Ignore path runs, so
+the value goes back to the caller unchanged. The game's `ASSERT:` log line is
+not written for these two sites, because the skipped handler writes it. Every
+other assertion keeps its dialog, and the `IgnoreAsserts` command and its flag
+are untouched.
 
 ## Installation and diagnostics
 
@@ -73,8 +79,9 @@ the allocation. Installation applies only to the newly launched verified process
 `ENGINE_CRASH_FIXES` and changed `ENGINE_CRASH_COUNTERS` are appended to the
 existing helper status log, already covered by launcher diagnostics. Counters
 distinguish dead targets, invalid vtables, invalid type-function addresses,
-unreadable targets and missing network clients. These are skipped operations,
-not a proven count of crashes prevented. No automatic upload is added.
+unreadable targets, missing network clients and ignored network-read
+assertions. These are skipped operations, not a proven count of crashes
+prevented. No automatic upload is added.
 
 ## Observer team commands
 
@@ -88,13 +95,13 @@ The diagnostic counter is `observerTeamCommandsIgnored`.
 
 ## Validation
 
-- `test_native.py`: 537 instruction-level cases across three ASLR bases. Uses
+- `test_native.py`: 549 instruction-level cases across three ASLR bases. Uses
   stock loop instructions with controlled objects and mocked type/update callees;
   compares valid behavior, one bad controller among 27, and client counts 0–7.
-- `TransactionTests.cs`: 1060 checks including the real Windows API resolver,
-  relocation, identity rejection, partial writes, rollback and uncertain rollback;
-  the assertion byte is set on success, restored after every injected failure,
-  and an already-set byte stays set.
+  The network-read assertion sites, patched and stock: Ignore and count versus
+  the handler entered, the site flag stored, stack and saved registers kept.
+- `TransactionTests.cs`: 1261 checks including the real Windows API resolver,
+  relocation, identity rejection, partial writes, rollback and uncertain rollback.
 - `ProbeWindowsTests.cs`: 52 checks in a disposable x86 Windows process. Executes
   the generated probe and real exception dispatcher with inaccessible target and
   vtable pages, page-boundary reads, unaffected valid probes, unrelated-exception
