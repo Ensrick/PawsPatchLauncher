@@ -15,12 +15,16 @@ internal static class MultiplayerSavesInstallerTests
     internal static int Main()
     {
         const string log = "C:\\Games\\Kohan II\\" + MultiplayerSaves.LogFile;
-        byte[] b = MultiplayerSaves.Configuration(MultiplayerSaves.AllFeatures, 1234, 5, log);
-        Check(b.Length == 16 + 260 * 2, "size matches the C struct (4 x uint32 + wchar_t[260])");
-        Check(BitConverter.ToUInt32(b, 0) == 0x31534d50 && BitConverter.ToUInt32(b, 4) == 3 && BitConverter.ToUInt32(b, 8) == 1234
+        const string data = "C:\\Private Profile\\Kohan2\\data";
+        byte[] b = MultiplayerSaves.Configuration(MultiplayerSaves.AllFeatures, 1234, 5, log, data);
+        Check(b.Length == 16 + 260 * 4, "size matches PMS2: four integers and two UTF-16 paths");
+        Check(BitConverter.ToUInt32(b, 0) == 0x32534d50 && BitConverter.ToUInt32(b, 4) == 3 && BitConverter.ToUInt32(b, 8) == 1234
               && BitConverter.ToUInt32(b, 12) == 5, "fields in order");
         Check(Encoding.Unicode.GetString(b, 16, log.Length * 2) == log && b[16 + log.Length * 2] == 0 && b[17 + log.Length * 2] == 0,
               "log path, NUL terminated");
+        Check(Encoding.Unicode.GetString(b, 536, data.Length * 2) == data && b[536 + data.Length * 2] == 0, "save data path, NUL terminated");
+        Check(Rejected(() => MultiplayerSaves.Configuration(1, 1, 5, log, new string('x', 260))), "save path too long");
+        Check(Rejected(() => MultiplayerSaves.Configuration(1, 1, 5, log, "a\0b")), "save path embedded NUL");
         Check(MultiplayerSaves.AllFeatures == (MultiplayerSaves.SaveCopies | MultiplayerSaves.Autosave), "feature bits");
         Check(Rejected(() => MultiplayerSaves.Configuration(4, 1, 5, log)), "unknown feature bit");
         Check(Rejected(() => MultiplayerSaves.Configuration(1, 0, 5, log)), "no main thread");

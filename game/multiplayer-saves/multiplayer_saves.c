@@ -25,11 +25,12 @@
 WINBASEAPI int WINAPI WideCharToMultiByte(UINT, DWORD, LPCWSTR, int, LPSTR, int, LPCSTR, LPBOOL);
 #endif
 
-#define MAGIC 0x31534d50u /* "PMS1" */
+#define MAGIC 0x32534d50u /* "PMS2" */
 enum { FEATURE_SAVE_COPIES = 1, FEATURE_AUTOSAVE = 2, FEATURE_ALL = 3 };
 typedef struct {
     uint32_t magic, features, mainThread, autosaveMinutes;
     wchar_t log[MAX_PATH];
+    wchar_t data[MAX_PATH];
 } Config;
 
 /* ------------------------------------------------------------------ 1.3.72 code (RVAs)
@@ -146,13 +147,13 @@ static void log_line(const char *format, ...) {
     DWORD written;
     if (!config.log[0]) return;
     GetLocalTime(&t);
-    n = _snprintf(text, sizeof text, "%04u-%02u-%02u %02u:%02u:%02u ", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute,
+    n = _snprintf(text, sizeof text, "%04u-%02u-%02u %02u:%02u:%02u multiplayer-saves: ", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute,
                   t.wSecond);
     if (n < 0) return;
     va_start(args, format);
     int m = _vsnprintf(text + n, sizeof text - n - 2, format, args);
     va_end(args);
-    if (m < 0) m = (int)strlen(text + n);
+    if (m < 0) m = (int)sizeof text - n - 2;
     n += m;
     text[n++] = '\r';
     text[n++] = '\n';
@@ -252,6 +253,10 @@ static void *pointer_at(uintptr_t global) { return global ? *(void *const *)glob
 static int user_data(wchar_t *out, size_t size) {
     const wchar_t *text = personalGlobal ? *(const wchar_t *const *)personalGlobal : 0;
     size_t i, n = text ? wcslen(text) : 0;
+    if (config.data[0]) {
+        if (wcslen(config.data) >= size) return 0;
+        wcscpy(out, config.data); return 1;
+    }
     if (!n || n + 6 > size) return 0;
     for (i = 0; i <= n; i++) out[i] = text[i] == L'/' ? L'\\' : text[i];
     if (out[n - 1] != L'\\') wcscat(out, L"\\");
@@ -288,9 +293,11 @@ static int file_checksum(const wchar_t *path, uint32_t *checksum, uint32_t *byte
     DWORD got;
     uint32_t h = 0, total = 0;
     HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+    BOOL ok;
     if (file == INVALID_HANDLE_VALUE) return 0;
-    while (ReadFile(file, buffer, sizeof buffer, &got, 0) && got) { h = lobby_checksum(buffer, got, h); total += got; }
+    while ((ok = ReadFile(file, buffer, sizeof buffer, &got, 0)) && got) { h = lobby_checksum(buffer, got, h); total += got; }
     CloseHandle(file);
+    if (!ok) return 0;
     *checksum = h;
     *bytes = total;
     return 1;
@@ -393,6 +400,7 @@ static int write_copy(const wchar_t *name) {
     int status;
     if (!world || !manager || !(resource = FIELD(void *, world, WORLD_RESOURCE))) return -2;
     ((StringCtor)(image + 0x205de))(&text, 0, name);
+    if (!text) return -3;
     task = ((EngineNew)(image + 0x2ef03c))(0x2c);
     if (task) ((SaveTaskCtor)(image + 0x1c180a))(task, 0, resource, 0, &text);
     ((StringRelease)(image + 0x21375))((char *)text - 0x10, 0);
@@ -456,6 +464,31 @@ static int autosaveSlot, autosaveBlocked, autosaveDeferred, autosaveState;
 static DWORD autosaveQueuedAt;
 static const void *autosaveTask;
 static wchar_t autosaveName[32];
+typedef struct { DWORD volume, indexHigh, indexLow, sizeHigh, sizeLow; FILETIME written; } SaveStamp;
+static SaveStamp autosaveBefore;
+static int autosaveBaseline;
+/* A fast task can be created AND detached between two 50 ms polls. Observe a
+ * changed, closed output as a fallback. FILE_SHARE_READ deliberately excludes
+ * live writers; an old file, read error or open writer cannot acknowledge it. */
+static int save_stamp(const wchar_t *relative, SaveStamp *stamp) {
+    wchar_t path[MAX_PATH]; HANDLE f; BY_HANDLE_FILE_INFORMATION info; DWORD error; BOOL ok;
+    memset(stamp, 0, sizeof *stamp);
+    if (!on_disk(relative, path, MAX_PATH)) return -1;
+    f = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+    if (f == INVALID_HANDLE_VALUE) {
+        error = GetLastError(); return error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND ? 0 : -1;
+    }
+    ok = GetFileInformationByHandle(f, &info); CloseHandle(f);
+    if (!ok || (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) return -1;
+    stamp->volume = info.dwVolumeSerialNumber; stamp->indexHigh = info.nFileIndexHigh; stamp->indexLow = info.nFileIndexLow;
+    stamp->sizeHigh = info.nFileSizeHigh; stamp->sizeLow = info.nFileSizeLow; stamp->written = info.ftLastWriteTime;
+    return 1;
+}
+static int fast_save_closed(void) {
+    SaveStamp current;
+    return autosaveBaseline >= 0 && save_stamp(autosaveName, &current) == 1 && (current.sizeHigh || current.sizeLow)
+        && (autosaveBaseline == 0 || memcmp(&current, &autosaveBefore, sizeof current));
+}
 static void autosave_end(const char *how) {
     char a[64];
     if (how) log_line("autosave \"%s\" %s", utf8(autosaveName, a, sizeof a), how);
@@ -471,6 +504,8 @@ static void autosave_follow(DWORD now) {
         if (task) {
             autosaveState = AUTOSAVE_RUNNING;
             autosaveTask = task;
+        } else if (fast_save_closed()) {
+            log_line("autosave: output updated and closed between task polls"); autosave_end(0);
         } else if (now - autosaveQueuedAt >= 30000) autosave_end("did not start in 30 s");
         return;
     }
@@ -516,6 +551,7 @@ static void autosave_tick(DWORD now) {
         return;
     }
     wcscpy(autosaveName, names[autosaveSlot]);
+    autosaveBaseline = save_stamp(autosaveName, &autosaveBefore);
     _snwprintf(command, 64, L"GameSave \"%ls\"", autosaveName);
     command[63] = 0;
     InterlockedExchange(&PawSaveBusy, 1); /* before the command: other modules see it from now on */
@@ -585,6 +621,7 @@ __declspec(dllexport) DWORD WINAPI PawInstall(void *raw) {
         return 11;
     memcpy(&config, cfg, sizeof config);
     config.log[MAX_PATH - 1] = 0;
+    config.data[MAX_PATH - 1] = 0;
     /* The main image from the x86 PEB, without the loader lock (other threads are paused). */
     __asm__("movl %%fs:0x30, %0" : "=r"(peb));
     image = *(uintptr_t *)(peb + 8);

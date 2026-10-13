@@ -354,8 +354,10 @@ internal static class Program
                     : logs.Contains("QUIET_READY", StringComparison.Ordinal);
                 var needsTransfer = item.Settings.Channel == "beta" && GameMod.PawPatchSelected(item.Settings);
                 if (needsTransfer) ready &= logs.Contains("FAST_TRANSFER_R2_READY", StringComparison.Ordinal);
-                if (packages.Any(p => p.Id == "pure-fixes-runtime" && p.Version == "1.3.72-pure.15-beta.1"))
+                if (packages.Any(p => p.Id == "pure-fixes-runtime" && p.Version.StartsWith("1.3.72-pure.15-beta.", StringComparison.Ordinal)))
                     ready &= logs.Contains("MATCH_RECOVERY_READY", StringComparison.Ordinal);
+                if (packages.Any(p => p.Id == "pure-fixes-runtime" && p.Version == "1.3.72-pure.15-beta.2"))
+                    ready &= logs.Contains("MULTIPLAYER_SAVES_READY revision=2 saveCopies=True autosave=True/5min", StringComparison.Ordinal);
                 var phase = game is null ? null : reader.Read(gameRoot, state)?.Phase;
                 observedPhase=phase;helperReady=ready;responding=game is not null && game.Responding;
                 if (phase == "menu" && ready && game!.MainWindowHandle != IntPtr.Zero && responding) stableSamples++;

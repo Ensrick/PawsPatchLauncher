@@ -30,13 +30,15 @@ def main():
     parser.add_argument('--dotnet',type=Path)
     parser.add_argument('--mapped-image',type=Path)
     parser.add_argument('--recovery-native',type=Path,help='Verified integrated recovery/lobby DLL for Pure beta only')
+    parser.add_argument('--saves-native',type=Path,help='Verified multiplayer saves DLL, paired with the recovery beta')
     args=parser.parse_args(); out=args.out.resolve(); out.mkdir(parents=True,exist_ok=False)
+    assert bool(args.recovery_native)==bool(args.saves_native), 'Recovery beta requires both coordinated native modules'
     assert json.loads((args.ai_native/'ai-policy.json').read_text())['profile']=='pure', 'Pure requires its own native AI profile'
     assert 'Profile="pure"' in (args.ai_native/'AiPolicyPayload.cs').read_text(), 'Wrong AI payload'
     source=ROOT/'game/pure-fixes'; shared=ROOT/'game/beta7'
     sources=[source/(name+'.cs') for name in ('Program','NativeMemory','PurePatch','PureChannel','PureBetaRuntime','PureFamilyRelations')]
     sources += [shared/(name+'.cs') for name in ('TerrainRuntime','ReleaseStartup','RandomMapPatch','RandomMapBundle','GamePresentation1372','GameText','BuildFeatures','LobbyColorsNative','SyncDiagnostics1372','k2_paws_family_herd_relations_1372')]
-    sources += [ROOT/'game/fast-transfer/FastTransfer.cs', ROOT/'game/lobby-compatibility/PawLobbyCompatibility.cs', ROOT/'game/multiplayer-saves/MultiplayerSaves.cs',
+    sources += [ROOT/'game/fast-transfer/FastTransfer.cs', ROOT/'game/lobby-compatibility/PawLobbyCompatibility.cs',
                 ROOT/'game/graphics-diagnostics/GraphicsDiagnostics.cs', ROOT/'game/ai-policy/PawAiOptions.cs',
                 ROOT/'game/ai-policy/AiDiagnosticsSnapshot.cs', args.native/'nightmare-data/NightmareDifficultyData.cs']
     for folder,(generated,patch,payload) in NATIVE.items():
@@ -44,8 +46,10 @@ def main():
     resources={name:shared/(name+'.bin') for name in ('PawCommonUiPayload','PawCommonUiFixups','RandomMapPayload','RandomMapFixups','PawLobbyColorsPayload','PawLobbyColorsFixups')}
     resources.update(FastTransferGuards=args.native/'FastTransferGuards.bin',
                      PawLobbyCompatibilityNative=args.recovery_native or args.native/'paws_lobby_compatibility.dll',
-                     PawMultiplayerSavesNative=args.native/'paws_multiplayer_saves.dll',
                      PawsGraphicsRecorder=args.native/'PawsGraphicsRecorder.exe')
+    if args.saves_native:
+        sources += [ROOT/'game/multiplayer-saves/MultiplayerSaves.cs']
+        resources['PawMultiplayerSavesNative']=args.saves_native
     # A compile-time allowlist is deliberate: excluded gameplay payloads cannot
     # be accidentally enabled by a launcher setting or stale installed file.
     assert not any(any(part in str(p) for part in ('city-assistant','foundation-native','slots-native','fractional-native')) for p in sources)
@@ -67,6 +71,7 @@ def main():
             name='k2_paws_pure'+('_colors' if colors else '')+('_sync' if sync else '')+('_fixes' if not(colors or sync) else '')+'_1372.exe'
             flags=['PAW_PURE_EXTENDED','PAW_PURE_CHANNEL','PAW_PURE_FAST_TRANSFER','PAW_MENU_PRESENTATION','HERD_RELATIONS_ONLY','PROVOKED_NEUTRAL_ATTACK','RACE_RELATIONS','PRESERVE_NONINDEPENDENT_OWNER']
             if args.recovery_native: flags.append('PAW_PURE_RECOVERY')
+            if args.saves_native: flags.append('PAW_PURE_MULTIPLAYER_SAVES')
             src=list(sources); res=dict(resources)
             if colors:
                 flags.append('PAW_PURE_COLORS')

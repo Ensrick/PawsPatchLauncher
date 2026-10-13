@@ -1,0 +1,22 @@
+{
+  "category": "patch",
+  "version": "0.4.1-beta.2",
+  "publishedAt": "2026-10-13",
+  "mods": ["vanilla", "immortals"],
+  "title": {
+    "ru": "Paw’s Patch 0.4.1-beta.2 — Vanilla / Immortals",
+    "en": "Paw’s Patch 0.4.1-beta.2 — Vanilla / Immortals",
+    "de": "Paw’s Patch 0.4.1-beta.2 — Vanilla / Immortals",
+    "fr": "Paw’s Patch 0.4.1-beta.2 — Vanilla / Immortals",
+    "cs": "Paw’s Patch 0.4.1-beta.2 — Vanilla / Immortals",
+    "uk": "Paw’s Patch 0.4.1-beta.2 — Vanilla / Immortals"
+  },
+  "body": {
+    "ru": "• Автосохранение сетевого матча каждые пять минут с чередованием двух слотов.\n• При сохранении хостом другие игроки получают локальную копию сейва, если загруженную карту можно сохранить.\n• Улучшена совместная работа автосохранения и восстановления матча после отключения игрока.\n• Исправлен вылет при попытке восстановить матч после потери хоста у игрока, получившего сейв по сети.",
+    "en": "• Multiplayer autosaves every five minutes, alternating between two slots.\n• When the host saves, other players write a local save copy if the loaded map can be saved.\n• Improved coordination between autosaves and match recovery after a disconnection.\n• Fixed a crash during recovery after host loss for players who received the save over the network.",
+    "de": "• Automatisches Speichern im Mehrspielermodus alle fünf Minuten, abwechselnd in zwei Speicherplätzen.\n• Wenn der Host speichert, legen andere Spieler eine lokale Kopie an, sofern die geladene Karte gespeichert werden kann.\n• Bessere Abstimmung zwischen automatischem Speichern und Wiederherstellung nach einem Verbindungsabbruch.\n• Ein Absturz bei der Wiederherstellung nach dem Ausfall des Hosts wurde für Spieler behoben, die den Spielstand über das Netzwerk erhalten haben.",
+    "fr": "• Sauvegarde automatique multijoueur toutes les cinq minutes, en alternant deux emplacements.\n• Lorsque l’hôte sauvegarde, les autres joueurs créent une copie locale si la carte chargée peut être sauvegardée.\n• Meilleure coordination entre sauvegarde automatique et reprise après une déconnexion.\n• Correction d’un plantage lors de la reprise après la perte de l’hôte pour les joueurs ayant reçu la sauvegarde par le réseau.",
+    "cs": "• Automatické ukládání síťové hry každých pět minut střídá dvě pozice.\n• Když hostitel uloží hru, ostatní hráči vytvoří místní kopii, pokud lze načtenou mapu uložit.\n• Lepší spolupráce automatického ukládání a obnovení zápasu po odpojení hráče.\n• Opraven pád při obnovení po odpojení hostitele u hráčů, kteří obdrželi uloženou hru po síti.",
+    "uk": "• Автозбереження мережевого матчу кожні п’ять хвилин із чергуванням двох слотів.\n• Коли хост зберігає гру, інші гравці створюють локальну копію сейва, якщо завантажену карту можна зберегти.\n• Покращено спільну роботу автозбереження та відновлення матчу після відключення гравця.\n• Виправлено виліт під час відновлення після втрати хоста у гравців, які отримали сейв через мережу."
+  }
+}

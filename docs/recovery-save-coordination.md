@@ -84,9 +84,8 @@ It passes 19 assertions against both of our actual DLLs: recovery busy defers au
 command, the queued/native-task interval stays busy, native task detachment releases it, and a malformed export
 defers. Evidence: `Pr9AdapterContract.exe`, `pr9_adapter_contract.c` and `pr9-native/`.
 
-Next: finish review of PR #9's installer and helper wiring, compose the client copies/autosave in an isolated kit,
-then run the deferred Vanilla/Immortals multiplayer acceptance cases. Contract-level compatibility is now checked;
-the two engine hooks and save-copy loadability have not been exercised together in a game here.
-The existing recovery remains save/lobby
-recovery. Direct rejoining into an ongoing simulation is still unimplemented. Localization/keybinding admission
-rules, public versions, feeds and server state are unchanged.
+The subsequent installer integration and real Vanilla/Immortals acceptance are recorded in
+[the 0.4.1-beta.2 validation](release-pure-0.4.1-beta.2-validation.md). That follow-up checks the packaged modules
+together, including save-copy loadability and received-save host loss. Recovery remains save/lobby recovery;
+direct rejoining into an ongoing simulation is still unimplemented. Localization/keybinding admission rules
+are unchanged.

@@ -8,7 +8,7 @@ namespace PawPureFixes
     internal static class PureChannel
     {
 #if PAW_PURE_RECOVERY
-        internal const string Channel = "beta", Version = "1.3.72-pure.15-beta.1", PatchVersion = "0.4.1-beta.1";
+        internal const string Channel = "beta", Version = "1.3.72-pure.15-beta.2", PatchVersion = "0.4.1-beta.2";
 #elif PAW_PURE_EXTENDED
         internal const string Channel = "stable", Version = "1.3.72-pure.14", PatchVersion = "0.4.0";
 #else
@@ -45,7 +45,7 @@ namespace PawPureFixes
                 result = PureBetaRuntime.Describe(result);
 #endif
 #if PAW_PURE_RECOVERY
-                result = result.TrimEnd('}') + ",\"matchRecoveryRevision\":2,\"matchRecoveryMode\":\"save-lobby\",\"automaticDropVoting\":false}";
+                result = result.TrimEnd('}') + ",\"matchRecoveryRevision\":3,\"saveSourceGuardRevision\":1,\"saveCoordinationRevision\":1,\"matchRecoveryMode\":\"save-lobby\",\"automaticDropVoting\":false}";
 #endif
                 return result;
             }

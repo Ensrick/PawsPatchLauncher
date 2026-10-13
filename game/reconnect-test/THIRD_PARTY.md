@@ -30,7 +30,12 @@ and keeps the diagnostic general enough to cover missing resources and settings 
 The shared `PawSaveBusy` data export follows Ensrick's
 [PR #9 coordination proposal](https://github.com/VasiliyPaw/PawsPatchLauncher/pull/9#issuecomment-6144485943).
 Paw's implementation adds guarded module discovery, retained drops bound to their match, a bounded retry,
-coordination throughout lobby return, and real-DLL/tick tests. It does not include PR #9's autosave or copies.
+coordination throughout lobby return, and real-DLL/tick tests. The adapter itself does not implement autosaves or copies.
+Pure 0.4.1-beta.2 pairs it with Ensrick's separately guarded `game/multiplayer-saves` module from PR #9,
+merged at `fb091d31f4322cd4499f961f091f4d801470b301`. Paw's integration adds a compile-time beta gate,
+waits for the delayed message-pump import during startup, and includes its messages in the existing diagnostic log.
+It also supplies the save-data directory explicitly and acknowledges a changed, closed autosave output when
+the native task completed between message-pump polls. Real-file regression tests cover the writer-lock boundary.
 
 Kohan II and Immortals files are read from the user's existing installation
 solely to prepare their local PC/VM test. They are not included in this source

@@ -13,20 +13,21 @@ from PrepareRelease070 import read, write, sha, verify, validate_package
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'game/pure-fixes'))
 import build
-VERSION='0.4.1-beta.1'; RUNTIME='1.3.72-pure.15-beta.1'; TAG='patch-pure-'+VERSION
+VERSION='0.4.1-beta.2'; RUNTIME='1.3.72-pure.15-beta.2'; TAG='patch-pure-'+VERSION
 IDS={'pure-fixes-runtime','pure-fixes-data'}
 DOWNLOAD='https://github.com/VasiliyPaw/PawsPatchLauncher/releases/download/'+TAG+'/'
 NOTE='docs/release-pure-'+VERSION+'.json'
-def committed_raw():
+def committed_raw(require_current=True):
  head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
  # The public REST ref can retain the preceding commit in a CDN cache after a
  # successful push. Verify through the Git transport before reading SHA URLs.
  remote=subprocess.check_output(['git','ls-remote','origin','refs/heads/main'],cwd=ROOT,text=True).split()
- assert remote==[head,'refs/heads/main'],'Push source/catalog commit first'
- return RAW.replace('/main/','/'+head+'/')
+ assert len(remote)==2 and remote[1]=='refs/heads/main'
+ if require_current:assert remote[0]==head,'Push source/catalog commit first'
+ return RAW.replace('/main/','/'+remote[0]+'/')
 GUIDE=dict(id='pure-match-recovery',category='beta',titleRu='Восстановление матча',titleEn='Match recovery',
- bodyRu='После отключения игрока хост сохраняет матч и открывает лобби с выбранным сейвом. Вернитесь в лобби, получите сохранение, займите свой слот и нажмите «Готов». Хост запускает сохранённый матч. При потере первоначального хоста новый хост сохраняет матч и оставляет паузу; сейв нужно загрузить через лобби вручную. При зависшем соединении используйте штатное подтверждение отключения игрока. Обычный выход игрока тоже может запустить восстановление. Вход прямо в работающую симуляцию пока недоступен.',
- bodyEn='After a client disconnects, the host saves the match and opens the lobby with that save selected. Rejoin the lobby, download the save, reclaim your slot and become ready. The host launches the saved match. If the original host disconnects, the new host saves and pauses; load the save through a lobby manually. For a stalled connection use the native disconnect vote. An ordinary player exit may also trigger recovery. Direct entry into the running simulation is not available yet.')
+ bodyRu='Хост сетевого матча делает автосохранение каждые пять минут, чередуя MP Autosave A и B. При сохранении хостом клиенты также записывают свою копию, если игра позволяет сохранить загруженную карту. После отключения игрока хост сохраняет матч и открывает лобби с выбранным сейвом. Вернитесь, получите сейв, займите свой слот и нажмите «Готов». При потере первоначального хоста новый хост сохраняет матч, если это возможно; иначе используйте предыдущий сейв или копию. Продолжение выполняется через загрузку в лобби. При зависшем соединении используйте штатное подтверждение отключения игрока. Вход прямо в работающую симуляцию пока недоступен.',
+ bodyEn='The multiplayer host autosaves every five minutes, alternating MP Autosave A and B. When the host saves, clients also write a local copy if the game can save the loaded map. After a client disconnects, the host saves and opens the lobby with that save selected. Rejoin, download the save, reclaim your slot and become ready. If the original host disconnects, the new host saves the match if possible; otherwise use an earlier save or copy. Continue by loading the save in a lobby. For a stalled connection use the native disconnect vote. Direct entry into the running simulation is not available yet.')
 
 def private(a):
  p=serialization.load_pem_private_key(a.private_key.read_bytes(),None)
@@ -42,12 +43,15 @@ def scoped(before,after):
  assert {p['id'] for p in before['packages']}=={p['id'] for p in after['packages']}
  for old,new in zip(before['modGuides'],after['modGuides']):
   if old['id'] not in ('vanilla','immortals'):assert old==new;continue
-  normalized=copy.deepcopy(new);assert normalized['patchGuide']['entries'][-1]==GUIDE
-  normalized['patchGuide']['entries'].pop();normalized['patchGuide']['version']=old['patchGuide']['version']
+  normalized=copy.deepcopy(new)
+  previous=[e for e in old['patchGuide']['entries'] if e['id']==GUIDE['id']];assert len(previous)==1
+  entries=normalized['patchGuide']['entries'];indexes=[i for i,e in enumerate(entries) if e['id']==GUIDE['id']];assert len(indexes)==1
+  assert entries[indexes[0]]==GUIDE;entries[indexes[0]]=previous[0]
+  normalized['patchGuide']['version']=old['patchGuide']['version']
   assert normalized==old and new['patchGuide']['version']==VERSION
 
 def prepare(a):
- out=a.out.resolve();out.mkdir(parents=True,exist_ok=False);pkey=private(a);baseline={};raw=committed_raw()
+ out=a.out.resolve();out.mkdir(parents=True,exist_ok=False);pkey=private(a);baseline={};raw=committed_raw(False)
  for name,path in FEEDS.items():
   assert normalize(fetch(raw+path))==normalize((ROOT/path).read_bytes()),path
   baseline[path]=sha(ROOT/path);shutil.copyfile(ROOT/path,out/(name+'-before.json'))
@@ -62,7 +66,9 @@ def prepare(a):
    for name,data in files.items():
     f=features[name]['features'];assert hashlib.sha256(data).hexdigest().upper()==features[name]['sha256']
     assert f['patchVersion']==VERSION and f['version']==RUNTIME and f['channel']=='beta'
-    assert f['matchRecoveryRevision']==2 and f['matchRecoveryMode']=='save-lobby' and not f['automaticDropVoting']
+    assert f['matchRecoveryRevision']==3 and f['matchRecoveryMode']=='save-lobby' and not f['automaticDropVoting']
+    assert f['saveSourceGuardRevision']==1 and f['saveCoordinationRevision']==1
+    assert f['multiplayerSavesRevision']==2 and f['multiplayerAutosaveMinutes']==5 and f['clientSaveCopies']
     assert f['nativeTransferRevision']=='R2' and f['aiPolicyProfile']=='pure'
     assert all(not f[k] for k in ('cityAssistant','automaticMilitia','additionalBuildingSlots','foundationDistribution','fractionalKingdomPoints'))
    version=RUNTIME
@@ -79,7 +85,9 @@ def prepare(a):
  assert len(assets)==2
  for guide in after['modGuides']:
   if guide['id'] in ('vanilla','immortals'):
-   guide['patchGuide']['version']=VERSION;guide['patchGuide']['entries'].append(copy.deepcopy(GUIDE))
+   guide['patchGuide']['version']=VERSION
+   entries=guide['patchGuide']['entries'];indexes=[i for i,e in enumerate(entries) if e['id']==GUIDE['id']];assert len(indexes)==1
+   entries[indexes[0]]=copy.deepcopy(GUIDE)
  notes=read(ROOT/NOTE);after['changelog']=[notes]+after['changelog'];after['publishedAt']=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
  scoped(before,after);write(out/'payload.json',after)
  history=read(ROOT/'feed/changelog.history.json');history['beta']=[notes]+history['beta'];write(out/'history.json',history)

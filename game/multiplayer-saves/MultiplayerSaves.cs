@@ -14,26 +14,29 @@ using System.Text;
 internal static class MultiplayerSaves
 {
     internal const string ModuleId = "pure-multiplayer-saves";
-    internal const string LogFile = "paws_multiplayer_saves_1372.log";
+    // The shipped launcher already includes this combined recovery log in diagnostics.
+    internal const string LogFile = "paws_recovery.log";
     internal const uint SaveCopies = 1, Autosave = 2, AllFeatures = 3;
     internal const uint AutosaveMinutes = 5;
-    private const uint Magic = 0x31534d50; // "PMS1"
+    private const uint Magic = 0x32534d50; // "PMS2": explicit save-data directory
     private const int PathChars = 260;
     // The call site the module redirects (RVA, current target); unchanged before install.
     private static readonly uint[] Sites = {0x162b94};
     private static readonly uint[] Originals = {0x14c9a6};
-    private static string nativePath, logPath;
+    private static string nativePath, logPath, dataPath;
 
-    // Config: magic, features, main thread id, autosave minutes, UTF-16 log path (260 characters).
-    internal static byte[] Configuration(uint features, uint mainThread, uint minutes, string log)
+    // Config: four integers, UTF-16 log and save-data paths (260 characters each).
+    internal static byte[] Configuration(uint features, uint mainThread, uint minutes, string log, string data = "")
     {
         if ((features & ~AllFeatures) != 0 || mainThread == 0 || minutes < 1 || minutes > 120)
             throw new ArgumentException("Invalid multiplayer saves settings.");
         if (log.Length >= PathChars || log.IndexOf('\0') >= 0) throw new ArgumentException("Log path is too long.");
-        var b = new byte[16 + PathChars * 2];
+        if (data.Length >= PathChars || data.IndexOf('\0') >= 0) throw new ArgumentException("Save data path is too long.");
+        var b = new byte[16 + PathChars * 4];
         BitConverter.GetBytes(Magic).CopyTo(b, 0); BitConverter.GetBytes(features).CopyTo(b, 4);
         BitConverter.GetBytes(mainThread).CopyTo(b, 8); BitConverter.GetBytes(minutes).CopyTo(b, 12);
         Encoding.Unicode.GetBytes(log).CopyTo(b, 16);
+        Encoding.Unicode.GetBytes(data).CopyTo(b, 16 + PathChars * 2);
         return b;
     }
 
@@ -58,7 +61,12 @@ internal static class MultiplayerSaves
             finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
         if (FileHash(nativePath) != digest) throw new InvalidDataException("Multiplayer saves resource integrity check failed.");
-        logPath = Path.Combine(Path.GetFullPath(root), LogFile);
+        logPath = Path.Combine(Path.GetFullPath(root), "Logs", LogFile);
+        Directory.CreateDirectory(Path.GetDirectoryName(logPath));
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string testDocuments = Environment.GetEnvironmentVariable("PAWS_TEST_DOCUMENTS");
+        if (File.Exists(Path.Combine(root, "reconnect-test.marker")) && !String.IsNullOrEmpty(testDocuments)) documents = Path.GetFullPath(testDocuments);
+        dataPath = Path.Combine(documents, "Kohan2", "data");
     }
 
     // autosaveMinutes: the helper uses the default; the test rig (tools/MultiplayerRig) passes a shorter interval.
@@ -70,10 +78,10 @@ internal static class MultiplayerSaves
             game.Refresh();
             uint process, thread = GetWindowThreadProcessId(game.MainWindowHandle, out process);
             if (thread == 0 || process != (uint)game.Id) throw new IOException("Game window thread is unavailable.");
-            byte[] config = Configuration(AllFeatures, thread, autosaveMinutes, logPath);
+            byte[] config = Configuration(AllFeatures, thread, autosaveMinutes, logPath, dataPath);
             uint on;
             using (var native = new Installer(game, image)) on = native.Install(nativePath, config);
-            log("MULTIPLAYER_SAVES_READY revision=1 saveCopies=" + ((on & SaveCopies) != 0) + " autosave=" + ((on & Autosave) != 0)
+            log("MULTIPLAYER_SAVES_READY revision=2 saveCopies=" + ((on & SaveCopies) != 0) + " autosave=" + ((on & Autosave) != 0)
                 + "/" + autosaveMinutes + "min log=" + LogFile);
         }
         catch (Exception error)
@@ -153,10 +161,32 @@ internal static class MultiplayerSaves
                     throw new IOException("Multiplayer saves guard failed at " + Sites[i].ToString("X"));
             }
         }
+        private void WaitForMessagePump()
+        {
+            // MainWindowHandle exists while startup resources are still loading.
+            // The delayed PeekMessage import resolves only on the first pump.
+            // Wait with the game running; never replace its unresolved thunk.
+            var local = Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Single(m => m.ModuleName.Equals("user32.dll", StringComparison.OrdinalIgnoreCase));
+            var remote = Module("user32.dll");
+            if (FileHash(local.FileName) != FileHash(remote.FileName)) throw new IOException("Message pump system module differs.");
+            uint a = U(GetProcAddress(local.BaseAddress, "PeekMessageA")), w = U(GetProcAddress(local.BaseAddress, "PeekMessageW"));
+            uint begin = U(local.BaseAddress), end = begin + (uint)local.ModuleMemorySize;
+            if (a < begin || a >= end || w < begin || w >= end) throw new IOException("Unexpected message pump exports.");
+            a = U(remote.BaseAddress) + a - begin; w = U(remote.BaseAddress) + w - begin;
+            var timer = Stopwatch.StartNew();
+            while (true)
+            {
+                Guard();
+                uint value = BitConverter.ToUInt32(Read(image + 0x5d4314, 4), 0);
+                if (value == a || value == w) return;
+                if (timer.ElapsedMilliseconds >= 30000) throw new IOException("Game message pump did not become ready.");
+                System.Threading.Thread.Sleep(50);
+            }
+        }
         // Returns the features the module turned on.
         internal uint Install(string dll, byte[] config)
         {
-            Guard(); IntPtr local = LoadLibraryEx(dll, IntPtr.Zero, 1);
+            Guard(); WaitForMessagePump(); IntPtr local = LoadLibraryEx(dll, IntPtr.Zero, 1);
             if (local == IntPtr.Zero) throw new IOException("Cannot read the multiplayer saves module.");
             try
             {

@@ -149,7 +149,7 @@ internal static class PawLobbyCompatibility
         using(var native=new Installer(game,image))native.Install(nativePath,configuration);
         log("LOBBY_COMPATIBILITY_READY protocol=1 patch="+Version+" nativeCalls=7 browserLabel=Paws-Launcher identity="+Encoding.ASCII.GetString(configuration,8,256).TrimEnd('\0'));
 #if PAW_PURE_RECOVERY
-        log("MATCH_RECOVERY_READY revision=2 mode=save-lobby hostLoss=manual-save nativeTransfer=R2 autoVote=false");
+            log("MATCH_RECOVERY_READY revision=3 mode=save-lobby hostLoss=guarded-manual-save nativeTransfer=R2 autoVote=false");
 #endif
     }
 #if PAW_PURE_RECOVERY
