@@ -22,6 +22,7 @@
   "Default": "Standard",
   "Show match timer": "Spielzeit anzeigen",
   "Player colors on the minimap": "Spielerfarben auf der Minikarte",
+  "Don't stretch the interface on widescreen": "Oberfläche auf Breitbildschirmen nicht strecken",
   "Close the game to save changes.": "Schließe das Spiel, um Änderungen zu speichern.",
   "Game settings saved.": "Spieleinstellungen gespeichert.",
   "The settings file changed. Reopen this window and make your changes again.": "Die Einstellungsdatei wurde geändert. Öffne dieses Fenster erneut und wiederhole deine Änderungen.",
