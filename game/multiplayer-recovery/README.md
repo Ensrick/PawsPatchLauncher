@@ -37,8 +37,8 @@ feature whose code differs stays off and the log says which signature failed. It
 | `call TGC_AdminNode::PlayerLeave` in the leave decree | `15708C` | note a player leaving |
 | the pointer the main loop's message pump calls `PeekMessage` through (`call [ptr]` at `2F5391`) | `5D4314` | a tick on the game's main thread, every frame, at most every 50 ms. Replaced only once the game has resolved it to `user32`'s `PeekMessageW`/`A` (before first use it points at a resolver that would overwrite it). `timeGetTime` is not usable: 1.3.72 calls it only in a start-up memory benchmark. |
 
-Each redirected call checks its current target first. In 1.3.72 the simulation runs on its own thread (`SIM`), and
-the save order, the leave decree and therefore these hooks run there. The client save hook writes the copy right
+Each redirected call checks its current target first. The simulation runs on its own thread (`SIM`, as in 1.3.68),
+and the save order, the leave decree and therefore these hooks run there. The client save hook writes the copy right
 there while the simulation is frozen for the host's save; on the rig that took 31 ms. The other hooks only record
 events. Everything else runs from the main-thread tick:
 
