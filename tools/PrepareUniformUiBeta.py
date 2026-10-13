@@ -45,11 +45,12 @@ def scoped(before,after,scopes):
   if not ('pure' in scopes and old['id'] in ('vanilla','immortals')):assert old==new,old['id']
 
 def prepare(a):
- ui_manifest=read(a.ui_assets/'assets.json');assert len(ui_manifest)==24
  expected_ui={n.replace('background.tga','PawUniformCenter.tga') for n in FRAMES}|{'data/ui/game/'+n+'.tgi' for n in ('control_panel','action_buttons','object_display')}
- assert set(ui_manifest)==expected_ui
- ui_files={n:(a.ui_assets/'payload'/n).read_bytes() for n in ui_manifest}
- assert all(hashlib.sha256(b).hexdigest().upper()==ui_manifest[n] for n,b in ui_files.items())
+ scoped_ui={}
+ for scope in a.scope:
+  ui_manifest=read(a.ui_assets/scope/'assets.json');assert set(ui_manifest)==expected_ui
+  scoped_ui[scope]={n:(a.ui_assets/scope/'payload'/n).read_bytes() for n in ui_manifest}
+  assert all(hashlib.sha256(b).hexdigest().upper()==ui_manifest[n] for n,b in scoped_ui[scope].items())
  out=a.out;out.mkdir(parents=True,exist_ok=False);pkey=private(a);remote=public_root()
  tracked=[*FEEDS.values(),'feed/changelog.history.json','feed/patch-guide-beta.json']
  baseline={}
@@ -63,6 +64,7 @@ def prepare(a):
   for path in root.rglob('*.zip'):cache.setdefault(path.stat().st_size,[]).append(path)
  assets=[];audit={};seen=set();removed={'arcane':set(),'pure':set()};notes=[]
  for scope in a.scope:
+  ui_files=scoped_ui[scope]
   version=AW if scope=='arcane' else PURE;tag=('patch-' if scope=='arcane' else 'patch-pure-')+version
   notes.append(read(ROOT/('docs/release-'+('patch-' if scope=='arcane' else 'pure-')+version+'.json')))
   selected=AW_IDS if scope=='arcane' else PURE_IDS
@@ -146,7 +148,8 @@ def promote(a):
   release=json.loads(fetch(API+'/releases/tags/'+tag));assert release['prerelease'] and not release['draft']
   ref=json.loads(fetch(API+'/git/ref/tags/'+tag))['object']
   while ref['type']=='tag':ref=json.loads(fetch(API+'/git/tags/'+ref['sha']))['object']
-  assert ref['type']=='commit' and ref['sha']==a.commit
+  expected_commit=(a.pure_commit or a.commit) if tag.startswith('patch-pure-') else a.commit
+  assert ref['type']=='commit' and ref['sha']==expected_commit
  for item in prep['assets']:
   raw=fetch(item['url']);assert len(raw)==item['size'] and hashlib.sha256(raw).hexdigest().upper()==item['sha256']
  remote=public_root()
@@ -175,4 +178,4 @@ if __name__=='__main__':
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','promote','readback']);p.add_argument('--out',type=Path,required=True)
  p.add_argument('--private-key',type=Path);p.add_argument('--arcane-helpers',type=Path);p.add_argument('--pure-helpers',type=Path);p.add_argument('--ui-assets',type=Path)
  p.add_argument('--cache',type=Path,action='append',default=[]);p.add_argument('--scope',choices=['arcane','pure'],action='append',default=[])
- p.add_argument('--validation',type=Path);p.add_argument('--commit');a=p.parse_args();globals()[a.action](a)
+ p.add_argument('--validation',type=Path);p.add_argument('--commit');p.add_argument('--pure-commit');a=p.parse_args();globals()[a.action](a)

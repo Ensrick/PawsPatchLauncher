@@ -3,8 +3,8 @@ using System.Text;
 using System.Text.Json;
 using PawsPatchLauncher.Rwd;
 
-if (args.Length != 3)
-    throw new ArgumentException("Usage: BuildAssets <stock game> <source-assets.json> <new output directory>");
+if (args.Length != 4)
+    throw new ArgumentException("Usage: BuildAssets <stock game> <source-assets.json> <new output directory> <Arcane Wars original object_display.tgi>");
 var sourceHashes = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(args[1]))!;
 var output = Path.GetFullPath(args[2]);
 if (Directory.Exists(output)) throw new IOException("Output directory must be new.");
@@ -65,8 +65,17 @@ foreach (var race in new[] { "", "human", "gauri", "drauga", "haroun", "undead",
         payload.Add("data/ui/game/" + name + ".tgi", Encoding.Unicode.GetPreamble().Concat(Encoding.Unicode.GetBytes(text)).ToArray());
     }
 }
-if (used.Count != 24 || used.Count != sourceHashes.Count || payload.Count != 24)
+if (used.Count != 24 || sourceHashes.Count != 25 || payload.Count != 24)
     throw new InvalidDataException("Expected 21 stock atlases and 3 layouts.");
+const string arcaneKey = "ArcaneWars-0.82.1.8-clean.1:data/UI/Game/object_display.tgi";
+var arcaneOriginal = File.ReadAllBytes(args[3]);
+if (Convert.ToHexString(SHA256.HashData(arcaneOriginal)) != sourceHashes[arcaneKey])
+    throw new InvalidDataException("Unrecognized Arcane Wars object display.");
+// Arcane Wars has tighter company member spacing. Keep all of its content;
+// Vanilla/Immortals continue using the original retail layout above.
+var arcaneText = new UTF8Encoding(false, true).GetString(arcaneOriginal);
+var arcaneDisplay = ReplaceOnce(arcaneText, "R = +456", "R = 273r");
+checks++;
 // At the stock logical width these anchors preserve every original coordinate.
 // Wider layouts leave a gap between the centre display and the right action panel.
 foreach (var width in new[] { 1024d, 1280, 1365.333333, 1536, 1820.444444, 2730.666667 })
@@ -77,17 +86,21 @@ foreach (var width in new[] { 1024d, 1280, 1365.333333, 1536, 1820.444444, 2730.
         throw new InvalidDataException("Overlapping UI anchors.");
     checks++;
 }
-Directory.CreateDirectory(output);
-var manifest = new SortedDictionary<string, string>(StringComparer.Ordinal);
-foreach (var pair in payload)
+foreach (var scope in new[] { "pure", "arcane" })
 {
-    var path = Path.Combine(output, "payload", pair.Key);
-    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-    File.WriteAllBytes(path, pair.Value);
-    manifest.Add(pair.Key, Convert.ToHexString(SHA256.HashData(pair.Value)));
+    var manifest = new SortedDictionary<string, string>(StringComparer.Ordinal);
+    foreach (var pair in payload)
+    {
+        var bytes = scope == "arcane" && pair.Key == "data/ui/game/object_display.tgi"
+            ? Encoding.UTF8.GetBytes(arcaneDisplay) : pair.Value;
+        var path = Path.Combine(output, scope, "payload", pair.Key);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, bytes);
+        manifest.Add(pair.Key, Convert.ToHexString(SHA256.HashData(bytes)));
+    }
+    File.WriteAllText(Path.Combine(output, scope, "assets.json"), JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }) + "\n");
 }
-File.WriteAllText(Path.Combine(output, "assets.json"), JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }) + "\n");
-Console.WriteLine($"UI_ASSETS_PASS: {checks} checks; 24 assets; 7 skins; original pixels and 4:3 anchors preserved.");
+Console.WriteLine($"UI_ASSETS_PASS: {checks} checks; 24 assets per family; 7 skins; original pixels, 4:3 anchors and mod-specific spacing preserved.");
 
 static string ReplaceOnce(string text, string from, string to)
 {

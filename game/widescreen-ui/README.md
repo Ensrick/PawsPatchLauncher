@@ -21,6 +21,8 @@ The shipped layout instead uses the engine's `DecalVETiledHorizontal`:
 - Side-panel tabs and action buttons anchor to the right; the object display
   fills the middle. At width 1024 all original coordinates remain unchanged.
 - All six racial skins and the observer skin have all three stock atlas sizes.
+- Arcane Wars retains its original compact company-member spacing; that mod's
+  layout is separately pinned and only its right edge anchor is changed.
 
 The 21 former loose minimap-frame filler textures are retired only in these
 beta packages. Stock backgrounds remain in their original RWD archives.
@@ -28,12 +30,12 @@ beta packages. Stock backgrounds remain in their original RWD archives.
 Build the 24 resource overrides from owned stock archives (no game launch):
 
 ```powershell
-dotnet run --project game/widescreen-ui/BuildAssets -c Release -- STOCK_GAME game/widescreen-ui/source-assets.json NEW_OUTPUT
+dotnet run --project game/widescreen-ui/BuildAssets -c Release -- STOCK_GAME game/widescreen-ui/source-assets.json NEW_OUTPUT ARCANE_ORIGINAL_OBJECT_DISPLAY
 ```
 
 The builder checks every source SHA-256, TGA encoding, crop row and layout
 anchor. `source-assets.json` pins the supported retail resources. Outputs are
-three UTF-16 layouts, 21 small TGA strips and a hash manifest. The beta staging
+three layouts, 21 small TGA strips and a hash manifest per mod family. The beta staging
 tool checks this manifest, preserves unrelated payload bytes, and requires
 live UI, native and installation/rollback evidence before feed promotion.
 
