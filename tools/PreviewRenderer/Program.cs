@@ -20,6 +20,7 @@ public static class Program
 
     private static void Run(string[] args)
     {
+        if (args.Contains("--icon-checks")) { IconChecks.Run(args[0]); return; }
         var language = args.FirstOrDefault(arg => arg.StartsWith("--language="))?.Split('=')[1] ?? "ru";
         var communityChecks = args.Contains("--community-checks");
         var pureOptionsConfig = args.FirstOrDefault(a=>a.StartsWith("--pure-options-config="))?["--pure-options-config=".Length..];

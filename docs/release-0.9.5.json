@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "0.9.5",
+  "publishedAt": "2026-10-13",
+  "title": {
+    "ru": "Paw’s Launcher 0.9.5",
+    "en": "Paw’s Launcher 0.9.5",
+    "de": "Paw’s Launcher 0.9.5",
+    "fr": "Paw’s Launcher 0.9.5",
+    "cs": "Paw’s Launcher 0.9.5",
+    "uk": "Paw’s Launcher 0.9.5"
+  },
+  "body": {
+    "ru": "- Исправлен значок скрещённых мечей у «Вражды независимых».\n- Значок шестерёнки настроек выровнен по центру и больше не обрезается снизу.",
+    "en": "- Fixed the crossed swords icon for Independent hostility.\n- Centered the settings gear icon and fixed its clipped bottom edge.",
+    "de": "- Das Symbol mit den gekreuzten Schwertern für die Feindschaft der Unabhängigen wurde korrigiert.\n- Das Zahnrad der Einstellungen ist nun zentriert und wird am unteren Rand nicht mehr abgeschnitten.",
+    "fr": "- Correction de l’icône des épées croisées pour l’hostilité des indépendants.\n- L’icône d’engrenage des paramètres est désormais centrée et son bord inférieur n’est plus coupé.",
+    "cs": "- Opravena ikona zkřížených mečů pro nepřátelství nezávislých.\n- Ikona ozubeného kola nastavení je nyní vystředěná a její spodní okraj se již neořezává.",
+    "uk": "- Виправлено значок схрещених мечів для «Ворожнечі незалежних».\n- Значок шестерні налаштувань вирівняно по центру, і він більше не обрізається знизу."
+  }
+}
