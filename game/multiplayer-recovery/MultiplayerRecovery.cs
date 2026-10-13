@@ -20,8 +20,8 @@ internal static class MultiplayerRecovery
     private const uint Magic = 0x31524d50; // "PMR1"
     private const int PathChars = 260;
     // Call sites the module redirects (RVA, current target) and the import entry it replaces; unchanged before install.
-    private static readonly uint[] Sites = {0x162b94, 0x162c3a, 0x15708c, 0x1503ea};
-    private static readonly uint[] Originals = {0x14c9a6, 0x16a9f6, 0x14b7c5, 0x151cb5};
+    private static readonly uint[] Sites = {0x162b94, 0x162c3a, 0x15708c};
+    private static readonly uint[] Originals = {0x14c9a6, 0x16a9f6, 0x14b7c5};
     private static string nativePath, logPath;
 
     // Config: magic, features, main thread id, autosave minutes, vote seconds, UTF-16 log path (260 characters).

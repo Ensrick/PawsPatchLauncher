@@ -41,7 +41,7 @@ typedef struct { const char *name; uint32_t rva; const char *bytes; } Signature;
 enum {
     S_GAME_SAVE, S_CLIENT_SAVE_CALL, S_HOST_SAVE_CALL, S_BEGIN_SOLO_TASK, S_CREATE_SAVE_TASK, S_NEW, S_SAVE_TASK_CTOR,
     S_QUEUE_TASK, S_BLOCK_TASK, S_STRING_CTOR, S_STRING_RELEASE, S_USER_DATA, S_WANTED_PACKET, S_NETCONN_ADMIN,
-    S_KICK_VOTE, S_DISCONNECT_REQUEST, S_DISCONNECT_REQUEST_CALL, S_LEAVE_DECREE, S_PLAYER_LEAVE, S_END_MISSION,
+    S_KICK_VOTE, S_LEAVE_DECREE, S_PLAYER_LEAVE, S_END_MISSION,
     S_GAME_TYPE, S_LOAD_SAVE_CTOR, S_LOAD_SAVE_ISSUE, S_COUNTDOWN_READ, S_SESSION_READ, S_FOR_EACH_CONNECTION,
     S_SCRIPT_READ, S_RUN_SCRIPT, S_SOURCE_WALK, S_SOURCE_STEP, S_SETTINGS_READ, S_SETTINGS_TYPE, S_BACKUP_MODE,
     S_WORLD_READ, S_MANAGER_READ, S_MESSAGE_PUMP, S_SAVE_TASK_SLOT, S_COUNT
@@ -66,8 +66,6 @@ static const Signature signatures[S_COUNT] = {
     {"TGC_AdminConn::GetWantedPacketType", 0x150009, "56 8b f1 8b 0d ?? ?? ?? ?? 80 b9 ec 02 00 00 00 74 35 3b b1 e4 02 00 00 0f 85 16 01 00 00 6a 02 a1 ?? ?? ?? ?? 8b 8e 2c 04 00 00 f3 0f 10 40 50 33 c0 f3 0f 5c 81 90 00 00 00"},
     {"net connection's admin connection", 0x15c551, "8b 81 a0 00 00 00 57 8b 7c 24 08 85"},
     {"CSDKickLaggingPlayers", 0xbc599, "55 8b ec 8b 4d 08 e8 ad c4 13 00 8b 0d ?? ?? ?? ?? f7 d8 1a c0 fe c0 88 45 08 ff 75 08 e8 fb e4 08 00"},
-    {"TGC_AdminConn::SerializeClientDisconnectRequest", 0x151cb5, "55 8b ec a1 ?? ?? ?? ?? 83 ec 0c 56 8b f1 3b 80 e8 02 00 00 74 23"},
-    {"client disconnect request call", 0x1503e4, "ff 75 0c 8b cf 56 e8 c6 18 00 00 5e"},
     /* push [ecx+8]; push [ecx+4]; mov ecx, [admin node]; call PlayerLeave; ret */
     {"player leave decree", 0x157080, "ff 71 08 ff 71 04 8b 0d ?? ?? ?? ?? e8 34 47 ff ff c3"},
     {"TGC_AdminNode::PlayerLeave", 0x14b7c5, "56 8b 74 24 08 57 8b f9 85 f6 75 23 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 68 d3 0c 00 00"},
@@ -102,7 +100,6 @@ static const Signature signatures[S_COUNT] = {
 #define CLIENT_SAVE_CALL 0x162b94
 #define HOST_SAVE_CALL 0x162c3a
 #define LEAVE_DECREE_CALL 0x15708c
-#define DISCONNECT_REQUEST_CALL 0x1503ea
 #define END_MISSION_SET_MAP_TYPE_CALL 0xc4143
 #define END_MISSION_LAUNCH_CALL 0xc414d
 #define SET_MAP_TYPE_ISSUE 0x8523a
@@ -136,7 +133,6 @@ typedef void *(__attribute__((fastcall)) *StringCtor)(void *self, void *edx, con
 typedef void (__attribute__((fastcall)) *StringRelease)(void *header, void *edx);
 typedef void (__attribute__((fastcall)) *RunScript)(void *console, void *edx, void *command, int flag);
 typedef void (__attribute__((fastcall)) *PlayerLeave)(void *admin, void *edx, void *player, int reason);
-typedef void (__attribute__((fastcall)) *DisconnectRequest)(void *conn, void *edx, void *stream, int sequence);
 typedef void (__attribute__((fastcall)) *BeginSoloTask)(void *admin, void *edx, int flag, void *node);
 typedef void (__attribute__((fastcall)) *CreateSaveTask)(void *session, void *edx, int flag);
 typedef void *(__cdecl *EngineNew)(size_t size);
@@ -532,8 +528,7 @@ static const int autosaveNeeds[] = {S_SESSION_READ, S_FOR_EACH_CONNECTION, S_WAN
 
 /* ------------------------------------------------------------------ drop recovery */
 static PlayerLeave originalPlayerLeave;
-static DisconnectRequest originalDisconnectRequest;
-static volatile LONG leavesPending, lastReason = -1, quitAt;
+static volatile LONG leavesPending, lastReason = -1;
 /* After a leave: save, then (lobby step on, this PC the original host) wait for the save, take everyone to the lobby,
  * and select the save there. One step per tick, each at most 30 s.
  *  selecting:  a moment after arriving (an order sent in the same instant as the switch is refused "due to
@@ -555,17 +550,6 @@ static void __attribute__((fastcall)) leave_hook(void *admin, void *edx, void *p
         InterlockedIncrement(&leavesPending);
     }
 }
-/* The packet reader's call of SerializeClientDisconnectRequest: a player asked to leave. Noted, so the leave the
- * host then issues (reason 5, the same reason as a crash) is not taken for a drop. */
-static void __attribute__((fastcall)) disconnect_request_hook(void *conn, void *edx, void *stream, int sequence) {
-    DWORD now = GetTickCount();
-    InterlockedExchange(&quitAt, (LONG)(now ? now : 1)); /* 0 means "no request" */
-    originalDisconnectRequest(conn, edx, stream, sequence);
-}
-static int left_on_purpose(DWORD now) {
-    LONG at = quitAt;
-    return at && now - (DWORD)at < 3000;
-}
 static void go(int next, DWORD now) {
     step = next;
     stepSince = now;
@@ -577,10 +561,6 @@ static void on_leave(DWORD now) {
     char a[96];
     SYSTEMTIME t;
     if (!host_of_running_match(admin, session)) return; /* not the host, or a leave from the lobby */
-    if (left_on_purpose(now)) {
-        log_line("drop recovery: a player quit the match on purpose (reason %ld); nothing to do", (long)reason);
-        return;
-    }
     if (step != IDLE) {
         log_line("drop recovery: %ld more player(s) left (reason %ld); already handling a leave", (long)leaves, (long)reason);
         return;
@@ -722,7 +702,6 @@ static void recovery_tick(DWORD now) {
 }
 static const int dropNeeds[] = {S_LEAVE_DECREE, S_PLAYER_LEAVE, S_SESSION_READ, S_WANTED_PACKET, S_GAME_SAVE,
     S_SCRIPT_READ, S_RUN_SCRIPT, S_STRING_CTOR, S_STRING_RELEASE, S_USER_DATA, S_BACKUP_MODE, -1};
-static const int quitNeeds[] = {S_DISCONNECT_REQUEST, S_DISCONNECT_REQUEST_CALL, -1};
 static const int lobbyNeeds[] = {S_END_MISSION, S_GAME_TYPE, S_LOAD_SAVE_CTOR, S_LOAD_SAVE_ISSUE, S_COUNTDOWN_READ,
     S_WORLD_READ, -1};
 static const int voteNeeds[] = {S_FOR_EACH_CONNECTION, S_NETCONN_ADMIN, S_KICK_VOTE, -1};
@@ -810,12 +789,8 @@ __declspec(dllexport) DWORD WINAPI PawInstall(void *raw) {
         on |= FEATURE_AUTOSAVE;
     if ((cfg->features & FEATURE_DROP_RECOVERY) && signatures_match(image, imageSize, dropNeeds, "drop recovery")) {
         originalPlayerLeave = (PlayerLeave)(image + 0x14b7c5);
-        originalDisconnectRequest = (DisconnectRequest)(image + 0x151cb5);
         if (redirect_call(image + LEAVE_DECREE_CALL, image + 0x14b7c5, leave_hook)) {
             on |= FEATURE_DROP_RECOVERY;
-            if (!signatures_match(image, imageSize, quitNeeds, "quit detection") ||
-                !redirect_call(image + DISCONNECT_REQUEST_CALL, image + 0x151cb5, disconnect_request_hook))
-                log_line("drop recovery: cannot tell quitting from dropping; every leave counts as a drop");
             if ((cfg->features & FEATURE_LOBBY_STEP) && hostSavesOn && signatures_match(image, imageSize, lobbyNeeds, "lobby step") &&
                 call_target(image + END_MISSION_SET_MAP_TYPE_CALL) == image + SET_MAP_TYPE_ISSUE &&
                 call_target(image + END_MISSION_LAUNCH_CALL) == image + LAUNCH_ISSUE) {
@@ -835,7 +810,6 @@ __declspec(dllexport) DWORD WINAPI PawInstall(void *raw) {
         hostSavesOn = 0;
         if (on & FEATURE_DROP_RECOVERY) {
             redirect_call(image + LEAVE_DECREE_CALL, (uintptr_t)leave_hook, (void *)(image + 0x14b7c5));
-            redirect_call(image + DISCONNECT_REQUEST_CALL, (uintptr_t)disconnect_request_hook, (void *)(image + 0x151cb5));
         }
         features = 0;
         PawRecoveryInstallStatus = -1;
@@ -960,10 +934,6 @@ int main(int argc, char **argv) {
     check(seenCalls == 1 && seenSelf == admin && seenFirst == session && seenSecond == 5 && leavesPending == 1 &&
           lastReason == 5, "leave hook passes the leave on and notes it");
     check(thiscall2((void *)leave_hook, admin, 0, 6) && leavesPending == 1, "a leave without a player is not noted");
-    originalDisconnectRequest = (DisconnectRequest)fake_two; quitAt = 0;
-    check(thiscall2((void *)disconnect_request_hook, netNode, (uint32_t)(uintptr_t)world, 77), "request hook keeps the stack");
-    check(seenSelf == netNode && seenFirst == world && seenSecond == 77 && left_on_purpose(GetTickCount()) &&
-          !left_on_purpose(GetTickCount() + 3001), "request hook passes on and marks a quit for 3 s");
     originalBeginSoloTask = (BeginSoloTask)fake_flag_node; features = 0;
     check(thiscall2((void *)client_save_hook, admin, 1, (uint32_t)(uintptr_t)world), "client save hook keeps the stack");
     check(seenSelf == admin && seenSecond == 1 && seenFirst == world, "client save hook passes the call on");
@@ -1002,7 +972,7 @@ int main(int argc, char **argv) {
         for (i = 0; i < S_COUNT; i++) check(matches_at((uintptr_t)mapped, (uint32_t)size, signatures[i].rva, signatures[i].bytes), signatures[i].name);
         {
             const uint32_t sites[][2] = {{CLIENT_SAVE_CALL, 0x14c9a6}, {HOST_SAVE_CALL, 0x16a9f6}, {LEAVE_DECREE_CALL, 0x14b7c5},
-                {DISCONNECT_REQUEST_CALL, 0x151cb5}, {END_MISSION_SET_MAP_TYPE_CALL, SET_MAP_TYPE_ISSUE},
+                {END_MISSION_SET_MAP_TYPE_CALL, SET_MAP_TYPE_ISSUE},
                 {END_MISSION_LAUNCH_CALL, LAUNCH_ISSUE}};
             for (i = 0; i < sizeof sites / sizeof sites[0]; i++)
                 check(call_target((uintptr_t)mapped + sites[i][0]) == (uintptr_t)mapped + sites[i][1], "call site target");

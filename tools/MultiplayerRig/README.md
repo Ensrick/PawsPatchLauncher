@@ -5,11 +5,13 @@ script commands, with the multiplayer recovery module (`game/multiplayer-recover
 same installer code the pure helper uses. It tests multiplayer changes without a second player or PC.
 
 It starts the real game. Never run it while someone is playing; it refuses to start when `k2.exe` is running.
-Steam must run (the game's copy protection).
+Steam must run (the game's copy protection). The copies play over LAN loopback: a dropped peer there causes a
+socket error that removes it at once, whereas over Steam the game waits in its connection dialog for a vote, so the
+vote path needs real PCs.
 
 ```powershell
 tools/MultiplayerRig/build.ps1 -OutputDirectory .local/rig -NativeCompiler <x86-tcc>
-tools/MultiplayerRig/Run-Rig.ps1 -RigBuild .local/rig -Scenario SaveCopy   # also Autosave, Drop, Rejoin, HostLeaves
+tools/MultiplayerRig/Run-Rig.ps1 -RigBuild .local/rig -Scenario SaveCopy   # also Autosave, Drop, Rejoin, Abandon, HostLeaves
 ```
 
 The exit code is the number of failed checks. The output lists both modules' logs, the relevant lines of both game
@@ -21,11 +23,11 @@ logs and the checks.
 | --- | --- |
 | Start a copy with its script | `k2.exe +Exec PawsRig/host.txt` (`+command` on the command line runs a script command), `SteamAppId` in its environment, shown without activation and moved past the right edge of the desktop (not minimized: a minimized windowed game gets a 0x0 client area and its renderer fails). |
 | Keep both running in the background | `RunWhenInactive = true` in each copy's settings; otherwise a copy that is not in front nearly stops. |
-| Own Documents folder per copy | The stand-in `shfolder.dll` (`rig_shfolder.c`): the game finds its user folder with `LoadLibrary("shfolder.dll")` + `SHGetFolderPathW`, Windows takes that DLL from the game folder first, and the stand-in answers with `K2_RIG_DOCUMENTS`. |
+| Own Documents folder per copy | The stand-in `shfolder.dll` (`rig_shfolder.c`): the game finds its user folder with `LoadLibrary("shfolder.dll")` + `SHGetFolderPathW`, Windows takes that DLL from the game folder first, and the stand-in answers with `K2_RIG_DOCUMENTS`. The game frees the DLL after the first call and asks again later, so the stand-in pins itself; without that, a later call reached the system DLL and the game's `%USERDATA%` string turned back to the real Documents folder while its saves still went to the copy's own. |
 | Host a LAN game | `RequestMultiplayer`, `RequestLobbyLAN`, `LobbySetLANNickname`, `InternetGameCreate <name> <port> <players>` (a fourth argument is the password), `SelectLaunchType RANDOM_MAP`, `StagingLaunch`. Readiness comes from Windows (the host listens on UDP 5860), because the game buffers its log. |
 | Join by address | `LobbyJoinDirect`, `JoinDirectJoin`. No script command fills an editbox, so with `K2_RIG_JOIN=<ip>:<port>` the stand-in answers the Direct IP dialog's two editbox reads (1.3.72 RVAs `EF184`, `EF1A6`, calls of the widget text getter `29FC02`). |
 | Install the module | `RigInject.exe <pid> <rig folder> <autosave minutes>`: `MultiplayerRecovery.Prepare` + `Install`, with the module and its log in the copy's own rig folder. |
-| Drop a player | `Stop-Process` on the copy (like a crash), or `RequestLeaveGame` from its script (a deliberate quit). |
+| Drop a player | `Stop-Process` on the copy (like a crash), or `RequestLeaveGame` from its script (a deliberate quit; in 1.3.72 the client then closes its connection without a disconnect request, so on LAN the host sees a connection reset, the same as for a crash). |
 | Quit | `ReallyQuit` (no confirmation). |
 
 `WaitState <state>` before the main menu crashes the game, so the scripts start with a plain `Wait 45`.

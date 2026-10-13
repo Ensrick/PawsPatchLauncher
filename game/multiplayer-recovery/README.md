@@ -8,7 +8,7 @@ enabled. It has three features, all made from the game's own commands and orders
 | --- | --- |
 | Save copies | When the host saves a multiplayer match (by hand or by autosave), every other player's game writes the same moment as `<name> (copy).RSG`. If the host's PC is gone, anyone can host the match again. |
 | Multiplayer autosave | The host's game saves the running match every 5 minutes into `MP Autosave A` and `MP Autosave B` in turn. The game's own autosave is single-player only. |
-| Drop recovery | When a player drops out of a running match (crash, lost connection), the host's game saves `MP Resume <date> <time>` and pauses. It then takes everyone back to the lobby, still connected, with that save selected. The dropped player joins again, the host launches, and the match continues. A deliberate quit is left alone. |
+| Drop recovery | When a player drops out of a running match (crash, lost connection), the host's game saves `MP Resume <date> <time>` and pauses. It then takes everyone back to the lobby, still connected, with that save selected. The dropped player joins again, the host launches, and the match continues; if they do not come back, the host can launch without them. |
 
 Drop recovery also votes to drop a player whose connection stays down for 20 s while the game waits in its
 connection dialog. Over Steam a dropped peer never causes the automatic removal that a LAN socket error triggers,
@@ -27,7 +27,7 @@ lobby module's handshake:
 An install that fails is logged as `MULTIPLAYER_RECOVERY_OFF` and the game runs unchanged. An aborted install
 releases the waiting worker with a configuration the module rejects before any change.
 
-The module (`multiplayer_recovery.c`, x86 TCC) checks 37 byte signatures (relocated operands are wildcards). A
+The module (`multiplayer_recovery.c`, x86 TCC) checks 35 byte signatures (relocated operands are wildcards). A
 feature whose code differs stays off and the log says which signature failed. It then changes:
 
 | What | 1.3.72 RVA | Why |
@@ -35,7 +35,6 @@ feature whose code differs stays off and the log says which signature failed. It
 | `call BeginSoloTask` in `KKC_Session::GameSave`, client branch | `162B94` | after it, write the copy (`KKC_ResourceManagerTaskSaveGame`, queue, `TGC_ResourceManagerTask::Block`) while the game is paused for the host's save |
 | `call CreateSaveGameTask`, host branch | `162C3A` | take a reference on the save task it stored in the session (`+134`) and hand it to the tick, which follows its status (`+14`: 2 finished, 3 failed), logs the save's lobby checksum, and lets the drop-recovery lobby step wait for `MP Resume` without looking at files |
 | `call TGC_AdminNode::PlayerLeave` in the leave decree | `15708C` | note a player leaving |
-| `call SerializeClientDisconnectRequest` in the packet reader | `1503EA` | note a player asking to leave, so the leave that follows within 3 s is a quit, not a drop |
 | the pointer the main loop's message pump calls `PeekMessage` through (`call [ptr]` at `2F5391`) | `5D4314` | a tick on the game's main thread, every frame, at most every 50 ms. Replaced only once the game has resolved it to `user32`'s `PeekMessageW`/`A` (before first use it points at a resolver that would overwrite it). `timeGetTime` is not usable: 1.3.72 calls it only in a start-up memory benchmark. |
 
 Each redirected call checks its current target first. In 1.3.72 the simulation runs on its own thread (`SIM`), and
@@ -74,12 +73,12 @@ game/multiplayer-recovery/build.ps1 -OutputDirectory <native> -NativeCompiler <x
 Run it before `game/pure-fixes/build_beta.py --native <native>`, which embeds the DLL. It builds the DLL and
 then runs three checks:
 
-- `MultiplayerRecoveryTests.exe` (`-DPAW_TEST`), 82 offline checks:
+- `MultiplayerRecoveryTests.exe` (`-DPAW_TEST`), 78 offline checks:
   - plain-memory state decisions: host of a running match, End Mission allowed, connection down;
   - copy names, the lobby checksum and the signature table format;
   - every hook called the way the game calls it (thiscall: `ECX` + stack arguments popped by the callee). Each
     hook must pass its arguments to the original, keep the stack and saved registers, and record its event.
-- with `-MappedImage` (the hash-pinned 1.3.72 snapshot), 125 checks: all 37 signatures and all 6 call sites.
+- with `-MappedImage` (the hash-pinned 1.3.72 snapshot), 118 checks: all 35 signatures and all 5 call sites.
 - `MultiplayerRecoveryInstallerTests.exe`, 13 checks: the configuration block's layout and limits.
 
 ## Validation
@@ -96,6 +95,11 @@ then runs three checks:
   removes a dropped player automatically, so the vote path is only reachable over Steam.
 
 ## Known limits
+
+- **A deliberate quit counts as a drop.** In 1.3.72 a client that leaves through the in-game menu becomes a
+  private host and closes its connection without a disconnect request, so the host sees the same as for a crash
+  (on LAN a connection reset, reason 5). Drop recovery therefore also runs then. Everyone is taken to the lobby with
+  `MP Resume` selected and can launch without the player who left.
 
 - **Host crash:** handled only partly. The player who takes over saves and pauses but keeps the match. Bringing the
   lost host back needs that player's lobby to be found, which is untested.

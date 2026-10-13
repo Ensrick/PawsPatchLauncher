@@ -8,11 +8,14 @@
 #   -Scenario Autosave    -AutosaveMinutes for this run; the host plays two intervals. Checks "MP Autosave A/B" on the
 #                         host, the client's copies, and that only the host saved.
 #   -Scenario Drop        -DropAfter seconds after the client starts, the rig kills the -DropWho copy (like a crash),
-#                         or with -DropHow Quit the client leaves from the game's menu. A killed client is started again
-#                         and tries to join. Checks what the remaining host's module did.
+#                         or with -DropHow Quit the client leaves from the game's menu (1.3.72 sends no disconnect
+#                         request then, so the host treats it as a drop too). A killed client is started again and
+#                         tries to join. Checks what the remaining host's module did.
 #   -Scenario Rejoin      like Drop (client killed); the host's module saves "MP Resume", takes everyone back to the lobby
 #                         and selects it; the client starts again, joins, gets the save; the host launches again.
 #                         Checks that the client is back in a match loaded from "MP Resume".
+#   -Scenario Abandon     like Rejoin, but the dropped client never comes back: the host launches "MP Resume" alone
+#                         after -RelaunchAfter. Checks that the host is back in a match loaded from it.
 #   -Scenario HostLeaves  host: LAN lobby, quits once the client is in it. Checks whether the client survives (on 1.3.68
 #                         the client crashed in 4 of 18 such runs, after a failed assertion).
 #
@@ -21,7 +24,7 @@
 # and PawsRig\*.txt for the run; its Logs folder (the game keeps only about ten logs) is copied aside first.
 param(
     [Parameter(Mandatory = $true)][string] $RigBuild,  # tools/MultiplayerRig/build.ps1 -OutputDirectory
-    [ValidateSet('SaveCopy', 'Autosave', 'Drop', 'Rejoin', 'HostLeaves')] [string] $Scenario = 'SaveCopy',
+    [ValidateSet('SaveCopy', 'Autosave', 'Drop', 'Rejoin', 'Abandon', 'HostLeaves')] [string] $Scenario = 'SaveCopy',
     [string] $Game = 'C:\Program Files (x86)\Steam\steamapps\common\Kohan II',
     [int] $Port = 5860,                  # the first port the game tries for a LAN host (5860-5869)
     [int] $LaunchAfter = 90,             # seconds the host waits in its lobby for the client before launching
@@ -31,7 +34,7 @@ param(
     [ValidateSet('Client', 'Host')] [string] $DropWho = 'Client',
     [ValidateSet('Kill', 'Quit')] [string] $DropHow = 'Kill',
     [int] $DropAfter = 240,              # seconds after the client starts (its match runs from about 120)
-    [int] $RelaunchAfter = 300           # Rejoin: seconds after its second launch try before the host launches again
+    [int] $RelaunchAfter = 300           # Rejoin, Abandon: seconds after its second launch try before the host launches again
 )
 $ErrorActionPreference = 'Stop'
 $logs = Join-Path $Game 'Logs'
@@ -127,10 +130,10 @@ switch ($Scenario) {
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait $LaunchAfter`nEcho rig: host launching`nStagingLaunch`nWaitState game`nEcho rig: host in the match`nWait $inMatch`nEcho rig: host end`nReallyQuit"
         $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWaitState game`nEcho rig: client in the match`nWait $($inMatch - 20)`nEcho rig: client end`nReallyQuit"
     }
-    { $_ -in 'Drop', 'Rejoin' } {
+    { $_ -in 'Drop', 'Rejoin', 'Abandon' } {
         # No WaitState here (it gives up after about a minute); the rig drops a copy by the clock instead. A second
         # StagingLaunch covers a client that became ready after the first one.
-        $again = if ($Scenario -eq 'Rejoin') { "Wait $RelaunchAfter`nEcho rig: host launching again`nStagingLaunch`nWait 30`nStagingLaunch`nWait 240" } else { 'Wait 420' }
+        $again = if ($Scenario -in 'Rejoin', 'Abandon') { "Wait $RelaunchAfter`nEcho rig: host launching again`nStagingLaunch`nWait 30`nStagingLaunch`nWait 240" } else { 'Wait 420' }
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait $LaunchAfter`nEcho rig: host launching`nStagingLaunch`nWait 30`nStagingLaunch`n$again`nEcho rig: host end`nReallyQuit"
         $stay = if ($Scenario -eq 'Drop' -and $DropHow -eq 'Quit') { "Wait $([math]::Max(30, $DropAfter - 75))`nEcho rig: client quitting`nRequestLeaveGame`nWait 20" } else { 'Wait 600' }
         $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`n$stay`nEcho rig: client end`nReallyQuit"
@@ -149,7 +152,7 @@ Write-Script 'host' $hostScript
 Write-Script 'client' $clientScript.Replace('__NICK__', 'RigClient')
 if ($rejoinScript) { Write-Script 'rejoin' $rejoinScript.Replace('__NICK__', 'RigClient') }
 Copy-Item $rigShfolder $shfolderInGame -Force
-$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } 'HostLeaves' { 420 } 'Drop' { $DropAfter + 420 } 'Rejoin' { $DropAfter + 720 } default { $LaunchAfter + $SaveAfter + 300 } }
+$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } 'HostLeaves' { 420 } 'Drop' { $DropAfter + 420 } 'Rejoin' { $DropAfter + 720 } 'Abandon' { $DropAfter + $RelaunchAfter + 420 } default { $LaunchAfter + $SaveAfter + 300 } }
 
 # ---------------------------------------------------------------- starting a copy
 . (Join-Path $PSScriptRoot 'RigLauncher.ps1')
@@ -195,7 +198,7 @@ try {
         if ($Scenario -eq 'Drop' -and $DropHow -eq 'Quit' -and -not $dropped -and ((Get-Date) - $t0).TotalSeconds -ge $DropAfter) {
             $dropped = Get-Date; 'drop: the client is quitting from the menu about now'
         }
-        if ($Scenario -in 'Drop', 'Rejoin' -and $DropHow -eq 'Kill' -and -not $dropped -and ((Get-Date) - $t0).TotalSeconds -ge $DropAfter) {
+        if ($Scenario -in 'Drop', 'Rejoin', 'Abandon' -and $DropHow -eq 'Kill' -and -not $dropped -and ((Get-Date) - $t0).TotalSeconds -ge $DropAfter) {
             $victim = if ($DropWho -eq 'Host' -and $Scenario -eq 'Drop') { $hostCopy.Id } else { $clientCopy.Id }
             Stop-Process -Id $victim -Force -ErrorAction SilentlyContinue
             $dropped = Get-Date
@@ -252,7 +255,7 @@ switch ($Scenario) {
         $checks['host module saved twice'] = ([regex]::Matches((Module-Text 'host'), 'autosave: saving')).Count -ge 2
         $checks['client module never saved'] = -not (Module-Text 'client').Contains('autosave: saving')
     }
-    { $_ -in 'Drop', 'Rejoin' } {
+    { $_ -in 'Drop', 'Rejoin', 'Abandon' } {
         $pattern = 'Timeout\(\)|CSD|Vote|PlayerLeave\(\)|already in progress|Rejected|taken over|BackupMode|Becoming|has joined|quit the game|GamePause|GameSave|MP Resume|Loading File|SetNewState|has ended|ASSERT|exception|rig: '
         foreach ($pair in @(@('host', $hostCopy.Log), @('client', $clientCopy.Log), @('rejoined client', $(if ($rejoinCopy) { $rejoinCopy.Log })))) {
             $f = Final-Log $pair[1]; if (-not $f) { continue }
@@ -262,12 +265,18 @@ switch ($Scenario) {
         }
         $checks['the rig dropped a copy'] = [bool]$dropped
         if ($Scenario -eq 'Drop' -and $DropHow -eq 'Quit') {
-            $checks['the host module saw a quit, not a drop'] = (Module-Text 'host').Contains('quit the match on purpose')
-            $checks['the host module did not save'] = -not (Module-Text 'host').Contains('saving "Save/MP Resume')
+            # 1.3.72: a menu leave sends no disconnect request; the host handles it like a drop
+            $checks['the host module handled the leave like a drop'] = (Module-Text 'host') -match 'drop recovery: .* saving "Save/MP Resume'
+            $checks['the host module took everyone to the lobby with "MP Resume"'] = (Module-Text 'host').Contains('in the lobby with "MP Resume" selected')
         } else {
             $saver = if ($DropWho -eq 'Host' -and $Scenario -eq 'Drop') { 'client' } else { 'host' }
             $checks["the $saver module saved and paused"] = (Module-Text $saver) -match 'drop recovery: .* saving "Save/MP Resume'
             $checks['"MP Resume" was written'] = [bool](Get-ChildItem (Saves $saver) -Filter 'MP Resume *.RSG' -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*(copy)*' -and $_.LastWriteTime -gt $dropped })
+        }
+        if ($Scenario -eq 'Abandon') {
+            $checks['host module took everyone to the lobby with "MP Resume"'] = (Module-Text 'host').Contains('in the lobby with "MP Resume" selected')
+            $selected = $hostText.LastIndexOf('Loading File: <Save/MP Resume ')
+            $checks['the host is back in a match from "MP Resume" without the dropped player'] = $selected -ge 0 -and $hostText.IndexOf('ChangeToState(2,', $selected) -gt 0
         }
         if ($Scenario -eq 'Rejoin') {
             $checks['host module took everyone to the lobby with "MP Resume"'] = (Module-Text 'host').Contains('in the lobby with "MP Resume" selected')
