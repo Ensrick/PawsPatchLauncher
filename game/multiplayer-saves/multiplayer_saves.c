@@ -128,15 +128,13 @@ __declspec(dllexport) volatile LONG PawSavesCopies, PawSavesCopiesSkipped, PawSa
     PawSavesTicks;
 
 /* ------------------------------------------------------------------ shared save contract
- * A Paw module that queues or writes a save exports PawSaveBusy and keeps it non-zero from just before it queues the
- * save command until that save has ended (or it gave up waiting). A module queues a save only while no loaded module's
- * PawSaveBusy is non-zero and no native save task is pending in the session. Here it counts this module's saves in
- * flight: autosave (main thread) and save copies (simulation thread). */
+ * Each Paw module that schedules game saves exports an aligned `volatile LONG PawSaveBusy`, initially 0, and writes
+ * only its own flag, with InterlockedExchange: 1 from just before it queues a save command until that work has ended
+ * or it gave up. Immediately before queueing, a module checks the session's native save slot (+0x134: occupied while
+ * not null, including a finished task not yet detached) and every other loaded module's flag. Saves are scheduled
+ * only on the game's main thread; the flags coordinate, they are not a cross-thread lock. Here only autosave schedules
+ * saves; save copies are written on clients inside the host's save and schedule nothing. */
 __declspec(dllexport) volatile LONG PawSaveBusy;
-#define OTHER_MODULES 8
-static volatile LONG *otherBusy[OTHER_MODULES]; /* other loaded modules' PawSaveBusy */
-static int otherCount;
-static DWORD otherScanned; /* main thread: when the module list was last read; 0 = never */
 
 /* ------------------------------------------------------------------ log */
 static void log_line(const char *format, ...) {
@@ -311,33 +309,45 @@ static void log_checksum(const char *what, const wchar_t *relative) {
 }
 
 /* ------------------------------------------------------------------ shared save contract: other modules */
-/* Main thread. Reads the loaded modules' PawSaveBusy exports again at most once a second. The helpers load Paw modules
- * into the game with LoadLibraryW and never free them, so the pointers stay valid. */
-static void scan_other_modules(DWORD now) {
+/* An exported PawSaveBusy is usable when it is a 4-byte aligned, committed, writable data location inside the image of
+ * the module that exports it. */
+static int busy_export_valid(HMODULE module, const void *address) {
+    MEMORY_BASIC_INFORMATION m;
+    if (((uintptr_t)address & 3) || !VirtualQuery(address, &m, sizeof m)) return 0;
+    if (m.State != MEM_COMMIT || m.Type != MEM_IMAGE || m.AllocationBase != (void *)module ||
+        (m.Protect & (PAGE_GUARD | PAGE_NOACCESS)))
+        return 0;
+    return (m.Protect & (PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0 &&
+           (uintptr_t)address + 4 <= (uintptr_t)m.BaseAddress + m.RegionSize;
+}
+/* Main thread, immediately before queueing a save: 0 every other loaded module's PawSaveBusy is 0; 1 one is busy; -1 the
+ * modules could not be listed or an export is malformed (both defer). Each module is held with a reference while its
+ * export is looked up and read; nothing is cached. */
+static int read_other_modules(void) {
     static EnumModulesFn enumerate;
     HMODULE modules[256], self = 0;
-    DWORD needed = 0, i, n;
-    if (otherScanned && now - otherScanned < 1000) return;
-    otherScanned = now ? now : 1;
+    DWORD needed = 0, i;
+    int result = 0;
     if (!enumerate) enumerate = (EnumModulesFn)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "K32EnumProcessModules");
-    if (!enumerate || !enumerate(GetCurrentProcess(), modules, sizeof modules, &needed)) return;
-    GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                       (LPCWSTR)(const void *)&PawSaveBusy, &self);
-    n = needed / sizeof(HMODULE);
-    if (n > 256) n = 256;
-    otherCount = 0;
-    for (i = 0; i < n && otherCount < OTHER_MODULES; i++) {
-        volatile LONG *busy;
+    if (!enumerate || !enumerate(GetCurrentProcess(), modules, sizeof modules, &needed) || needed > sizeof modules) return -1;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            (LPCWSTR)(const void *)&PawSaveBusy, &self))
+        return -1;
+    for (i = 0; i < needed / sizeof(HMODULE) && result >= 0; i++) {
+        HMODULE held;
+        const volatile LONG *busy;
         if (modules[i] == self) continue;
-        busy = (volatile LONG *)GetProcAddress(modules[i], "PawSaveBusy");
-        if (busy) otherBusy[otherCount++] = busy;
+        /* a reference: the module cannot unload while it is read (it may have unloaded since the list was taken) */
+        if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)(const void *)modules[i], &held)) continue;
+        if (held == modules[i] && (busy = (const volatile LONG *)GetProcAddress(held, "PawSaveBusy")) != 0) {
+            if (!busy_export_valid(held, (const void *)busy)) result = -1;
+            else if (*busy) result = 1;
+        }
+        FreeLibrary(held);
     }
+    return result;
 }
-static int others_busy(void) {
-    int i;
-    for (i = 0; i < otherCount; i++) if (*otherBusy[i]) return 1;
-    return 0;
-}
+static int (*other_modules)(void) = read_other_modules; /* the offline checks stand in for the module list */
 
 /* ------------------------------------------------------------------ save copies */
 static BeginSoloTask originalBeginSoloTask;
@@ -414,9 +424,7 @@ static void on_client_save(void) {
         return;
     }
     start = GetTickCount();
-    InterlockedIncrement(&PawSaveBusy);
     status = write_copy(copy);
-    InterlockedDecrement(&PawSaveBusy);
     if (status != 2) {
         InterlockedIncrement(&PawSavesCopiesSkipped);
         log_line("save copy of \"%s\" did not finish (status %d)", utf8(name, a, sizeof a), status);
@@ -454,7 +462,7 @@ static void autosave_end(const char *how) {
     else log_checksum("autosave", autosaveName);
     autosaveState = AUTOSAVE_IDLE;
     autosaveTask = 0;
-    InterlockedDecrement(&PawSaveBusy);
+    InterlockedExchange(&PawSaveBusy, 0);
 }
 static void autosave_follow(DWORD now) {
     const void *session = pointer_at(sessionGlobal);
@@ -473,7 +481,7 @@ static void autosave_tick(DWORD now) {
     static const wchar_t *const names[] = {L"Save/MP Autosave A.RSG", L"Save/MP Autosave B.RSG"};
     const void *session = pointer_at(sessionGlobal);
     wchar_t command[64];
-    int ready, depth;
+    int ready, depth, others;
     if (autosaveState != AUTOSAVE_IDLE) autosave_follow(now);
     if (!hosting_match(pointer_at(adminGlobal), session, pointer_at(netNodeGlobal))) {
         if (autosaveSince) log_line("autosave: the match this PC hosted is over");
@@ -487,12 +495,13 @@ static void autosave_tick(DWORD now) {
         return;
     }
     if (now - autosaveSince < config.autosaveMinutes * 60000u) return;
-    scan_other_modules(now);
-    if (autosaveState != AUTOSAVE_IDLE || FIELD(const void *, session, SESSION_SAVE_TASK) || others_busy()) {
+    others = autosaveState == AUTOSAVE_IDLE && !FIELD(const void *, session, SESSION_SAVE_TASK) ? other_modules() : 0;
+    if (autosaveState != AUTOSAVE_IDLE || FIELD(const void *, session, SESSION_SAVE_TASK) || others) {
         if (!autosaveDeferred) {
             InterlockedIncrement(&PawSavesAutosavesDeferred);
-            log_line("autosave: deferred, another save is %s", autosaveState != AUTOSAVE_IDLE ? "this module's" :
-                     FIELD(const void *, session, SESSION_SAVE_TASK) ? "running in the game" : "queued by another module");
+            log_line("autosave: deferred, %s", autosaveState != AUTOSAVE_IDLE ? "this module's save is still running" :
+                     FIELD(const void *, session, SESSION_SAVE_TASK) ? "a save is running in the game" :
+                     others > 0 ? "another module is saving" : "the other modules' save state cannot be read");
         }
         autosaveDeferred = 1;
         return;
@@ -509,9 +518,9 @@ static void autosave_tick(DWORD now) {
     wcscpy(autosaveName, names[autosaveSlot]);
     _snwprintf(command, 64, L"GameSave \"%ls\"", autosaveName);
     command[63] = 0;
-    InterlockedIncrement(&PawSaveBusy); /* before the command: other modules see it from now on */
+    InterlockedExchange(&PawSaveBusy, 1); /* before the command: other modules see it from now on */
     if (!run_script(command)) {
-        InterlockedDecrement(&PawSaveBusy);
+        InterlockedExchange(&PawSaveBusy, 0);
         return;
     }
     autosaveState = AUTOSAVE_QUEUED;
@@ -648,8 +657,9 @@ static void *adminPointer, *sessionPointer, *netNodePointer, *worldPointer;
 /* a map resource chain for sources_ready(): world -> made -> settings -> source */
 static unsigned char made[0x90], settings[0x60], source[0x90], settings2[0x60];
 static unsigned char __cdecl fake_is_from_resource(void *object) { return object == settings || object == settings2; }
-static int commands;
+static int commands, othersState;
 static wchar_t lastCommand[64];
+static int stub_other_modules(void) { return othersState; }
 static int count_command(const wchar_t *command) { commands++; wcsncpy(lastCommand, command, 63); return 1; }
 static void chain(void) {
     memset(made, 0, sizeof made); memset(settings, 0, sizeof settings); memset(source, 0, sizeof source);
@@ -674,7 +684,7 @@ static void hosting(void) {
     run_script = count_command; commands = 0;
     config.autosaveMinutes = 1;
     autosaveSince = 1000; autosaveState = AUTOSAVE_IDLE; autosaveBlocked = autosaveDeferred = 0; autosaveSlot = 0;
-    PawSaveBusy = 0; otherCount = 0; otherScanned = 62000; /* no module scan in the offline checks */
+    PawSaveBusy = 0; othersState = 0; other_modules = stub_other_modules;
 }
 /* thiscall with two stack arguments; 1 when ESP, EBX, ESI, EDI and EBP are the same afterwards. The values go to static
  * memory: EAX, ECX and EDX belong to the callee. */
@@ -694,7 +704,6 @@ int main(int argc, char **argv) {
     wchar_t out[MAX_PATH];
     unsigned i;
     int depth;
-    volatile LONG otherFlag = 0;
     /* autosave decisions */
     hosting(); check(hosting_match(admin, session, netNode), "hosting with players");
     admin[ADMIN_BACKUP_MODE] = 1; check(!hosting_match(admin, session, netNode), "no autosave in backup mode");
@@ -715,9 +724,12 @@ int main(int argc, char **argv) {
     check(commands == 0 && autosaveDeferred && PawSaveBusy == 0, "native save pending: deferred, nothing queued");
     *(void **)(session + SESSION_SAVE_TASK) = 0; autosave_tick(62050);
     check(commands == 1, "native save ended: the deferred autosave runs");
-    hosting(); otherBusy[0] = &otherFlag; otherCount = 1; otherFlag = 1; autosave_tick(62000);
+    hosting(); othersState = 1; autosave_tick(62000);
     check(commands == 0 && autosaveDeferred, "another module busy (its save queued, task not yet visible): deferred");
-    otherFlag = 0; autosave_tick(62050); check(commands == 1, "the other module idle again: the autosave runs");
+    othersState = 0; autosave_tick(62050); check(commands == 1, "the other module idle again: the autosave runs");
+    hosting(); othersState = -1; autosave_tick(62000);
+    check(commands == 0 && autosaveDeferred, "other modules unreadable or a malformed export: deferred");
+    othersState = 0; autosave_tick(62050); check(commands == 1, "readable again: the autosave runs");
     hosting(); autosave_tick(62000); autosaveSince = 1000; autosave_tick(70000);
     check(commands == 1 && autosaveState == AUTOSAVE_QUEUED && autosaveDeferred,
           "own save queued and due again before its task is visible: deferred, no second save");
@@ -727,6 +739,34 @@ int main(int argc, char **argv) {
     check(commands == 0 && autosaveBlocked && PawSaveBusy == 0, "a match this PC cannot save: no save, said once");
     hosting(); *(int *)(session + SESSION_STATE) = 1; autosaveSince = 5; autosave_tick(62000);
     check(!autosaveSince && commands == 0, "match over: autosave resets");
+    other_modules = read_other_modules;
+    check(read_other_modules() == 0, "the real module list: no other module exports PawSaveBusy here");
+    PawSaveBusy = 1; check(read_other_modules() == 0, "the module's own flag is not another module's");
+    PawSaveBusy = 0;
+    { /* the built DLL next to this test (build.ps1 builds it first): its exported flag, read as another module's */
+        wchar_t path[MAX_PATH], *slash;
+        HMODULE dll;
+        volatile LONG *flag;
+        GetModuleFileNameW(0, path, MAX_PATH);
+        slash = wcsrchr(path, L'\\');
+        if (slash) wcscpy(slash + 1, L"paws_multiplayer_saves.dll");
+        dll = LoadLibraryW(path);
+        flag = dll ? (volatile LONG *)GetProcAddress(dll, "PawSaveBusy") : 0;
+        check(flag && !*flag, "the built DLL exports PawSaveBusy, initially 0");
+        if (flag) {
+            check(busy_export_valid(dll, (const void *)flag), "its export is a valid flag");
+            InterlockedExchange(flag, 1); check(read_other_modules() == 1, "another module's flag set: busy");
+            InterlockedExchange(flag, 0); check(read_other_modules() == 0, "cleared: idle");
+        }
+        if (dll) FreeLibrary(dll);
+    }
+    {
+        static LONG aligned[2];
+        check(busy_export_valid(GetModuleHandleW(0), (const void *)&aligned[0]), "an aligned writable export is valid");
+        check(!busy_export_valid(GetModuleHandleW(0), (const char *)&aligned[0] + 1), "a misaligned export is not");
+        check(!busy_export_valid(GetModuleHandleW(0), (const void *)main), "code is not a writable flag");
+        check(!busy_export_valid(GetModuleHandleW(L"kernel32.dll"), (const void *)&aligned[0]), "an address outside the module is not");
+    }
     /* the source walk */
     chain(); check(sources_ready(&depth) == 0 && depth == 2, "a loaded source: the game's save code can save");
     *(uint32_t *)(source + RES_FLAGS) = 0;

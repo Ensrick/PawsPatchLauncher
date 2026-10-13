@@ -52,17 +52,26 @@ module logs why.
 
 ## Saves never overlap
 
-Autosave queues `GameSave` only while nothing save-related is busy. A busy save defers the autosave to a later tick;
-it does not skip it.
-- **The game:** no save task is pending in the session (`+134`, which the session clears when the task has ended).
+Autosave queues `GameSave` only on the game's main thread, and only while nothing save-related is busy. A busy save
+defers the autosave to a later tick; it does not skip it. Immediately before queueing, it checks:
+- **The game:** the session's save slot (`+134`) is empty. Any task there counts, including a finished one the session
+  has not detached yet.
 - **This module:** no own save is in flight. It counts from the `GameSave` command until its task has appeared in that
   slot and left it again: at most 30 s for the task to appear, 2 minutes in all.
-- **Other modules:** no other loaded module's `PawSaveBusy` is non-zero.
+- **Other modules:** no other loaded module's `PawSaveBusy` is non-zero. A module list that cannot be read, or a
+  malformed export, also defers.
 
-`PawSaveBusy` is the shared contract between Paw modules in one game. A module that queues or writes a save exports
-`volatile LONG PawSaveBusy`, non-zero from just before it queues the save until that save has ended or it gave up.
-This module sets it for each autosave and each copy. It reads the other modules' exports at most once a second. The
-helpers load Paw modules with `LoadLibraryW` and never free them, so the pointers stay valid.
+`PawSaveBusy` is the shared contract between Paw modules in one game:
+- **The flag:** each module that schedules game saves exports an aligned `volatile LONG PawSaveBusy`, initially 0, and
+  writes only its own flag, with `InterlockedExchange`. The flag is 1 from just before the module queues a save until
+  that work has ended or it gave up.
+- **Main thread only:** saves are scheduled only there. The flags coordinate the modules; they are not a lock between
+  threads.
+- **Who writes it here:** only autosave. Save copies are written on clients inside the host's save and schedule
+  nothing.
+- **Reading other modules:** this module lists the loaded modules each time. It holds each one with a reference while
+  looking up and reading its export, and caches nothing. A valid export is a 4-byte aligned, committed, writable
+  location inside the exporting module's image.
 
 The log is `<game>\paws_multiplayer_saves_1372.log`, with save names relative to the game's data folder and no user
 paths.
@@ -76,18 +85,23 @@ game/multiplayer-saves/build.ps1 -OutputDirectory <native> -NativeCompiler <x86-
 Run it before `game/pure-fixes/build_beta.py --native <native>`, which embeds the DLL. It builds the DLL and then runs
 three checks:
 
-- `MultiplayerSavesTests.exe` (`-DPAW_TEST`), 67 offline checks:
+- `MultiplayerSavesTests.exe` (`-DPAW_TEST`), 79 offline checks:
   - autosave decisions, with a command-counting stand-in for the script call:
     - idle: one save;
-    - a native save pending, another module busy, or the module's own save queued: deferred, then run once idle;
+    - a native save pending, another module busy, the other modules unreadable, or the module's own save queued:
+      deferred, then run once idle;
     - a save that never starts: given up after 30 s;
     - a match this PC cannot save;
+  - the shared flag: the built DLL exports `PawSaveBusy` (initially 0, a valid flag), and setting it there makes the
+    module list read busy; the test's own flag is not counted, and misaligned, code or foreign addresses are not
+    valid flags;
   - the source walk on built resource chains;
   - copy names, the lobby checksum and the signature table format;
   - the client save hook called the way the game calls it (thiscall: `ECX` plus stack arguments popped by the
     callee): arguments passed on, stack and saved registers kept.
-  Removing any one of the three deferral conditions makes its check fail.
-- with `-MappedImage` (the hash-pinned 1.3.72 snapshot), 93 checks: all 25 signatures and the call site.
+  Removing any one of the deferral conditions, or deferring only on a busy flag and not on an unreadable list, makes
+  its check fail.
+- with `-MappedImage` (the hash-pinned 1.3.72 snapshot), 105 checks: all 25 signatures and the call site.
 - `MultiplayerSavesInstallerTests.exe`, 11 checks: the configuration block's layout and limits.
 
 ## Known limits
