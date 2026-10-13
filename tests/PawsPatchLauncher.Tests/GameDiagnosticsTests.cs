@@ -33,6 +33,7 @@ internal static class GameDiagnosticsTests
         Add(Path.Combine(locations.Documents, "Kohan2"), "log-7.dmp", 15, "documents dump");
         Add(Path.Combine(locations.Documents, "Kohan2"), "log-7.log", 15, "documents log");
         Add(locations.GameRoot, "paws_graphics_guard.log", 25);
+        Add(locations.GameRoot, "Logs/paws_recovery.log", 25);
         Add(locations.GameRoot, "paws_sync_family_herd_relations_1372_status.txt", 25);
         var syncFolder = Path.Combine(locations.Documents, "Kohan2", "data", "synclogs");
         for (var i = 1; i <= 6; i++) Add(syncFolder, $"synclog_film_{i}.txt", i, "Old replay history");
@@ -76,6 +77,7 @@ internal static class GameDiagnosticsTests
             Check(copied.Any(f => f.Source == Path.Combine(locations.GameRoot, "SAI_log-5.log")), "SAI companion missing");
             Check(copied.All(f => !f.Source.EndsWith("log-1.dmp")), "Old dump should be outside retention");
             Check(copied.Any(f => f.Source.EndsWith("paws_graphics_guard.log")), "Graphics guard status missing");
+            Check(copied.Any(f => f.Source.EndsWith("paws_recovery.log")), "Match recovery log missing");
             Check(copied.Any(f => f.Source == firstDesync), "First network desync capture missing from diagnostics");
             Check(copied.Count(f => f.Category == "sync-logs") == 5, "Native sync log retention changed");
             Check(copied.Any(f => f.Source.Contains("windows-custom-")) || copied.Any(f => f.ArchivePath.Contains("windows-custom-")), "Custom Windows folder ignored");

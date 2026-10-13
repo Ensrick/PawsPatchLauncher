@@ -106,6 +106,22 @@ internal static class PawLobbyCompatibility
     internal static void Prepare(string root) {
         bool russian;string token=InstalledIdentity(root,out russian);
         configuration=new byte[264];BitConverter.GetBytes(0x31434c50u).CopyTo(configuration,0);BitConverter.GetBytes(PawGameText.Language==""?(russian?1u:0u):PawGameText.LanguageId).CopyTo(configuration,4);Encoding.ASCII.GetBytes(token).CopyTo(configuration,8);
+#if PAW_PURE_RECOVERY
+        Array.Resize(ref configuration,1312);
+        string documents=Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        // Explicit private-profile support for our isolated regression fixture.
+        // A normal installed game has no test marker and always uses Documents.
+        string testDocuments=Environment.GetEnvironmentVariable("PAWS_TEST_DOCUMENTS");
+        if(File.Exists(Path.Combine(root,"reconnect-test.marker"))&&!String.IsNullOrEmpty(testDocuments))documents=Path.GetFullPath(testDocuments);
+        string data=Path.Combine(documents,"Kohan2","data");
+        string log=Path.Combine(root,"Logs","paws_recovery.log");
+        if(data.Length>=130||log.Length>=260)throw new InvalidDataException("Game or Documents path is too long for match recovery.");
+        Directory.CreateDirectory(Path.Combine(data,"Save"));Directory.CreateDirectory(Path.GetDirectoryName(log));
+        Encoding.Unicode.GetBytes(data+"\0").CopyTo(configuration,272);
+        Encoding.Unicode.GetBytes(log+"\0").CopyTo(configuration,792);
+        // Keep native lag voting manual in the public beta; recovery itself is automatic.
+        BitConverter.GetBytes(0u).CopyTo(configuration,268);
+#endif
         byte[] payload;
         using(var s=Assembly.GetExecutingAssembly().GetManifestResourceStream("PawLobbyCompatibilityNative")) {
             if(s==null||s.Length<1024||s.Length>1024*1024)throw new InvalidDataException("Missing lobby compatibility resource.");
@@ -125,9 +141,20 @@ internal static class PawLobbyCompatibility
     }
     internal static void Install(Process game,IntPtr image,Action<string> log) {
         if(configuration==null||nativePath==null)throw new InvalidOperationException("Compatibility check was not prepared.");
+#if PAW_PURE_RECOVERY
+        uint process;uint thread=GetWindowThreadProcessId(game.MainWindowHandle,out process);
+        if(thread==0||process!=(uint)game.Id)throw new IOException("Cannot verify the game main thread for recovery.");
+        BitConverter.GetBytes(thread).CopyTo(configuration,264);
+#endif
         using(var native=new Installer(game,image))native.Install(nativePath,configuration);
         log("LOBBY_COMPATIBILITY_READY protocol=1 patch="+Version+" nativeCalls=7 browserLabel=Paws-Launcher identity="+Encoding.ASCII.GetString(configuration,8,256).TrimEnd('\0'));
+#if PAW_PURE_RECOVERY
+        log("MATCH_RECOVERY_READY revision=2 mode=save-lobby hostLoss=manual-save nativeTransfer=R2 autoVote=false");
+#endif
     }
+#if PAW_PURE_RECOVERY
+    [DllImport("user32.dll")]private static extern uint GetWindowThreadProcessId(IntPtr window,out uint process);
+#endif
 
     private sealed class Installer:IDisposable {
         private IntPtr handle;private readonly Process game;private readonly uint image;private readonly DateTime started;

@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.Json;
 
 TestProcessErrorMode.Enable();
+if(args.Length==3&&args[0]=="--verify-installed-rwd") {await CustomRwdModTests.VerifyInstalledAsync(args[1],args[2]);return;}
+if(args.Length==5&&args[0]=="--stage-custom-rwd") {await CustomRwdModTests.StageAsync(args[1],args[2],args[3],args[4]=="on");return;}
 if(args.Length==4&&args[0]=="--verify-pure-030") {await Pure030Tests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==1&&args[0]=="--game-user-settings") {GameUserSettingsTests.Run();return;}
 if(args.Length==4&&args[0]=="--verify-september20") {await September20Tests.RunAsync(args[1],args[2],args[3]);return;}
@@ -211,6 +213,7 @@ try
     passed += await WindowsClipboardTests.RunAsync();
     passed += DiagnosticArchiveHistoryTests.Run(root);
     passed += RwdArchiveTests.Run(root);
+    passed += await CustomRwdModTests.RunAsync(root);
     passed += await GameDiagnosticsTests.RunAsync(root);
     passed += await LauncherEvolutionTests.RunAsync(root);
     passed += ChannelPresentationTests.Run();

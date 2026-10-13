@@ -25,6 +25,13 @@ public sealed class LastWorkingConfiguration
 
 public static class ActivityStore
 {
+    public static bool IsCustomModsTest { get; } = CustomModsTestMarker();
+    private static bool CustomModsTestMarker()
+    {
+        try { return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "launcher.test-mode")).Trim() == "custom-rwd"; }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+    }
     public static bool IsCommunityTest { get; } =
 #if COMMUNITY_CHAT_TEST
         true;

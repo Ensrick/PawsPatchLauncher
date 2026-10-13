@@ -1440,7 +1440,7 @@
             </Border>
             <Border x:Name="GameSettingsOverlay" Grid.RowSpan="2" Panel.ZIndex="800" Background="#D907101F" Visibility="Collapsed"
                     WindowChrome.IsHitTestVisibleInChrome="True" PreviewMouseDown="GameSettings_MouseDown" PreviewKeyDown="GameSettings_KeyDown">
-                <Border x:Name="GameSettingsCard" MaxWidth="610" MaxHeight="740" Margin="24" Padding="24" CornerRadius="14" Background="#11243B"
+                <Border x:Name="GameSettingsCard" MaxWidth="710" MaxHeight="740" Margin="24" Padding="24" CornerRadius="14" Background="#11243B"
                         BorderBrush="#536F8E" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"
                         KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle">
                     <Grid>
@@ -1449,15 +1449,30 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                             <StackPanel Margin="0,0,18,0">
                                 <TextBlock x:Name="GameSettingsTitle" FontSize="23" FontWeight="Bold"/>
-                                <TextBlock x:Name="GameSettingsHint" Style="{StaticResource CardDescription}" Margin="0,7,0,0"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                                    <RadioButton x:Name="GameOptionsTab" GroupName="GameSettingsPages" Style="{StaticResource ModeRadio}" IsChecked="True" Padding="12,7" Margin="0,0,8,0" Checked="GameSettingsTab_Checked"/>
+                                    <RadioButton x:Name="CustomModsTab" GroupName="GameSettingsPages" Style="{StaticResource ModeRadio}" Padding="12,7" Checked="GameSettingsTab_Checked"/>
+                                </StackPanel>
+                                <TextBlock x:Name="GameSettingsHint" Style="{StaticResource CardDescription}" Margin="0,12,0,0"/>
                             </StackPanel>
                             <Button x:Name="GameSettingsClose" Grid.Column="1" Style="{StaticResource GhostButton}" Width="32" Height="32" Padding="8" VerticalAlignment="Top" Click="GameSettingsCancel_Click">
                                 <local:LauncherIcon Kind="Close" Width="14" Height="14"/>
                             </Button>
                         </Grid>
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0">
+                        <ScrollViewer x:Name="GameSettingsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0">
                             <StackPanel x:Name="GameSettingsBody"/>
                         </ScrollViewer>
+                        <Grid x:Name="CustomModsPanel" Grid.Row="1" Visibility="Collapsed" MinHeight="300">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="CustomModsGameLabel" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource GoldBrightBrush}" FontWeight="SemiBold"/>
+                                <Button x:Name="CustomModsAdd" Grid.Column="1" Style="{StaticResource GhostButton}" Padding="12,7" Click="CustomModsAdd_Click"/>
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+                                <StackPanel x:Name="CustomModsBody"/>
+                            </ScrollViewer>
+                        </Grid>
                         <StackPanel Grid.Row="2" Margin="0,12,0,0">
                             <TextBlock x:Name="GameSettingsStatus" Style="{StaticResource CardDescription}" Foreground="#F4C877" Margin="0,0,0,10"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

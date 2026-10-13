@@ -111,6 +111,7 @@ public static class GameDiagnosticFiles
                         else if (name.StartsWith("synclog", StringComparison.OrdinalIgnoreCase) && name.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
                             Add(path, sourceRoot, label, "sync-logs", path);
                         else if (name.Equals("paws_graphics_guard.log", StringComparison.OrdinalIgnoreCase)
+                            || name.Equals("paws_recovery.log", StringComparison.OrdinalIgnoreCase)
                             || name.StartsWith("paws_", StringComparison.OrdinalIgnoreCase) && name.EndsWith("status.txt", StringComparison.OrdinalIgnoreCase))
                             Add(path, sourceRoot, label, "status:" + name.ToLowerInvariant(), path);
                     }

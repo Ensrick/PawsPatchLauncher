@@ -184,6 +184,7 @@ public sealed class ModuleFile
 
 public sealed class InstallState
 {
+    public Dictionary<string, List<CustomRwdMod>> CustomMods { get; set; } = new(StringComparer.Ordinal);
     public int SchemaVersion { get; set; } = 1;
     public Dictionary<string, InstalledModule> Modules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, OriginalFile> Originals { get; set; } = new(StringComparer.OrdinalIgnoreCase);

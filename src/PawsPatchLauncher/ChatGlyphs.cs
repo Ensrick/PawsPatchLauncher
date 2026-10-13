@@ -37,7 +37,9 @@ public static class ChatGlyphs
     {
         if (!Images.TryGetValue(glyph.Id, out var bitmap))
         {
-            bitmap = new BitmapImage(new Uri("pack://application:,,,/PawsPatchLauncher;component/Assets/ChatGlyphs/" + glyph.Id + ".png"));
+            // Local test builds have a different assembly name; resolve resources from their owner.
+            var assemblyName = typeof(ChatGlyphs).Assembly.GetName().Name;
+            bitmap = new BitmapImage(new Uri($"pack://application:,,,/{assemblyName};component/Assets/ChatGlyphs/{glyph.Id}.png"));
             bitmap.Freeze(); Images[glyph.Id] = bitmap;
         }
         var label = UiLanguages.Text(language,glyph.Ru,glyph.En);

@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "0.9.3",
+  "publishedAt": "2026-10-13",
+  "title": {
+    "ru": "Paw’s Launcher 0.9.3",
+    "en": "Paw’s Launcher 0.9.3",
+    "de": "Paw’s Launcher 0.9.3",
+    "fr": "Paw’s Launcher 0.9.3",
+    "cs": "Paw’s Launcher 0.9.3",
+    "uk": "Paw’s Launcher 0.9.3"
+  },
+  "body": {
+    "ru": "- Пользовательские RWD-моды: добавление, включение, отключение и порядок загрузки через настройки игры.\n- Отдельные списки модов для Vanilla, Immortals и Arcane Wars.\n- Исправлена повторяющаяся ошибка после отмены выбора RWD-файла.\n- Поддержка восстановления матча в бете Vanilla и Immortals.",
+    "en": "- Add, enable, disable and reorder custom RWD mods from game settings.\n- Separate mod lists for Vanilla, Immortals and Arcane Wars.\n- Fixed a repeated error after cancelling the RWD file picker.\n- Support for match recovery in the Vanilla and Immortals beta.",
+    "de": "- Eigene RWD-Mods in den Spieleinstellungen hinzufügen, aktivieren, deaktivieren und ihre Ladereihenfolge ändern.\n- Separate Modlisten für Vanilla, Immortals und Arcane Wars.\n- Wiederholten Fehler nach Abbrechen der RWD-Dateiauswahl behoben.\n- Unterstützung der Spielwiederherstellung in der Beta für Vanilla und Immortals.",
+    "fr": "- Ajout, activation, désactivation et ordre de chargement des mods RWD personnalisés dans les paramètres du jeu.\n- Listes de mods distinctes pour Vanilla, Immortals et Arcane Wars.\n- Correction d’une erreur répétée après l’annulation du choix d’un fichier RWD.\n- Prise en charge de la reprise des parties dans la bêta de Vanilla et Immortals.",
+    "cs": "- Přidávání, zapínání, vypínání a pořadí načítání vlastních RWD modů v nastavení hry.\n- Samostatné seznamy modů pro Vanilla, Immortals a Arcane Wars.\n- Opravena opakovaná chyba po zrušení výběru RWD souboru.\n- Podpora obnovení zápasu v betě Vanilla a Immortals.",
+    "uk": "- Власні RWD-моди: додавання, увімкнення, вимкнення та порядок завантаження в налаштуваннях гри.\n- Окремі списки модів для Vanilla, Immortals та Arcane Wars.\n- Виправлена повторювана помилка після скасування вибору RWD-файлу.\n- Підтримка відновлення матчу в беті Vanilla та Immortals."
+  }
+}

@@ -116,13 +116,17 @@ public sealed class ModuleInstaller
 
     public async Task ReconcileAsync(IReadOnlyDictionary<string, InstalledModule> desired, CancellationToken cancellationToken = default,
         UserSettings? settings = null, string? releaseId = null, bool resetOriginals = false, bool preserveVanillaBootstrap = false,
-        GameRequirement? gameRequirement = null, string? baseGameSha256 = null)
+        GameRequirement? gameRequirement = null, string? baseGameSha256 = null,
+        Dictionary<string, List<CustomRwdMod>>? customMods = null, string? expectedState = null, Action? ensureGameClosed = null)
     {
         if (resetOriginals && desired.Count != 0) throw new InvalidOperationException("Originals can only be reset during uninstall.");
         Directory.CreateDirectory(_controlRoot);
         var recovery = new PatchRecovery(_gameRoot);
         await recovery.RecoverInterruptedAsync();
         var state = LoadState();
+        if (expectedState is not null && JsonSerializer.Serialize(state, LauncherJsonContext.Default.InstallState) != expectedState)
+            throw new IOException("The installation changed. Reopen game settings and try again.");
+        CustomRwdMods.Validate(state.CustomMods);
         if (settings?.DataOnly == true)
         {
             GameCompatibilityPolicy.ValidateDataModules(desired.Values);
@@ -130,6 +134,9 @@ public sealed class ModuleInstaller
                 throw new InvalidDataException("Restore the original game executable before applying file-only components.");
         }
         var previous = JsonSerializer.Deserialize(JsonSerializer.Serialize(state, LauncherJsonContext.Default.InstallState), LauncherJsonContext.Default.InstallState)!;
+        state.CustomMods = CustomRwdMods.Copy(customMods ?? state.CustomMods);
+        desired = await new CustomRwdMods(_gameRoot).ComposeAsync(desired, previous, state.CustomMods,
+            resetOriginals ? null : settings?.Mod, cancellationToken);
         var winners = new Dictionary<string, (string Id, InstalledModule Module, ModuleFile? File)>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in desired.Where(x => x.Value.Enabled).OrderBy(x => x.Value.Priority).ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
         {
@@ -175,19 +182,27 @@ public sealed class ModuleInstaller
             await PreserveSteamOriginalsAsync(state, allPaths, desired, cancellationToken);
         if (preserveVanillaBootstrap) await PreserveVanillaBootstrapAsync(state, cancellationToken);
         var changes = new List<string>();
+        var customPaths = previous.Modules.GetValueOrDefault(CustomRwdMods.ModuleId)?.Files.Select(f => CryptoAndIO.NormalizeRelativePath(f.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+        customPaths.UnionWith(desired.GetValueOrDefault(CustomRwdMods.ModuleId)?.Files.Select(f => CryptoAndIO.NormalizeRelativePath(f.Path)) ?? []);
         foreach (var relative in allPaths)
         {
             var target = PatchRecovery.GamePath(_gameRoot, relative);
+            if (customMods is not null && File.Exists(target) && MultiplayerCheck.IsHotkeyFile(relative)) continue;
             var expected = winners.TryGetValue(relative, out var winner) ? winner.File?.Sha256 : state.Originals.GetValueOrDefault(relative)?.Sha256;
             if (!File.Exists(target) ? expected is not null : expected is null || !(await CryptoAndIO.Sha256Async(target, cancellationToken)).Equals(expected, StringComparison.OrdinalIgnoreCase))
+            {
+                if (customMods is not null && !customPaths.Contains(relative)) throw new IOException("Repair the game files before applying custom mods: " + relative);
                 changes.Add(relative);
+            }
         }
+        ensureGameClosed?.Invoke();
         var snapshot = await recovery.CaptureAsync(changes, previous, ct: cancellationToken);
         try
         {
             foreach (var relative in changes)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                ensureGameClosed?.Invoke();
                 var target = PatchRecovery.GamePath(_gameRoot, relative);
 
                 if (winners.TryGetValue(relative, out var winner))
@@ -233,7 +248,7 @@ public sealed class ModuleInstaller
             state.BaseGameSha256 = baseGameSha256;
             if (resetOriginals) state.Originals.Clear(); // A later fresh install must capture its new baseline.
             await CryptoAndIO.AtomicWriteTextAsync(_statePath, JsonSerializer.Serialize(state, LauncherJsonContext.Default.InstallState), cancellationToken);
-            var errors = await VerifyAsync(cancellationToken);
+            var errors = await VerifyAsync(cancellationToken, allowCustomHotkeys: customMods is not null);
             if (errors.Count > 0) throw new IOException("Installation verification failed: " + string.Join("; ", errors.Take(5)));
             await recovery.CommitAsync(snapshot.Directory, snapshot.Journal);
         }
@@ -346,7 +361,7 @@ public sealed class ModuleInstaller
         state.Originals[relative] = new OriginalFile { Existed = true, Sha256 = file.Sha256, BackupRelativePath = backupName };
     }
 
-    public async Task<IReadOnlyList<string>> VerifyAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<string>> VerifyAsync(CancellationToken cancellationToken = default, bool allowCustomHotkeys = false)
     {
         var state = LoadState();
         var errors = new List<string>();
@@ -362,7 +377,10 @@ public sealed class ModuleInstaller
             }
             if (!File.Exists(target)) { errors.Add($"Missing: {relative}"); continue; }
             var actual = await CryptoAndIO.Sha256Async(target, cancellationToken);
-            if (!actual.Equals(expected.Sha256, StringComparison.OrdinalIgnoreCase)) errors.Add($"Changed: {relative}");
+            // Installation/rollback validation stays byte-exact. Readiness and
+            // launch may accept an existing, deliberately remapped input script.
+            if (!actual.Equals(expected.Sha256, StringComparison.OrdinalIgnoreCase)
+                && !(allowCustomHotkeys && MultiplayerCheck.IsHotkeyFile(relative))) errors.Add($"Changed: {relative}");
         }
         return errors;
     }

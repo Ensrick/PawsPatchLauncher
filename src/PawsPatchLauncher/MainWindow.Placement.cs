@@ -8,6 +8,7 @@ public partial class MainWindow
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        if (_customModsBusy) { e.Cancel = true; return; }
         base.OnClosing(e); // All busy/modal/external cancellation handlers must run first.
         if (!e.Cancel) _windowPlacement?.SaveOnAcceptedClose();
     }

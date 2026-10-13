@@ -29,7 +29,7 @@ public static class UpdateDetector
     public static bool HasModuleChanges(InstallState state, IReadOnlyCollection<PackageRelease> selected)
     {
         var desiredIds = selected.Select(package => package.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (state.Modules.Keys.Any(id => !desiredIds.Contains(id))) return true;
+        if (state.Modules.Keys.Any(id => id != CustomRwdMods.ModuleId && !desiredIds.Contains(id))) return true;
 
         foreach (var package in selected)
         {

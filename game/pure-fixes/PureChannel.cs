@@ -7,7 +7,9 @@ namespace PawPureFixes
     // The shared R2 source supplies the exact same native code as Arcane Wars.
     internal static class PureChannel
     {
-#if PAW_PURE_EXTENDED
+#if PAW_PURE_RECOVERY
+        internal const string Channel = "beta", Version = "1.3.72-pure.15-beta.1", PatchVersion = "0.4.1-beta.1";
+#elif PAW_PURE_EXTENDED
         internal const string Channel = "stable", Version = "1.3.72-pure.14", PatchVersion = "0.4.0";
 #else
         internal const string Channel = "stable", Version = "1.3.72-pure.11", PatchVersion = "0.3.0";
@@ -41,6 +43,9 @@ namespace PawPureFixes
                     .Replace("{", "{\"channel\":\"" + Channel + "\",\"patchVersion\":\"" + PatchVersion + "\",\"nativeTransferRevision\":\"" + (FastTransfer ? "R2" : "stock") + "\",");
 #if PAW_PURE_EXTENDED
                 result = PureBetaRuntime.Describe(result);
+#endif
+#if PAW_PURE_RECOVERY
+                result = result.TrimEnd('}') + ",\"matchRecoveryRevision\":2,\"matchRecoveryMode\":\"save-lobby\",\"automaticDropVoting\":false}";
 #endif
                 return result;
             }

@@ -30,13 +30,25 @@ public static class MultiplayerCheck
         {
             var name = Path.GetFileName(pair.Key);
             if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && !name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
-                && !name.EndsWith(".ini", StringComparison.OrdinalIgnoreCase) && !pair.Key.StartsWith("startup\\", StringComparison.OrdinalIgnoreCase)) continue;
+                && !name.EndsWith(".ini", StringComparison.OrdinalIgnoreCase) && !pair.Key.StartsWith("startup\\", StringComparison.OrdinalIgnoreCase) && !pair.Key.StartsWith("PawsCustom\\", StringComparison.OrdinalIgnoreCase)) continue;
             var path = PatchRecovery.GamePath(game, pair.Key);
             if (pair.Value is null) { if (File.Exists(path)) errors.Add("Should be removed: " + pair.Key); continue; }
             if (!File.Exists(path)) errors.Add("Missing: " + pair.Key);
             else if (!string.Equals(await CryptoAndIO.Sha256Async(path), pair.Value.Sha256, StringComparison.OrdinalIgnoreCase)) errors.Add("Changed: " + pair.Key);
         }
         return errors;
+    }
+
+    public static bool IsHotkeyFile(string relative)
+    {
+        var path = CryptoAndIO.NormalizeRelativePath(relative);
+        var parts = path.Split('\\');
+        if (parts.Length != 4 || !parts[1].Equals("Localization", StringComparison.OrdinalIgnoreCase)
+            || !parts[2].Equals("Hotkeys", StringComparison.OrdinalIgnoreCase)
+            || !parts[3].EndsWith(".txt", StringComparison.OrdinalIgnoreCase)) return false;
+        return parts[0].Equals("data", StringComparison.OrdinalIgnoreCase)
+            || GameLanguages.Choices.Any(code => parts[0].Equals("Local_" + code, StringComparison.OrdinalIgnoreCase)
+                || parts[0].Equals("Local_base_" + code, StringComparison.OrdinalIgnoreCase));
     }
 
     public static async Task<ReadinessReport> CreateAsync(string game, InstallState state, UserSettings settings, string executable, string build, CancellationToken ct = default)

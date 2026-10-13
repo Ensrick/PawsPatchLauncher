@@ -68,6 +68,7 @@ public static class Program
         var launcherUpdateChecks = args.Contains("--launcher-update-checks");
         var componentSettingsChecks = args.Contains("--component-settings-checks");
         var gameSettingsChecks = args.Contains("--game-settings-checks");
+        var customModsChecks = args.Contains("--custom-mods-checks");
         var helpCreditChecks = args.Contains("--help-credit-checks");
         var accountChecks = args.Contains("--account-checks");
         var socialChecks = args.Contains("--social-checks");
@@ -211,6 +212,7 @@ public static class Program
         if (launcherUpdateChecks) LauncherUpdateChecks.Run();
         if (componentSettingsChecks) ComponentSettingsChecks.Run(language);
         if (gameSettingsChecks) { GameSettingsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
+        if (customModsChecks) { CustomModsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (helpCreditChecks) HelpCreditChecks.Run(language);
         if (accountChecks) AccountChecks.Run(language);
         if (languageReliabilityConfig is not null) { LanguageReliabilityChecks.Run(languageReliabilityConfig, language); app.Shutdown(); return; }

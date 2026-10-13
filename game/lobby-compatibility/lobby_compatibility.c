@@ -17,7 +17,14 @@ typedef void (__attribute__((fastcall)) *Release)(void*,void*);
 typedef void (__cdecl *ReasonWrite)(void*,int);
 typedef void (__cdecl *ReasonRead)(void*,int*);
 typedef void (__cdecl *Bits)(void*,void*,int);
-typedef struct { uint32_t magic; int language; char token[TOKEN_MAX]; } Config;
+#ifdef PAW_RECOVERY_INTEGRATED
+#include "../reconnect-test/integrated.h"
+#endif
+typedef struct { uint32_t magic; int language; char token[TOKEN_MAX];
+#ifdef PAW_RECOVERY_INTEGRATED
+    PawRecoveryConfig recovery;
+#endif
+} Config;
 static uintptr_t image;
 static Config local;
 static wchar_t localWide[TOKEN_MAX], remoteWide[TOKEN_MAX];
@@ -216,6 +223,10 @@ __declspec(dllexport) DWORD WINAPI PawInstall(void *raw) {
         }
         PawLobbyInstallStatus=-1;return 40;
     }
+#ifdef PAW_RECOVERY_INTEGRATED
+    DWORD recoveryResult=PawRecoveryInstall(&cfg->recovery,image);
+    if(recoveryResult){PawLobbyInstallStatus=-1;return recoveryResult;}
+#endif
     PawLobbyInstallStatus=1; return 0;
 }
 BOOL WINAPI DllMain(HINSTANCE instance,DWORD reason,LPVOID unused) {return TRUE;}

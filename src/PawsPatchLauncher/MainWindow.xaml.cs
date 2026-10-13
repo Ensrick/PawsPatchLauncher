@@ -149,6 +149,7 @@ public partial class MainWindow : Window
             SubtitleText.Text = T("Тестовая сборка · локальные обновления", "Test build · local updates");
             Title = "Paw's Launcher — Local test";
             if (ActivityStore.IsCommunityTest) SubtitleText.Text = T("Тестовая сборка · общий чат RU / EN", "Test build · RU / EN community chat");
+            if (ActivityStore.IsCustomModsTest) SubtitleText.Text = T("Тестовая сборка · пользовательские моды", "Test build · custom mods");
         }
         HomeNav.Content = _text["nav.home"];
         ModulesNav.Content = _text["nav.modules"];
@@ -438,7 +439,7 @@ public partial class MainWindow : Window
     private void RefreshAvailableUpdates(InstallState? state)
     {
         var launcher = _launcherUpdates.Latest;
-        _pendingLauncherUpdate = !ActivityStore.IsCommunityTest && launcher is not null && SelfUpdater.IsNewer(launcher.Version) && launcher.Urls.Count > 0 && !SelfUpdater.IsBlocked(launcher.Sha256)
+        _pendingLauncherUpdate = !ActivityStore.IsCommunityTest && !ActivityStore.IsCustomModsTest && launcher is not null && SelfUpdater.IsNewer(launcher.Version) && launcher.Urls.Count > 0 && !SelfUpdater.IsBlocked(launcher.Sha256)
             ? launcher
             : null;
         LauncherUpdateButton.Visibility = _pendingLauncherUpdate is null ? Visibility.Collapsed : Visibility.Visible;
@@ -587,7 +588,7 @@ public partial class MainWindow : Window
         try
         {
             SetBusy(true, _text["button.repair"] + "…");
-            var errors = await new ModuleInstaller(_game.Directory).VerifyAsync();
+            var errors = await new ModuleInstaller(_game.Directory).VerifyAsync(allowCustomHotkeys: true);
             _fileCheckFailed = errors.Count > 0;
             ShowResult(() => errors.Count == 0 ? T("Проверка файлов завершена. Ошибок нет.", "File check complete. No errors found.") : string.Join(Environment.NewLine, errors.Take(5)), failure: errors.Count > 0);
         }
@@ -615,7 +616,7 @@ public partial class MainWindow : Window
                 var vanilla = Path.Combine(_game.Directory, "k2.exe");
                 var vanillaInstaller = new ModuleInstaller(_game.Directory);
                 var check = (await MultiplayerCheck.CriticalAsync(_game.Directory, vanillaInstaller.LoadState(), vanilla, new GameRequirement()))
-                    .Concat(await vanillaInstaller.VerifyAsync()).ToList();
+                    .Concat(await vanillaInstaller.VerifyAsync(allowCustomHotkeys: true)).ToList();
                 if (check.Count != 0) throw new IOException(string.Join("; ", check));
                 EnsureGameClosed();
                 await GameLobbyPreferences.PrepareForLaunchAsync(_game.Directory, vanillaInstaller.LoadState().AppliedSettings ?? GetEffectiveSettings());
@@ -650,7 +651,7 @@ public partial class MainWindow : Window
             SetBusy(true, T("Проверяю критические файлы…", "Checking critical files…"));
             var critical = await MultiplayerCheck.CriticalAsync(_game.Directory, installer.LoadState(), executable, !CompatibilityRelevant || DataOnlyMode ? new GameRequirement() : GameMod.Requirement(channel, _settings.Mod));
             if (!GameMod.IsArcaneWars(_settings) || !_settings.PawPatchEnabled || DataOnlyMode)
-                critical = critical.Concat(await installer.VerifyAsync()).ToList();
+                critical = critical.Concat(await installer.VerifyAsync(allowCustomHotkeys: true)).ToList();
             _fileCheckFailed = critical.Count > 0;
             if (_fileCheckFailed) throw new IOException(T("Запуск остановлен: ", "Launch stopped: ") + string.Join("; ", critical.Take(5)));
             if (!DataOnlyMode && GameExecutableSelector.HasMenuRuntime(channel) && Path.GetFileName(executable) != "k2.exe")
@@ -737,7 +738,7 @@ public partial class MainWindow : Window
 
     private async Task<bool> InstallPendingLauncherUpdateAsync(bool showErrors)
     {
-        if (ActivityStore.IsCommunityTest) return false;
+        if (ActivityStore.IsCommunityTest || ActivityStore.IsCustomModsTest) return false;
         var release = _pendingLauncherUpdate;
         if (release is null || _busy || ConfirmationActive) return false;
         try

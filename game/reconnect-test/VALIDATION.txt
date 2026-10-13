@@ -1,0 +1,78 @@
+Local recovery experiment r2 / 2026-10-13
+
+Scope
+- Private Vanilla / Immortals 2.1 kit for Kohan II 1.3.72.
+- Save-and-lobby recovery based on Ensrick v0.1.0-beta.12 (MIT), with
+  independently checked 1.3.72 corrections from his later research notes.
+- Not seamless in-progress hot join. No public release or feed changes.
+- Main game installation was read only; profiles and game files are separate.
+
+Completed
+- Native C build: 122 checks passed, including x86 hook calling conventions,
+  separate backup/disconnecting fields, original-host tracking, bounded voting,
+  exit-intent expiry, transfer pacing and actual null-player x86 guard execution.
+- Runtime: 29 exact machine-code guards passed at multiple ASLR addresses.
+- Launcher and PC/VM test harness C# x86 builds: warnings as errors, passed.
+- Vanilla silent-drop test: suspended the owned client while its socket stayed
+  open. After 20 seconds of native backup/connection loss, one native vote
+  disconnected it. Host saved successfully, waited for file closure, returned
+  to the lobby and selected the save. Restarted client downloaded it and both
+  loaded the saved match. Both remained running for the 15-second final check.
+  Matching save SHA256:
+  ae7c12d11f847c654a55572eb4f6b2ff2e5dd6e69be49696076bb3b387967b9c.
+- Vanilla host-loss test: terminated the original host. The elected client
+  retained original_host=0, saved and paused with replacement_host=1 and
+  HOST_LOST. It did not automatically return to a lobby as the original host.
+  This validates the save fallback, not host migration/rejoin.
+- Immortals 2.1 forced-client-exit test: host saved and selected the save;
+  restarted client downloaded it and both re-entered the saved match.
+  Both remained running for the 15-second final check. Matching save SHA256:
+  5b018a5d3dbab57603c38376cdfe441b8ffbecb2918398187ba6b9a450c8ef32.
+- No out-of-sync/assertion failure found in those short session logs.
+- VM installer verified 238 game files and updated the desktop shortcut.
+- VM Vanilla reached the 1.3.72 main menu with READY r2, guest PID 5332;
+  normal menu Quit completed with exit 0.
+
+PC-to-VM reconnect test
+- PASS: physical PC host and VirtualBox NAT client, both Vanilla 1.3.72.
+  Joined at 11:06:09, terminated guest client at 11:06:20. After one timeout
+  vote the host completed the save at 11:06:43 and selected it at 11:06:44.
+  Restarted guest downloaded it; both re-entered the saved match at 11:09:29.
+  Both processes remained running for 20 seconds; no native out-of-sync,
+  assertion or unhandled-exception markers were found. Test ended cleanly.
+  Transferred save: 220964 bytes, identical SHA256:
+  69bb53ecb59ba8535ed9bc80a775abcb42207fa89c3ac54ae47b5b2c844c168d.
+- Windows displayed a guest firewall permission prompt. It was not accepted
+  or needed for this outgoing NAT-client connection. No firewall rules changed.
+
+Interpretation and limits
+- Backup mode (admin+2f4) is a simulation stall; disconnecting is admin+2ed.
+  Neither alone identifies a replacement host. Original role is remembered
+  when entering each match.
+- Automatic timeout voting is optional, off by default, starts after 20 seconds,
+  and is limited to three attempts with 30-second spacing.
+- The native in-menu exit in 1.3.72 may have the same leave reason as a crash
+  without sending ClientDisconnectRequest. It may therefore start recovery.
+  Explicit received requests and reason 11 kicks are still excluded.
+- Only the existing, precisely verified null-player guard is applied; this
+  experiment does not skip assertions or suppress graphics/driver failures.
+- Earlier failed attempts (startup delay, Steam relaunch during startup and
+  a premature scripted host launch) are not counted as successful tests.
+- The recorded runs used an upstream command example that displayed lobby
+  capacity 5860, although only two peers joined. Inspection of the 1.3.72
+  command at RVA 13f84f and the VM lobby revealed the first numeric argument
+  is capacity. The scripts now pass 2 there; native plugin/launcher unchanged.
+  This script-only correction was compiled but not replayed end-to-end.
+
+Still requires multiplayer acceptance
+- Remote-player recovery over the Internet/Steam, different network conditions.
+- Simultaneous drops, repeated long sessions, large saves and more than two peers.
+- Explicit original-player identity/slot reclamation, observers and replay checks.
+- State checksum comparisons at matching simulation ticks after resuming.
+  Identical transferred saves and clean short logs are not proof of long-term sync.
+- Seamless joining into an active simulation and automatic host migration.
+
+Evidence: outputs/reconnect-r2-20261013/evidence/ under the project root.
+Private main kit: D:/PawsReconnectTest-r2
+Guest kit: C:/Users/Paw/AppData/Local/PawsReconnectTest-r2
+Shared installer: D:/Virtual Machines/Kohan Test/Shared/PawsReconnectTest-r2
