@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "0.4.1",
+  "version": "0.4.2-beta.1",
   "entries": [
     {
       "id": "company-position-recovery",
@@ -29,10 +29,10 @@
     {
       "id": "minimap-frames",
       "category": "always",
-      "titleRu": "Рамки миникарты",
-      "titleEn": "Minimap frames",
-      "bodyRu": "Обновлённые рамки всех шести рас заполняют чёрные промежутки вокруг миникарты. Готовые файлы рассчитаны на 16:9, включая Full HD и 2560×1440. Положение карты и кнопок сохранено; автоматического выбора по разрешению нет.",
-      "bodyEn": "Updated frames for all six races fill the black gutters around the minimap. The supplied files fit 16:9, including Full HD and 2560×1440. Map and button positions are preserved; there is no automatic resolution selection."
+      "titleRu": "Пропорции интерфейса",
+      "titleEn": "Interface proportions",
+      "bodyRu": "Paw’s Patch сохраняет пропорции игрового интерфейса на широком экране. Используются оригинальные рамки миникарты; отдельное включение не требуется.",
+      "bodyEn": "Paw’s Patch preserves the proportions of the in-game interface on widescreen displays. It uses the original minimap frames and requires no separate switch."
     },
     {
       "id": "lobby-compatibility",
