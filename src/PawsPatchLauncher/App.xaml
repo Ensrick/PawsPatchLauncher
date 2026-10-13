@@ -24,6 +24,8 @@
         <SolidColorBrush x:Key="PanelHoverBrush" Color="{StaticResource PanelHover}"/>
         <SolidColorBrush x:Key="GoldBrush" Color="{StaticResource Gold}"/>
         <SolidColorBrush x:Key="GoldBrightBrush" Color="{StaticResource GoldBright}"/>
+        <!-- LauncherIcon colour unless an icon sets its own Foreground or sits on a gold button (UseAccent False). -->
+        <SolidColorBrush x:Key="LauncherIconAccentBrush" Color="{StaticResource GoldBright}"/>
         <SolidColorBrush x:Key="TextMainBrush" Color="{StaticResource TextMain}"/>
         <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}"/>
         <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}"/>
@@ -92,6 +94,7 @@
         <Style x:Key="GoldButton" TargetType="Button">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="Foreground" Value="#151009"/>
+            <Setter Property="local:LauncherIcon.UseAccent" Value="False"/>
             <Setter Property="Background" Value="{StaticResource GoldBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource GoldBrightBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -127,6 +130,7 @@
                                 <Setter TargetName="Border" Property="local:Motion.Background" Value="#2B3544"/>
                                 <Setter TargetName="Border" Property="local:Motion.BorderBrush" Value="#4B5A6E"/>
                                 <Setter Property="Foreground" Value="#8794A7"/>
+                                <Setter Property="local:LauncherIcon.UseAccent" Value="False"/>
                                 <Setter Property="Cursor" Value="Arrow"/>
                             </Trigger>
                             <Trigger Property="local:ClipboardButton.IsCopySuccessful" Value="True">
@@ -143,6 +147,7 @@
 
         <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource GoldButton}">
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+            <Setter Property="local:LauncherIcon.UseAccent" Value="True"/>
             <Setter Property="Background" Value="#1D2D45"/>
             <Setter Property="BorderBrush" Value="#49607D"/>
             <Setter Property="local:Motion.HoverBackground" Value="#304867"/>

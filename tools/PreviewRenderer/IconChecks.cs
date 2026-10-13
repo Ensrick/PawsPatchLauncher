@@ -54,13 +54,14 @@ internal static class IconChecks
             cell.Children.Add(new TextBlock { Text = kind.ToString(), Foreground = Brushes.White, FontFamily = new FontFamily("Arial"), FontSize = 13, HorizontalAlignment = HorizontalAlignment.Center });
             gallery.Children.Add(cell);
         }
+        checks += IconAccentChecks.Run(errors);
         var image = Render(gallery, 900, (int)Math.Ceiling(kinds.Length / 5d) * 110, 1);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
         using (var output = File.Create(path)) encoder.Save(output);
         foreach (var error in errors) Console.WriteLine(error);
         if (errors.Count > 0) throw new InvalidOperationException($"Icon audit: {errors.Count} failures across {checks} checks; gallery: {path}");
-        Console.WriteLine($"ICONS PASS {checks}: {kinds.Length} icons, seven sizes, 100/125/150/200% DPI; no missing or clipped shapes; {path}");
+        Console.WriteLine($"ICONS PASS {checks}: {kinds.Length} icons, seven sizes, 100/125/150/200% DPI; no missing or clipped shapes; gold accent rule on real button styles; {path}");
     }
 
     private static RenderTargetBitmap Render(FrameworkElement element, int width, int height, double dpi)

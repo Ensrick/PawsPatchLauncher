@@ -18,6 +18,16 @@ public sealed class LauncherIcon : FrameworkElement
     public static IconKind GetKind(DependencyObject o) => (IconKind)o.GetValue(KindProperty);
     public static void SetKind(DependencyObject o, IconKind value) => o.SetValue(KindProperty, value);
 
+    /// <summary>
+    /// Icons take the theme's icon accent (resource LauncherIconAccentBrush, gold) unless their Foreground is set on the
+    /// icon itself (locally, by a style or by a template) or UseAccent is false here or on an ancestor, as on gold
+    /// buttons, whose dark text colour the icon then follows.
+    /// </summary>
+    public static readonly DependencyProperty UseAccentProperty = DependencyProperty.RegisterAttached("UseAccent", typeof(bool), typeof(LauncherIcon),
+        new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.Inherits | FrameworkPropertyMetadataOptions.AffectsRender));
+    public static bool GetUseAccent(DependencyObject o) => (bool)o.GetValue(UseAccentProperty);
+    public static void SetUseAccent(DependencyObject o, bool value) => o.SetValue(UseAccentProperty, value);
+
     private static readonly IReadOnlyDictionary<IconKind, Geometry> Shapes = CreateShapes();
     private static IReadOnlyDictionary<IconKind, Geometry> CreateShapes()
     {
@@ -75,16 +85,24 @@ public sealed class LauncherIcon : FrameworkElement
         return paths.ToDictionary(p => p.Key, p => { var g = Geometry.Parse(p.Value); g.Freeze(); return g; });
     }
 
+    private Brush IconBrush()
+    {
+        var source = DependencyPropertyHelper.GetValueSource(this, ForegroundProperty).BaseValueSource;
+        if (source != BaseValueSource.Inherited && source != BaseValueSource.Default || !GetUseAccent(this)) return Foreground;
+        return TryFindResource("LauncherIconAccentBrush") as Brush ?? Foreground;
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         base.OnRender(dc);
         if (!Shapes.TryGetValue(Kind, out var geometry)) return;
         var scale = Math.Min(ActualWidth, ActualHeight) / 24;
         if (scale <= 0) return;
-        var pen = new Pen(Foreground, 1.7) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
+        var brush = IconBrush();
+        var pen = new Pen(brush, 1.7) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
         dc.PushTransform(new TranslateTransform((ActualWidth - 24 * scale) / 2, (ActualHeight - 24 * scale) / 2));
         dc.PushTransform(new ScaleTransform(scale, scale));
-        dc.DrawGeometry(Kind == IconKind.Discord ? Foreground : null, Kind == IconKind.Discord ? null : pen, geometry);
+        dc.DrawGeometry(Kind == IconKind.Discord ? brush : null, Kind == IconKind.Discord ? null : pen, geometry);
         dc.Pop(); dc.Pop();
     }
 }
