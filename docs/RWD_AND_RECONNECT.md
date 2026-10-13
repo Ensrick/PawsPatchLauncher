@@ -59,6 +59,8 @@ player or reconcile divergent game state. Neither is a completed reconnect syste
 
 First PR: an opt-in research demonstrator, reproducible scenario, and design note.
 Document what works and what still crashes. Do not enable it in release feeds yet.
+Observations from 1.3.68 (drop handling, votes, back-to-staging, a host crash) are in
+[reconnect-research-1368.md](reconnect-research-1368.md).
 
 Suggested progression:
 
