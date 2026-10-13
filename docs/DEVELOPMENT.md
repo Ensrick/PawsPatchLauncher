@@ -39,6 +39,7 @@ GitHub's **Build and test** workflow runs the same checks for pull requests.
 | UI language strings | `Localization.cs` and `Assets/Languages/` |
 | Native transfers / sync diagnostics | `game/fast-transfer/`, `game/beta7/SyncDiagnostics1372.cs` |
 | Runtime patch entry points | `game/pure-fixes/`, `game/beta7/` |
+| Multiplayer recovery (save copies, autosave, drop recovery) and its two-copy test rig | `game/multiplayer-recovery/`, `tools/MultiplayerRig/` |
 | Account database | `supabase/migrations/`, `tools/AdminDatabaseTests/` |
 
 Paths without a directory prefix in this table are under `src/PawsPatchLauncher/`.
