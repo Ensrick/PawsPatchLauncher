@@ -19,7 +19,10 @@ DOWNLOAD='https://github.com/VasiliyPaw/PawsPatchLauncher/releases/download/'+TA
 NOTE='docs/release-pure-'+VERSION+'.json'
 def committed_raw():
  head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
- assert json.loads(fetch(API+'/git/ref/heads/main'))['object']['sha']==head,'Push source/catalog commit first'
+ # The public REST ref can retain the preceding commit in a CDN cache after a
+ # successful push. Verify through the Git transport before reading SHA URLs.
+ remote=subprocess.check_output(['git','ls-remote','origin','refs/heads/main'],cwd=ROOT,text=True).split()
+ assert remote==[head,'refs/heads/main'],'Push source/catalog commit first'
  return RAW.replace('/main/','/'+head+'/')
 GUIDE=dict(id='pure-match-recovery',category='beta',titleRu='Восстановление матча',titleEn='Match recovery',
  bodyRu='После отключения игрока хост сохраняет матч и открывает лобби с выбранным сейвом. Вернитесь в лобби, получите сохранение, займите свой слот и нажмите «Готов». Хост запускает сохранённый матч. При потере первоначального хоста новый хост сохраняет матч и оставляет паузу; сейв нужно загрузить через лобби вручную. При зависшем соединении используйте штатное подтверждение отключения игрока. Обычный выход игрока тоже может запустить восстановление. Вход прямо в работающую симуляцию пока недоступен.',
