@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "0.9.4",
+  "publishedAt": "2026-10-13",
+  "title": {
+    "ru": "Paw’s Launcher 0.9.4",
+    "en": "Paw’s Launcher 0.9.4",
+    "de": "Paw’s Launcher 0.9.4",
+    "fr": "Paw’s Launcher 0.9.4",
+    "cs": "Paw’s Launcher 0.9.4",
+    "uk": "Paw’s Launcher 0.9.4"
+  },
+  "body": {
+    "ru": "- В «Справка → Общее» добавлена карточка «Авторы и благодарности» со ссылкой на GitHub Ensrick.\n- Указан вклад Ensrick в работу с архивами RWD, сетевые автосохранения и восстановление матча. Спасибо за сотрудничество!",
+    "en": "- Added an Authors and acknowledgements card in Guide → Overview, with a link to Ensrick’s GitHub profile.\n- Credited Ensrick’s contributions to RWD archive tools, multiplayer autosaves and match recovery. Thank you for collaborating!",
+    "de": "- Unter Hilfe → Übersicht gibt es nun die Karte „Autoren und Danksagungen“ mit einem Link zu Ensricks GitHub-Profil.\n- Ensricks Beiträge zu RWD-Archivwerkzeugen, automatischen Mehrspieler-Spielständen und der Spielwiederherstellung werden gewürdigt. Vielen Dank für die Zusammenarbeit!",
+    "fr": "- Ajout d’une carte « Auteurs et remerciements » dans Guide → Vue d’ensemble, avec un lien vers le profil GitHub d’Ensrick.\n- Les contributions d’Ensrick aux outils d’archives RWD, aux sauvegardes automatiques multijoueur et à la reprise des parties sont désormais mentionnées. Merci pour cette collaboration !",
+    "cs": "- Do Nápověda → Přehled byla přidána karta „Autoři a poděkování“ s odkazem na profil Ensricka na GitHubu.\n- Uvedeny příspěvky Ensricka k nástrojům pro archivy RWD, automatickému ukládání síťové hry a obnovení zápasu. Děkujeme za spolupráci!",
+    "uk": "- У «Довідка → Загальне» додано картку «Автори та подяки» з посиланням на профіль Ensrick на GitHub.\n- Зазначено внесок Ensrick у роботу з архівами RWD, мережеві автозбереження та відновлення матчу. Дякуємо за співпрацю!"
+  }
+}

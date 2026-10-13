@@ -8,9 +8,9 @@
     <AssemblyName>PawsPatchLauncher</AssemblyName>
     <AssemblyName Condition="'$(LauncherTestName)' != ''">$(LauncherTestName)</AssemblyName>
     <RootNamespace>PawsPatchLauncher</RootNamespace>
-    <Version>0.9.3</Version>
-    <AssemblyVersion>0.9.3.0</AssemblyVersion>
-    <FileVersion>0.9.3.0</FileVersion>
+    <Version>0.9.4</Version>
+    <AssemblyVersion>0.9.4.0</AssemblyVersion>
+    <FileVersion>0.9.4.0</FileVersion>
     <ApplicationIcon>Assets\PawsPatch.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>

@@ -26,6 +26,11 @@ internal static class HelpCreditChecks
         var error = Control<TextBlock>("HelpLinkErrorText");
         var checks = 0;
         void Check(bool ok, string reason) { checks++; if (!ok) throw new InvalidOperationException(reason); }
+        async Task WaitUntil(Func<bool> completed)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(2);
+            while (!completed() && DateTime.UtcNow < deadline) await Task.Delay(15);
+        }
         Task Open(Uri uri) => (Task)Invoke("OpenArcaneWarsDiscordAsync", uri)!;
         void Help(string key) => Invoke("HelpButton_Click", new Button { Tag = key }, new RoutedEventArgs());
         async Task Scenario()
@@ -49,7 +54,8 @@ internal static class HelpCreditChecks
             link.RaiseEvent(navigation);
             Check(navigation.Handled && opened.Count == 0 && Control<Border>("ConfirmationOverlay").Visibility == Visibility.Visible,
                 "Invite link bypassed browser confirmation");
-            Control<Button>("ConfirmationDeleteButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(240);
+            Control<Button>("ConfirmationDeleteButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await WaitUntil(() => opened.Count == 1 && link.IsEnabled);
             Check(navigation.Handled && opened.SequenceEqual(new[] { invite }), "Click not routed to exact invite");
             Check(link.IsEnabled, "Successful navigation disabled link");
             foreach (var uri in new[] { new Uri("https://discord.gg/other"), new Uri("file:///C:/test.exe"), new Uri("relative", UriKind.Relative) }) await Open(uri);
@@ -65,7 +71,8 @@ internal static class HelpCreditChecks
             var attempts = 0;
             Set("_openHelpLink", (Func<string, Task>)(_ => { attempts++; return pending.Task; }));
             var first = Open(new Uri(invite));
-            Control<Button>("ConfirmationDeleteButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(240);
+            Control<Button>("ConfirmationDeleteButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await WaitUntil(() => attempts == 1);
             Check(!link.IsEnabled && error.Visibility == Visibility.Collapsed, "Retry not busy/error not cleared");
             await Open(new Uri(invite));
             Check(attempts == 1, "Repeated click opened duplicate browser request");

@@ -78,6 +78,17 @@ Catalog signatures and Windows executable signing are different mechanisms. See
 the [code signing policy](docs/CODE_SIGNING.md) for the current executable signing
 status, and the [privacy policy](docs/PRIVACY.md) for accounts, chat and diagnostics.
 
+## Authors and acknowledgements
+
+- **Paw** — Paw’s Launcher / Paw’s Patch development, adaptation and integration.
+- **[Ensrick](https://github.com/Ensrick)** — [RWD archive tools](tools/RwdTool/README.md),
+  [multiplayer save copies and autosaves](game/multiplayer-saves/README.md), and the
+  [foundation of match recovery after a disconnection](game/reconnect-test/THIRD_PARTY.md).
+  The recovery flow saves the match and returns to the lobby so players can rejoin
+  and resume from that save. Thank you for sharing your work and collaborating!
+- **Darquan Mortis** — Arcane Wars; **MartialDoctor** — Immortals. These are
+  independent mods by their respective authors.
+
 ## License and third-party content
 
 Project code is provided under the [MIT License](LICENSE), subject to the notices
