@@ -2,6 +2,52 @@
   "stable": [
     {
       "category": "launcher",
+      "version": "0.9.2",
+      "publishedAt": "2026-10-13",
+      "title": {
+        "ru": "Paw’s Launcher 0.9.2",
+        "en": "Paw’s Launcher 0.9.2",
+        "de": "Paw’s Launcher 0.9.2",
+        "fr": "Paw’s Launcher 0.9.2",
+        "cs": "Paw’s Launcher 0.9.2",
+        "uk": "Paw’s Launcher 0.9.2"
+      },
+      "body": {
+        "ru": "- Поддержка Paw’s Patch 0.4.0 для Vanilla и Immortals в релизном канале.\n- Защитники логов включены в основной патч; отдельный переключатель больше не нужен.",
+        "en": "- Support for Paw’s Patch 0.4.0 for Vanilla and Immortals in the Release channel.\n- Lair defenders are included in the core patch; the separate switch is no longer needed.",
+        "de": "- Unterstützung für Paw’s Patch 0.4.0 für Vanilla und Immortals im Release-Kanal.\n- Lagerverteidiger sind im Hauptpatch enthalten; der separate Schalter entfällt.",
+        "fr": "- Prise en charge de Paw’s Patch 0.4.0 pour Vanilla et Immortals dans le canal stable.\n- Les défenseurs des repaires font partie du patch principal ; l’interrupteur séparé n’est plus nécessaire.",
+        "cs": "- Podpora Paw’s Patch 0.4.0 pro Vanilla a Immortals ve stabilním kanálu.\n- Obránci doupat jsou součástí hlavního patche; samostatný přepínač již není potřeba.",
+        "uk": "- Підтримка Paw’s Patch 0.4.0 для Vanilla та Immortals у релізному каналі.\n- Захисники лігв включені до основного патча; окремий перемикач більше не потрібен."
+      }
+    },
+    {
+      "category": "patch",
+      "version": "0.4.0",
+      "publishedAt": "2026-10-13",
+      "title": {
+        "ru": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.0 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "- Возможности беты Vanilla и Immortals теперь доступны в релизе: экономика союзника, увеличенное отдаление камеры, настройки ботов, улучшения интерфейса и исправления игры.\n- Большие карты, до 16 королевств и 8 команд, случайный тип карты и время суток.\n- Защитники логов включены в основной Paw’s Patch: выжившие выходят в бой, не дожидаясь полного здоровья.\n- Отдельно настраиваются улучшения ботов, частота странствующих рот, дополнительные роты и вражда независимых семейств. Улучшения ботов учитывают правила Vanilla и Immortals.",
+        "en": "- Vanilla and Immortals Beta features are now available in Release: allied economy, extended camera zoom, bot settings, interface improvements and game fixes.\n- Larger maps, up to 16 kingdoms and 8 teams, random map type and time of day.\n- Lair defenders are now part of the core Paw’s Patch: surviving defenders deploy without waiting for full health.\n- Bot improvements, roaming frequency, additional companies and independent family hostility remain separate settings. Bot improvements follow Vanilla and Immortals rules.",
+        "de": "- Die Beta-Funktionen für Vanilla und Immortals sind jetzt im Release verfügbar: verbündete Wirtschaft, größere Kameradistanz, KI-Einstellungen, Verbesserungen der Oberfläche und Spielkorrekturen.\n- Größere Karten, bis zu 16 Königreiche und 8 Teams, zufälliger Kartentyp und Tageszeit.\n- Lagerverteidiger gehören jetzt zum Hauptpatch: Überlebende ziehen ohne volle Gesundheit in den Kampf.\n- KI-Verbesserungen, Häufigkeit umherziehender Kompanien, zusätzliche Kompanien und Feindschaft unabhängiger Gruppen bleiben separat einstellbar. Die KI berücksichtigt die Regeln von Vanilla und Immortals.",
+        "fr": "- Les fonctions bêta de Vanilla et Immortals sont désormais disponibles en version stable : économie alliée, recul de caméra accru, paramètres de l’IA, améliorations de l’interface et corrections du jeu.\n- Cartes agrandies, jusqu’à 16 royaumes et 8 équipes, type de carte et heure aléatoires.\n- Les défenseurs des repaires font désormais partie du patch principal : les survivants sortent sans attendre de récupérer toute leur santé.\n- Améliorations de l’IA, fréquence des compagnies errantes, compagnies supplémentaires et hostilité des familles indépendantes restent réglables séparément. L’IA respecte les règles de Vanilla et Immortals.",
+        "cs": "- Funkce bety pro Vanilla a Immortals jsou nyní ve stabilním vydání: ekonomika spojence, větší oddálení kamery, nastavení botů, vylepšení rozhraní a opravy hry.\n- Větší mapy, až 16 království a 8 týmů, náhodný typ mapy a denní doba.\n- Obránci doupat jsou nyní součástí hlavního patche: přeživší vyrážejí do boje bez čekání na plné zdraví.\n- Vylepšení botů, četnost potulných rot, další roty a nepřátelství nezávislých rodin lze nastavovat samostatně. Boti respektují pravidla Vanilla a Immortals.",
+        "uk": "- Можливості бети Vanilla та Immortals тепер доступні в релізі: економіка союзника, збільшене віддалення камери, налаштування ботів, поліпшення інтерфейсу й виправлення гри.\n- Великі карти, до 16 королівств і 8 команд, випадковий тип карти й час доби.\n- Захисники лігв включені до основного Paw’s Patch: ті, хто вижив, виходять у бій, не чекаючи повного здоров’я.\n- Окремо налаштовуються поліпшення ботів, частота мандрівних рот, додаткові роти й ворожнеча незалежних родин. Боти враховують правила Vanilla та Immortals."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ]
+    },
+    {
+      "category": "launcher",
       "version": "0.9.1",
       "publishedAt": "2026-10-08",
       "title": {
@@ -1020,6 +1066,52 @@
     }
   ],
   "beta": [
+    {
+      "category": "launcher",
+      "version": "0.9.2",
+      "publishedAt": "2026-10-13",
+      "title": {
+        "ru": "Paw’s Launcher 0.9.2",
+        "en": "Paw’s Launcher 0.9.2",
+        "de": "Paw’s Launcher 0.9.2",
+        "fr": "Paw’s Launcher 0.9.2",
+        "cs": "Paw’s Launcher 0.9.2",
+        "uk": "Paw’s Launcher 0.9.2"
+      },
+      "body": {
+        "ru": "- Поддержка Paw’s Patch 0.4.0 для Vanilla и Immortals в релизном канале.\n- Защитники логов включены в основной патч; отдельный переключатель больше не нужен.",
+        "en": "- Support for Paw’s Patch 0.4.0 for Vanilla and Immortals in the Release channel.\n- Lair defenders are included in the core patch; the separate switch is no longer needed.",
+        "de": "- Unterstützung für Paw’s Patch 0.4.0 für Vanilla und Immortals im Release-Kanal.\n- Lagerverteidiger sind im Hauptpatch enthalten; der separate Schalter entfällt.",
+        "fr": "- Prise en charge de Paw’s Patch 0.4.0 pour Vanilla et Immortals dans le canal stable.\n- Les défenseurs des repaires font partie du patch principal ; l’interrupteur séparé n’est plus nécessaire.",
+        "cs": "- Podpora Paw’s Patch 0.4.0 pro Vanilla a Immortals ve stabilním kanálu.\n- Obránci doupat jsou součástí hlavního patche; samostatný přepínač již není potřeba.",
+        "uk": "- Підтримка Paw’s Patch 0.4.0 для Vanilla та Immortals у релізному каналі.\n- Захисники лігв включені до основного патча; окремий перемикач більше не потрібен."
+      }
+    },
+    {
+      "category": "patch",
+      "version": "0.4.0",
+      "publishedAt": "2026-10-13",
+      "title": {
+        "ru": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.0 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.0 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "- Возможности беты Vanilla и Immortals теперь доступны в релизе: экономика союзника, увеличенное отдаление камеры, настройки ботов, улучшения интерфейса и исправления игры.\n- Большие карты, до 16 королевств и 8 команд, случайный тип карты и время суток.\n- Защитники логов включены в основной Paw’s Patch: выжившие выходят в бой, не дожидаясь полного здоровья.\n- Отдельно настраиваются улучшения ботов, частота странствующих рот, дополнительные роты и вражда независимых семейств. Улучшения ботов учитывают правила Vanilla и Immortals.",
+        "en": "- Vanilla and Immortals Beta features are now available in Release: allied economy, extended camera zoom, bot settings, interface improvements and game fixes.\n- Larger maps, up to 16 kingdoms and 8 teams, random map type and time of day.\n- Lair defenders are now part of the core Paw’s Patch: surviving defenders deploy without waiting for full health.\n- Bot improvements, roaming frequency, additional companies and independent family hostility remain separate settings. Bot improvements follow Vanilla and Immortals rules.",
+        "de": "- Die Beta-Funktionen für Vanilla und Immortals sind jetzt im Release verfügbar: verbündete Wirtschaft, größere Kameradistanz, KI-Einstellungen, Verbesserungen der Oberfläche und Spielkorrekturen.\n- Größere Karten, bis zu 16 Königreiche und 8 Teams, zufälliger Kartentyp und Tageszeit.\n- Lagerverteidiger gehören jetzt zum Hauptpatch: Überlebende ziehen ohne volle Gesundheit in den Kampf.\n- KI-Verbesserungen, Häufigkeit umherziehender Kompanien, zusätzliche Kompanien und Feindschaft unabhängiger Gruppen bleiben separat einstellbar. Die KI berücksichtigt die Regeln von Vanilla und Immortals.",
+        "fr": "- Les fonctions bêta de Vanilla et Immortals sont désormais disponibles en version stable : économie alliée, recul de caméra accru, paramètres de l’IA, améliorations de l’interface et corrections du jeu.\n- Cartes agrandies, jusqu’à 16 royaumes et 8 équipes, type de carte et heure aléatoires.\n- Les défenseurs des repaires font désormais partie du patch principal : les survivants sortent sans attendre de récupérer toute leur santé.\n- Améliorations de l’IA, fréquence des compagnies errantes, compagnies supplémentaires et hostilité des familles indépendantes restent réglables séparément. L’IA respecte les règles de Vanilla et Immortals.",
+        "cs": "- Funkce bety pro Vanilla a Immortals jsou nyní ve stabilním vydání: ekonomika spojence, větší oddálení kamery, nastavení botů, vylepšení rozhraní a opravy hry.\n- Větší mapy, až 16 království a 8 týmů, náhodný typ mapy a denní doba.\n- Obránci doupat jsou nyní součástí hlavního patche: přeživší vyrážejí do boje bez čekání na plné zdraví.\n- Vylepšení botů, četnost potulných rot, další roty a nepřátelství nezávislých rodin lze nastavovat samostatně. Boti respektují pravidla Vanilla a Immortals.",
+        "uk": "- Можливості бети Vanilla та Immortals тепер доступні в релізі: економіка союзника, збільшене віддалення камери, налаштування ботів, поліпшення інтерфейсу й виправлення гри.\n- Великі карти, до 16 королівств і 8 команд, випадковий тип карти й час доби.\n- Захисники лігв включені до основного Paw’s Patch: ті, хто вижив, виходять у бій, не чекаючи повного здоров’я.\n- Окремо налаштовуються поліпшення ботів, частота мандрівних рот, додаткові роти й ворожнеча незалежних родин. Боти враховують правила Vanilla та Immortals."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ]
+    },
     {
       "category": "patch",
       "version": "0.4.1",
