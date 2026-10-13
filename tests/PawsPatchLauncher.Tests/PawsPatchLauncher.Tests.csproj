@@ -7,6 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PawsPatchLauncher\PawsPatchLauncher.csproj" />
+    <ProjectReference Include="..\..\tools\RwdTool\RwdTool.csproj" />
   </ItemGroup>
 </Project>
-

@@ -16,6 +16,8 @@ and an ordered filesystem overlay. Start by reading
 First PR: a standalone RWD pack/list/extract demonstrator with tiny, self-authored
 fixtures and format notes. Include dependencies, license, exact commands and
 repeatable output. No game installation should be required for format-only tests.
+Status: [`tools/RwdTool`](../tools/RwdTool/README.md) covers the format items below;
+load precedence and launcher integration are still open.
 
 Before integrating into the launcher, establish:
 
