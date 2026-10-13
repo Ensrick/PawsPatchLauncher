@@ -14,6 +14,7 @@
 #include "guards.h"
 #define FC __attribute__((fastcall))
 #define EXPORT __declspec(dllexport)
+#include "save_coordination.h"
 
 typedef struct { unsigned api; uintptr_t exeBase; const wchar_t *gameDir,*modsDir; void (__cdecl *log)(const char*,const char*,...); } Host;
 /* TCC has no thiscall emitter: reserve the second fastcall register explicitly.
@@ -28,6 +29,7 @@ typedef void* (FC *CtorFn)(void*,void*,void*);
 typedef void (FC *IssueFn)(void*,void*,int);
 typedef void* (FC *DtorFn)(void*,void*,int);
 typedef int (FC *WantedFn)(void*,void*);
+typedef unsigned char (__cdecl *FromResourceFn)(void*);
 typedef struct { uintptr_t player,admin,world; DWORD when; } Intent;
 typedef struct { uintptr_t admin,session,world,player; int reason,deliberate; } Leave;
 typedef struct { uintptr_t admin,session,world,net; int state,hostKind,type,host,backup,disconnecting,network,countdown; } Snapshot;
@@ -45,6 +47,7 @@ static LeaveFn g_leave;
 static RequestFn g_request;
 static CreateFn g_create;
 static WantedFn g_wanted;
+static FromResourceFn g_fromResource;
 
 enum { IDLE, SAVING, ENDING, SELECTING, CONFIRMING };
 static int g_step,g_tookOver,g_sends;
@@ -55,6 +58,9 @@ static uintptr_t g_roleSession,g_roleWorld;
 static uintptr_t g_recoverySession,g_recoveryWorld,g_task;
 static wchar_t g_name[128],g_data[MAX_PATH],g_path[MAX_PATH];
 static unsigned g_serial;
+static Leave g_pendingLeave;
+static int g_pending,g_pendingReported;
+static ULONGLONG g_pendingSince,g_pendingProbe;
 static ULONGLONG Now(void) {
     typedef ULONGLONG (WINAPI *Fn)(void);
     static Fn fn; if(!fn)fn=(Fn)GetProcAddress(GetModuleHandleA("kernel32.dll"),"GetTickCount64");
@@ -139,7 +145,13 @@ static int InstallClientGuard(void) {
     return 1;
 }
 #endif
+#ifdef PAW_RECOVERY_TEST_COMMANDS
+static int (*g_testCommand)(const wchar_t*);
+#endif
 static int Run(const wchar_t *command) {
+#ifdef PAW_RECOVERY_TEST_COMMANDS
+    if(g_testCommand)return g_testCommand(command);
+#endif
     uintptr_t console=Ptr(g_consoleGlobal);wchar_t *text=0;
     if(!Readable(console,4)||GetCurrentThreadId()!=g_thread)return 0;
     ((StringFn)(g_base+0x205de))(&text,0,command);
@@ -180,18 +192,61 @@ static void FC CreateHook(void *session,void *unused,int isMap) {
     task=Ptr((uintptr_t)session+0x134);if(!Readable(task,0x2c))return;
     InterlockedIncrement((LONG*)(task+4));g_task=task;Log("SAVE_TASK captured; waiting for native completion");
 }
-static void Reset(const char *why) {if(g_step!=IDLE)Log("recovery stopped: %s (step %d)",why,g_step);ReleaseTask();g_step=IDLE;g_name[0]=0;}
-static void Go(int step) {g_step=step;g_since=Now();}
-static void StartRecovery(const Snapshot *s,int reason) {
-    SYSTEMTIME t;wchar_t cmd[180];GetLocalTime(&t);
+/* KKC_ResourceManagerTaskSaveGame::SaveGame (1c1a15) walks the world resource
+ * through its create settings to the source resource and asserts that each
+ * source header is loaded. A PC that received the match's save over the network
+ * has no such header: the assertion then waits on the ASYNC thread holding a lock
+ * the main thread needs, and the game ends with "timeout waiting for mutex"
+ * (issue #10). The same walk, read-only: 1 when the save task can run. */
+static int SaveSourcesReady(uintptr_t world) {
+    uintptr_t res=Ptr(world+0x28),settings;unsigned i;
+    if(!Readable(res,0x8c))return 0;if(!(Int(res+8)&0x10))return 1;
+    for(i=0;i<16;++i){
+        settings=Ptr(res+0x88);if(!Readable(settings,0x54))return 0;
+        if(!g_fromResource((void*)settings))return 1;
+        res=Ptr(settings+0x50);if(!Readable(res,0x8c)||!(Int(res+8)&2))return 0;
+    }return 0;
+}
+static void ClearPending(void) {g_pending=g_pendingReported=0;g_pendingSince=g_pendingProbe=0;memset(&g_pendingLeave,0,sizeof(g_pendingLeave));}
+static void Reset(const char *why) {
+    if(g_step!=IDLE)Log("recovery stopped: %s (step %d)",why,g_step);
+    ReleaseTask();g_step=IDLE;g_name[0]=0;ClearPending();InterlockedExchange(&PawSaveBusy,0);
+}
+static void Go(int step) {g_step=step;g_since=Now();InterlockedExchange(&PawSaveBusy,step!=IDLE);}
+/* -1 defers the drop, 0 consumes it without a save, 1 queues recovery. */
+static int StartRecovery(const Snapshot *s,int reason) {
+    SYSTEMTIME t;wchar_t cmd[180];
+    if(g_step!=IDLE)return 0;
+    if(Ptr(s->session+0x134)||OtherSaveBusy())return -1;
+    if(!SaveSourcesReady(s->world)){Log("DROP: reason=%d; not saving: save source is unavailable or its header is not loaded; match continues",reason);return 0;}
+    GetLocalTime(&t);
     _snwprintf(g_name,128,L"Save/Paw Resume %04u-%02u-%02u %02u%02u%02u-%03u-%lu-%u.RSG",t.wYear,t.wMonth,t.wDay,t.wHour,t.wMinute,t.wSecond,t.wMilliseconds,GetCurrentProcessId(),++g_serial);
     _snwprintf(g_path,MAX_PATH,L"%ls\\%ls",g_data,g_name);g_path[MAX_PATH-1]=0;
     {wchar_t *p;for(p=g_path;*p;++p)if(*p==L'/')*p=L'\\';}
     g_recoverySession=s->session;g_recoveryWorld=s->world;g_tookOver=!g_roleKnown||!g_originalHost;Go(SAVING);
     _snwprintf(cmd,180,L"GameSave \"%ls\"",g_name);cmd[179]=0;
     Log("DROP: reason=%d; host saving and pausing (backup=%d, replacement_host=%d)",reason,s->backup,g_tookOver);
-    if(!Run(cmd)){Reset("cannot queue save");return;}
+    if(!Run(cmd)){Reset("cannot queue save");return 0;}
     if(!Run(L"GamePause 1"))Log("could not queue pause");
+    return 1;
+}
+static void ExpirePending(const Snapshot *s,ULONGLONG now) {
+    if(!g_pending)return;
+    if(!RunningHost(s)||s->countdown>0||g_pendingLeave.admin!=s->admin||
+       g_pendingLeave.session!=s->session||g_pendingLeave.world!=s->world){
+        Log("deferred drop discarded: match or host changed");ClearPending();return;
+    }
+    if(now-g_pendingSince>=120000){Log("deferred drop timed out; existing match kept");ClearPending();return;}
+}
+static void PendingRecovery(const Snapshot *s,ULONGLONG now) {
+    int result;
+    ExpirePending(s,now);if(!g_pending)return;
+    /* Module enumeration is needed only for a pending drop, at most 4/s. No
+     * module handles or exported pointers survive the scan. */
+    if(g_pendingProbe&&now-g_pendingProbe<250)return;g_pendingProbe=now;
+    result=StartRecovery(s,g_pendingLeave.reason);
+    if(result!=-1){ClearPending();return;}
+    if(!g_pendingReported){Log("DROP deferred: another save is queued or running");g_pendingReported=1;}
 }
 static int FileReady(void) {
     HANDLE f=CreateFileW(g_path,GENERIC_READ,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);DWORD low,high=0;int ok;
@@ -218,7 +273,7 @@ static void Vote(const Snapshot *s,ULONGLONG now) {
 static void TickRecovery(void) {
     Snapshot s;Leave events[32];unsigned count,overflow,i;ULONGLONG now=Now();
     static int lastState=-1,lastHost=-1,lastBackup=-1,lastDisconnecting=-1;
-    if(!SnapshotRead(&s))return;
+    if(!SnapshotRead(&s)){if(g_pending||g_step!=IDLE)Reset("session unavailable");return;}
     if(s.state!=lastState||s.host!=lastHost||s.backup!=lastBackup||s.disconnecting!=lastDisconnecting){
         Log("STATE: session=%x world=%x state=%d host=%d backup=%d disconnecting=%d",s.session,s.world,s.state,s.host,s.backup,s.disconnecting);
         lastState=s.state;lastHost=s.host;lastBackup=s.backup;lastDisconnecting=s.disconnecting;
@@ -231,12 +286,18 @@ static void TickRecovery(void) {
         EnterCriticalSection(&g_lock);memset(g_intents,0,sizeof(g_intents));LeaveCriticalSection(&g_lock);
         g_lastSession=s.session;g_lastWorld=s.world;
     }
+    /* Discard an old pending drop before consuming new events, otherwise an
+     * event from the new match in this same tick could be lost behind it. */
+    ExpirePending(&s,now);
     for(i=0;i<count;++i){const Leave *e=events+i;
         if(e->session!=s.session||e->world!=s.world||e->admin!=s.admin||!RunningHost(&s))continue;
         if(e->deliberate){Log("intentional player exit ignored (reason=%d)",e->reason);continue;}
         if(e->reason==11){Log("explicit kick ignored");continue;}
-        if(g_step==IDLE)StartRecovery(&s,e->reason);else Log("another player dropped during recovery");
+        if(g_step==IDLE){
+            if(!g_pending){g_pendingLeave=*e;g_pending=1;g_pendingSince=now;g_pendingProbe=0;}
+        }else Log("another player dropped during recovery");
     }
+    PendingRecovery(&s,now);
     if(g_step==IDLE){Vote(&s,now);return;}
     if(s.session!=g_recoverySession||!s.host||s.disconnecting){Reset("session or host changed");return;}
     if(now-g_since>120000){Reset("step timed out; keep existing match/save");return;}
@@ -323,6 +384,7 @@ EXPORT int __cdecl K2Plugin_Start(const Host *host) {
     g_sessionGlobal=Ptr(g_base+0x15bbe3+1);g_consoleGlobal=Ptr(g_base+0x13df06+2);
     g_worldGlobal=Ptr(g_base+0x162ac1+1);g_app=Ptr(g_base+0xc3efb+14);
     g_leave=(LeaveFn)(g_base+0x14b7c5);g_request=(RequestFn)(g_base+0x151cb5);g_create=(CreateFn)(g_base+0x16a9f6);g_wanted=(WantedFn)(g_base+0x150009);
+    g_fromResource=(FromResourceFn)(g_base+0x16bf8f);
     InitializeCriticalSection(&g_lock);
     for(i=0;i<count;++i)if(CallTarget(g_base+hooks[i].site)!=g_base+hooks[i].target){Log("REFUSED: existing hook at %x",hooks[i].site);return 1;}
     for(i=0;i<count;++i){if(!Redirect(hooks[i].site,g_base+hooks[i].target,hooks[i].hook))break;++done;}
@@ -353,6 +415,15 @@ static int createCalls,leaveCalls,requestCalls;static uintptr_t expectedSelf,exp
 static void FC TestCreate(void *self,void *unused,int arg){(void)unused;CHECK((uintptr_t)self==expectedSelf);CHECK(arg==expectedArg);++createCalls;}
 static void FC TestLeave(void *self,void *unused,void *other,int arg){(void)unused;CHECK((uintptr_t)self==expectedSelf);CHECK((uintptr_t)other==expectedOther);CHECK(arg==expectedArg);++leaveCalls;}
 static void FC TestRequest(void *self,void *unused,void *other,int arg){(void)unused;CHECK((uintptr_t)self==expectedSelf);CHECK((uintptr_t)other==expectedOther);CHECK(arg==expectedArg);++requestCalls;}
+/* A resource chain as the save task walks it: world -> made -> settings -> source. */
+static unsigned char tWorld[0x40],tMade[0x90],tSettings[0x60],tSource[0x90],tSettings2[0x60],tOther[0x60];
+static unsigned char __cdecl TestFromResource(void *p){return p==tSettings||p==tSettings2;}
+static void Chain(void){
+    memset(tWorld,0,sizeof(tWorld));memset(tMade,0,sizeof(tMade));memset(tSettings,0,sizeof(tSettings));memset(tSource,0,sizeof(tSource));memset(tSettings2,0,sizeof(tSettings2));
+    g_fromResource=TestFromResource;*(uintptr_t*)(tWorld+0x28)=(uintptr_t)tMade;*(int*)(tMade+8)=0x10;
+    *(uintptr_t*)(tMade+0x88)=(uintptr_t)tSettings;*(uintptr_t*)(tSettings+0x50)=(uintptr_t)tSource;
+    *(int*)(tSource+8)=2;*(uintptr_t*)(tSource+0x88)=(uintptr_t)tOther; /* a random map's settings end the walk */
+}
 int main(void){
     unsigned i;Snapshot s;Bucket b;unsigned char admin[0x308]={0},conn[0x430]={0};
     InitializeCriticalSection(&g_lock);
@@ -405,6 +476,19 @@ int main(void){
         *(uintptr_t*)(node+12)=0;CHECK(count(node)==0);CHECK(count(0)==0);CHECK(!InstallClientGuard());
         VirtualFree(image,0,MEM_RELEASE);g_base=0;
     }
+    /* Issue #10: a source without its header blocks the recovery save; nothing is queued. */
+    Chain();CHECK(SaveSourcesReady((uintptr_t)tWorld));
+    *(int*)(tSource+8)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(int*)(tMade+8)=0;CHECK(SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tMade+0x88)=(uintptr_t)tOther;CHECK(SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tMade+0x88)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tSettings+0x50)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tSource+0x88)=(uintptr_t)tSettings2;*(uintptr_t*)(tSettings2+0x50)=(uintptr_t)tMade;*(int*)(tMade+8)|=2;
+    CHECK(!SaveSourcesReady((uintptr_t)tWorld));
+    Chain();*(uintptr_t*)(tWorld+0x28)=0;CHECK(!SaveSourcesReady((uintptr_t)tWorld));CHECK(!SaveSourcesReady(0));
+    Chain();*(int*)(tSource+8)=0;memset(&s,0,sizeof(s));s.world=(uintptr_t)tWorld;g_step=IDLE;g_name[0]=0;
+    {unsigned serial=g_serial;StartRecovery(&s,5);CHECK(g_step==IDLE&&g_serial==serial); /* no save name made, nothing queued */
+     *(int*)(tSource+8)=2;StartRecovery(&s,5);CHECK(g_step==IDLE&&g_serial==serial+1);} /* control: a save is attempted (no console here) */
     printf("PASS %u native recovery checks (including x86 thiscall/fastcall hooks)\n",checks);return 0;
 }
 #endif

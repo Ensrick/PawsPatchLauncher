@@ -20,6 +20,18 @@ The offsets were checked independently in 1.3.72. Paw's r2 adds original-host
 tracking, optional bounded timeout voting, and the existing Paw null-player
 guard at the verified active-client counter. It does not suppress assertions.
 
+The local save-source preflight follows Ensrick's
+[PR #11](https://github.com/VasiliyPaw/PawsPatchLauncher/pull/11), commit
+`5c1eabfe234d26e7ac94293b6525a58942331dc3`: skip recovery's save when the game's
+source-resource walk would fail, including a replacement host that received the save over the network.
+Paw's follow-up adds rejection tests for each new guard in the integrated composition
+and keeps the diagnostic general enough to cover missing resources and settings as well as unloaded headers.
+
+The shared `PawSaveBusy` data export follows Ensrick's
+[PR #9 coordination proposal](https://github.com/VasiliyPaw/PawsPatchLauncher/pull/9#issuecomment-6144485943).
+Paw's implementation adds guarded module discovery, retained drops bound to their match, a bounded retry,
+coordination throughout lobby return, and real-DLL/tick tests. It does not include PR #9's autosave or copies.
+
 Kohan II and Immortals files are read from the user's existing installation
 solely to prepare their local PC/VM test. They are not included in this source
 repository or published as part of this experiment.

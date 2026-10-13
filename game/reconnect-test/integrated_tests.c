@@ -30,6 +30,10 @@ int main(void){
         memcpy(image+g->rva,g->bytes,g->size);for(j=0;j<g->count;++j)*(DWORD*)(image+g->rva+g->fixups[j])+=(DWORD)image-0x460000;
     }
     CHECK(Validate((uintptr_t)image));image[0x14c047]=0xe9;image[0x150273]=0;CHECK(Validate((uintptr_t)image));
+    /* The four new save-source guards must remain active in the shipping composition. */
+    {const unsigned sites[]={0x1c1a22,0x1c1a56,0x1c1a99,0x16bf8f};
+     for(i=0;i<sizeof(sites)/sizeof(sites[0]);++i){unsigned char original=image[sites[i]];
+        image[sites[i]]^=0xff;CHECK(!Validate((uintptr_t)image));image[sites[i]]=original;}}
     image[0x1503ea]=0;CHECK(!Validate((uintptr_t)image));
     VirtualFree(image,0,MEM_RELEASE);printf("PASS %u integrated recovery checks\n",checks);return 0;
 }

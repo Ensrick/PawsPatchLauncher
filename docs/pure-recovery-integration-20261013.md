@@ -2,6 +2,10 @@
 
 Target: Vanilla / Immortals 0.4.1-beta.1, native helper 1.3.72-pure.15-beta.1.
 
+This is the dated record for the published beta. A later
+[local follow-up](ensrick-followup-review-20261013.md#local-fix-from-pr-11--issue-10) guards recovery saves after
+takeover when a received save lacks its source header. It is not part of the release described below.
+
 The shipping adapter is embedded in the existing lobby compatibility module.
 The regular helper owns R2 transfer and the missing-client guard; recovery does
 not install duplicate copies. It retains the existing QPC import target (including

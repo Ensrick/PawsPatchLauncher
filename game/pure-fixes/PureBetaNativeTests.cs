@@ -75,13 +75,14 @@ namespace PawPureFixes
             if (PawLobbyCompatibility.Version != PureChannel.PatchVersion) throw new Exception("Pure lobby version mismatch");
             if (AiPolicyPayload.Profile != "pure") throw new Exception("Pure runtime contains another AI profile");
             if(Program.Hash(args[0])!="B865D8206990C4F055C51DE857F0B09B88AB5EE3B6AE74EE5232134001AA591C")throw new Exception("Unverified game snapshot");
-            byte[] raw=File.ReadAllBytes(args[0]);int checks=0;
+            byte[] raw=File.ReadAllBytes(args[0]);int checks=0,saveCopyGuards=0;
             foreach(uint image in new uint[]{0x460000,0xF20000,0x18000000})
             foreach(bool ai in new[]{false,true}) foreach(bool lair in new[]{false,true})
             {
                 var m=new Memory();m.Regions.Add(image,Relocate(raw,image));m.Regions.Add(0x51000000,new byte[0x2000]);
                 m.Write(image+0x5F94D0,BitConverter.GetBytes(0x51000000u));
                 for(int i=0;i<3;i++) {uint f=0x51001000u+(uint)i*4;m.Write(0x51000120u+(uint)i*4,BitConverter.GetBytes(f));m.Write(f,BitConverter.GetBytes(new[]{20,64,256}[i]));}
+                byte[] blockBefore=m.Read(image+0x1CE7E9,80);
                 PureBetaRuntime.ImprovedAi=ai;PureBetaRuntime.WoundedDefenders=lair;
                 PureBetaRuntime.Validate(m,image);PurePatch.Validate(m,image);PawFastTransfer.Validate(m,image);
                 PureChannel.Install(m,image);
@@ -98,10 +99,16 @@ namespace PawPureFixes
                 foreach(uint rva in new uint[]{0x22C7CC,0x22D00F})
                     if(m.Hooks.Any(h=>image+rva>=h.Item1&&image+rva<h.Item1+h.Item2))throw new Exception("Family hook conflict");
                 PawGamePresentation.VerifyOffline();
+                // PR #9's client copies call native Block directly. Its signature
+                // must survive the Pure native patch composition, including R2.
+                if(!m.Read(image+0x1CE7E9,80).SequenceEqual(blockBefore))
+                    throw new Exception("Save-copy Block changed at 1CE7E9: "+BitConverter.ToString(m.Read(image+0x1CE7E9,80)));
+                ++saveCopyGuards;
                 checks+=m.Hooks.Count;
             }
             Console.WriteLine("PURE_BETA_COMPOSITION_PASS "+checks+" guarded hook installs; 12 compositions, 3 image bases; no native process access");
             Console.WriteLine("PURE_RANDOM_MAP_TRANSACTION_PASS "+RandomMapPatch.SelfTest());
+            Console.WriteLine("PURE_SAVE_COPY_BLOCK_PASS "+saveCopyGuards+" compositions; 80 relocated bytes unchanged at 1CE7E9; "+BitConverter.ToString(raw.Skip(0x1CE7E9).Take(18).ToArray()));
             return 0;
         }
     }

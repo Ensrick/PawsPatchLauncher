@@ -1,6 +1,7 @@
 # RWD, plugin API and reconnect: collaboration starting points
 
-These are proposed contributions, not shipped features or a fixed API contract.
+This note records the original contribution plan, not a fixed API contract.
+The dated RWD status below reflects subsequent work; the API and reconnect sections retain the research goals.
 Keep each topic in its own branch/PR so a useful RWD tool does not depend on
 unfinished multiplayer research. Start with a small runnable example, then agree
 on integration based on evidence.
@@ -16,10 +17,16 @@ and an ordered filesystem overlay. Start by reading
 First PR: a standalone RWD pack/list/extract demonstrator with tiny, self-authored
 fixtures and format notes. Include dependencies, license, exact commands and
 repeatable output. No game installation should be required for format-only tests.
-Status: [`tools/RwdTool`](../tools/RwdTool/README.md) covers the format items below;
-load precedence and launcher integration are still open.
+Status, 2026-10-13: [`tools/RwdTool`](../tools/RwdTool/README.md) covers the format items below.
+The [custom RWD manager](custom-rwd-mods-local.md) and its cancellation fix shipped in launcher 0.9.3;
+its `adddepot` menu-label probes and install/rollback checks are documented there. Ensrick separately
+reported `addmod` script precedence and case probes. [Current format evidence](rwd-format-evidence-20261013.md)
+keeps those loader paths distinct. Texture/audio case behavior and semantic equivalence between differently
+packaged multiplayer content remain unverified. The [relocated-path follow-up](rwd-relocated-paths-20261013.md)
+is local only. The cancelled Documents-depot scan/report remains deferred; this follow-up adds no admission
+rules for localization or personal keybindings.
 
-Before integrating into the launcher, establish:
+Original integration checklist (use the dated status above for completed items):
 
 - Correct path normalization, encodings, empty files, duplicate names and case
   handling; reject traversal paths and malformed or excessive sizes.
@@ -33,8 +40,8 @@ Before integrating into the launcher, establish:
 - Multiplayer peers can compare the effective content and load order. Packaging
   the same filenames does not establish equivalent simulation data.
 
-After the format/load-order evidence is available, propose the manifest/UI changes
-in a separate PR. Keep current package installs working during the transition.
+Further changes to manifests or UI should remain separate from format research.
+Keep current package installs working during the transition.
 
 ## 2. Plugin API
 
@@ -55,11 +62,17 @@ is a research input, not proof of a stable API or permission to relicense the ga
 
 ## 3. Rejoining an active multiplayer match
 
+Status, 2026-10-13: our [Pure beta integration](pure-recovery-integration-20261013.md) implements recovery through
+a save and lobby. The [PR #9/#11 follow-up review](ensrick-followup-review-20261013.md) records a locally tested
+save-source guard and the remaining autosave/copy work. Our side of
+[save coordination](recovery-save-coordination.md) is also implemented locally; upstream composition and live
+acceptance remain pending. Direct hot join remains a research goal.
+
 The existing native save-transfer tuning in `game/fast-transfer/` is for lobby
 save transfer. Continuing after a desync also does not restore a disconnected
 player or reconcile divergent game state. Neither is a completed reconnect system.
 
-First PR: an opt-in research demonstrator, reproducible scenario, and design note.
+Original first-PR scope: an opt-in research demonstrator, reproducible scenario, and design note.
 Document what works and what still crashes. Do not enable it in release feeds yet.
 
 Suggested progression:

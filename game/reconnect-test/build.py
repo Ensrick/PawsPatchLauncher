@@ -24,6 +24,9 @@ RANGES = {
     'backup_flag_write': (0x14f9a1, 17), 'disconnecting_flag_write': (0x14fb31, 17),
     'active_clients': (0x14c03f, 24),
     'recovery_admin_globals': (0x150009, 0x29),
+    # The save task's source walk, repeated read-only before a recovery save (issue #10).
+    'save_source_walk': (0x1c1a22, 22), 'save_settings_read': (0x1c1a56, 9),
+    'save_source_step': (0x1c1a99, 37), 'settings_type': (0x16bf8f, 22),
 }
 CALLS = {
     0x15708c: 0x14b7c5, 0x1503ea: 0x151cb5, 0x162c3a: 0x16a9f6,
@@ -77,6 +80,11 @@ def main():
     subprocess.run(common+['-shared','-DPAW_RECOVERY_INTEGRATED',str(HERE/'reconnect.c'),
         str(HERE.parent/'lobby-compatibility/lobby_compatibility.c'),
         '-o',str(a.out/'paws_recovery_integrated.dll'),'-lkernel32','-luser32'],check=True)
+    for name,flags in [('save_busy_fixture.dll',[]),('save_busy_invalid.dll',['-DINVALID_BUSY_EXPORT'])]:
+        subprocess.run(common+flags+['-shared',str(HERE/'save_busy_fixture.c'),'-o',str(a.out/name),'-lkernel32'],check=True)
+    subprocess.run(common+[str(HERE/'save_coordination_tests.c'),'-o',str(a.out/'SaveCoordinationTests.exe'),'-lkernel32','-luser32'],check=True)
+    subprocess.run([str(a.out/'SaveCoordinationTests.exe')]+[str((a.out/name).resolve()) for name in
+        ('save_busy_fixture.dll','save_busy_invalid.dll','paws_reconnect.dll','paws_recovery_integrated.dll')],check=True)
     subprocess.run(common+['-shared',str(HERE/'private_folder.c'),'-o',str(a.out/'shfolder.dll'),'-lkernel32'],check=True)
     # TCC decorates stdcall exports, but Kohan requests the documented undecorated
     # names. Rename only this DLL's two export strings, preserving their RVAs/ABI.
