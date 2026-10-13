@@ -36,7 +36,7 @@ def main():
     source=ROOT/'game/pure-fixes'; shared=ROOT/'game/beta7'
     sources=[source/(name+'.cs') for name in ('Program','NativeMemory','PurePatch','PureChannel','PureBetaRuntime','PureFamilyRelations')]
     sources += [shared/(name+'.cs') for name in ('TerrainRuntime','ReleaseStartup','RandomMapPatch','RandomMapBundle','GamePresentation1372','GameText','BuildFeatures','LobbyColorsNative','SyncDiagnostics1372','k2_paws_family_herd_relations_1372')]
-    sources += [ROOT/'game/fast-transfer/FastTransfer.cs', ROOT/'game/lobby-compatibility/PawLobbyCompatibility.cs', ROOT/'game/multiplayer-recovery/MultiplayerRecovery.cs',
+    sources += [ROOT/'game/fast-transfer/FastTransfer.cs', ROOT/'game/lobby-compatibility/PawLobbyCompatibility.cs', ROOT/'game/multiplayer-saves/MultiplayerSaves.cs',
                 ROOT/'game/graphics-diagnostics/GraphicsDiagnostics.cs', ROOT/'game/ai-policy/PawAiOptions.cs',
                 ROOT/'game/ai-policy/AiDiagnosticsSnapshot.cs', args.native/'nightmare-data/NightmareDifficultyData.cs']
     for folder,(generated,patch,payload) in NATIVE.items():
@@ -44,7 +44,7 @@ def main():
     resources={name:shared/(name+'.bin') for name in ('PawCommonUiPayload','PawCommonUiFixups','RandomMapPayload','RandomMapFixups','PawLobbyColorsPayload','PawLobbyColorsFixups')}
     resources.update(FastTransferGuards=args.native/'FastTransferGuards.bin',
                      PawLobbyCompatibilityNative=args.recovery_native or args.native/'paws_lobby_compatibility.dll',
-                     PawMultiplayerRecoveryNative=args.native/'paws_multiplayer_recovery.dll',
+                     PawMultiplayerSavesNative=args.native/'paws_multiplayer_saves.dll',
                      PawsGraphicsRecorder=args.native/'PawsGraphicsRecorder.exe')
     # A compile-time allowlist is deliberate: excluded gameplay payloads cannot
     # be accidentally enabled by a launcher setting or stale installed file.

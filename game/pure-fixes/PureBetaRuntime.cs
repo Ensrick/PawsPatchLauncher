@@ -13,7 +13,7 @@ namespace PawPureFixes
         internal static bool ImprovedAi;
         internal static bool WoundedDefenders;
         internal static bool Hostility;
-        internal static bool MultiplayerRecoveryEnabled;
+        internal static bool MultiplayerSavesEnabled;
         internal static bool ModuleEnabled(string root, string id)
         {
             var json = new JavaScriptSerializer { MaxJsonLength = 16*1024*1024, RecursionLimit = 64 };
@@ -28,7 +28,7 @@ namespace PawPureFixes
                 + ",\"allyEconomyRevision\":2,\"gameplayCameraZoomMaximum\":2"
                 + ",\"companyPositionRecoveryRevision\":1,\"exhaustionRecoveryRevision\":1"
                 + ",\"bulkBotLobbyRevision\":3,\"aiPolicyRevision\":39,\"aiPolicyProfile\":\"pure\",\"aiPolicyCompatibilityRevision\":1,\"aiImprovementsSelectable\":true"
-                + ",\"lobbyCompatibilityProtocol\":1,\"observerTeamCommandGuardRevision\":1,\"multiplayerRecoveryRevision\":1"
+                + ",\"lobbyCompatibilityProtocol\":1,\"observerTeamCommandGuardRevision\":1,\"multiplayerSavesRevision\":1"
                 + ",\"independentHostilitySelectable\":true,\"woundedLairDefendersSelectable\":false,\"woundedLairDefendersBuiltIn\":true"
                 + ",\"builtInGraphicsDiagnosticsRevision\":1,\"goldSoundButton\":true"
                 + ",\"automaticMilitia\":false,\"additionalBuildingSlots\":false"
@@ -53,10 +53,10 @@ namespace PawPureFixes
             PawAiOptions.Enabled = ImprovedAi;
             WoundedDefenders = true;
             Hostility = ModuleEnabled(root,"pure-independent-hostility");
-            MultiplayerRecoveryEnabled = ModuleEnabled(root,MultiplayerRecovery.ModuleId);
+            MultiplayerSavesEnabled = ModuleEnabled(root,MultiplayerSaves.ModuleId);
             NightmareDifficultyData.Validate(root, ImprovedAi);
             PawLobbyCompatibility.Prepare(root);
-            if (MultiplayerRecoveryEnabled) MultiplayerRecovery.Prepare(root);
+            if (MultiplayerSavesEnabled) MultiplayerSaves.Prepare(root);
         }
         internal static void Validate(IMemory memory, uint image)
         {
@@ -88,7 +88,7 @@ namespace PawPureFixes
         internal static void Finish(Process game, IntPtr image, string root, Action<string> log)
         {
             PawLobbyCompatibility.Install(game, image, log);
-            if (MultiplayerRecoveryEnabled) MultiplayerRecovery.Install(game, image, log);
+            if (MultiplayerSavesEnabled) MultiplayerSaves.Install(game, image, log);
             if (Hostility)
             {
                 using (var memory = new NativeMemory(game.Id,Path.Combine(root,"k2.exe"),game.StartTime.ToUniversalTime()))
