@@ -29,8 +29,8 @@ public static class ConfigurationCode
             if (index < parts.Length && parts[index] == "OOS1") { GameMod.SetDesync(mod, true); index++; }
             if (index < parts.Length && parts[index] == "PB1")
             {
-                if (mod.Channel != "beta" || !GameMod.PawPatchSelected(mod) || parts.Length < index + 6)
-                    throw new FormatException("Pure beta options require the enabled beta patch.");
+                if (!GameMod.PawPatchSelected(mod) || parts.Length < index + 6)
+                    throw new FormatException("Pure options require the enabled patch.");
                 mod.PureBetaFeatures = true; index++;
                 bool Option(string prefix)
                 {

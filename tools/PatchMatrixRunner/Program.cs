@@ -66,7 +66,7 @@ internal static class Program
         foreach (var channel in new[] { "stable", "beta" })
             feeds[channel] = await client.GetChannelAsync(channel) ?? throw new InvalidDataException("Missing " + channel);
         NightmareSmoke = options.GetValueOrDefault("nightmare-smoke") == "true";
-        var cases = (options.GetValueOrDefault("pure-beta-smoke") == "true" ? PureBetaCases() : NightmareSmoke ? NightmareCases() : Cases()).Where(c => !options.TryGetValue("channel", out var channel) || c.Settings.Channel == channel)
+        var cases = (options.GetValueOrDefault("pure-stable-smoke") == "true" ? PureStableCases() : options.GetValueOrDefault("pure-beta-smoke") == "true" ? PureBetaCases() : NightmareSmoke ? NightmareCases() : Cases()).Where(c => !options.TryGetValue("channel", out var channel) || c.Settings.Channel == channel)
             .Where(c => !options.TryGetValue("mod", out var mod) || c.Settings.Mod == mod)
             .Where(c => !options.TryGetValue("case", out var id) || c.Id == id).ToArray();
         if(mode=="apply"&&(!options.ContainsKey("case")||cases.Length!=1))throw new ArgumentException("Apply requires one exact --case.");
@@ -204,6 +204,20 @@ internal static class Program
             }
             yield return new Case(mod+"-pure-stable-rollback",new UserSettings { Mod=mod,Channel="stable",VanillaPawPatchEnabled=true,ImmortalsPawPatchEnabled=true,GameVoiceLanguage="en" });
             yield return new Case(mod+"-pure-disabled",new UserSettings { Mod=mod,Channel="beta",VanillaPawPatchEnabled=false,ImmortalsPawPatchEnabled=false,GameVoiceLanguage="en" });
+        }
+    }
+    private static IEnumerable<Case> PureStableCases()
+    {
+        foreach (var item in PureBetaCases())
+        {
+            if (!item.Id.Contains("-pure-beta-")) continue;
+            item.Settings.Channel="stable";
+            yield return new Case(item.Id.Replace("-pure-beta-","-pure-stable-"),item.Settings);
+        }
+        foreach (var mod in new[]{GameMod.Vanilla,GameMod.Immortals})
+        {
+            yield return new Case(mod+"-pure-beta-promoted",new UserSettings{Mod=mod,Channel="beta",VanillaPawPatchEnabled=true,ImmortalsPawPatchEnabled=true,GameVoiceLanguage="en"});
+            yield return new Case(mod+"-pure-stable-disabled",new UserSettings{Mod=mod,Channel="stable",VanillaPawPatchEnabled=false,ImmortalsPawPatchEnabled=false,GameVoiceLanguage="en"});
         }
     }
     private static IEnumerable<Case> NightmareCases()

@@ -1,5 +1,28 @@
 # Paw's Patch for Vanilla and Immortals
 
+## Current release: 0.4.0
+
+`build_beta.py` builds the extended Pure composition for stable 0.4.0,
+runtime `1.3.72-pure.14`. `tools/PreparePure040.py` promotes the accepted
+0.4.0-beta.2 data byte-for-byte, publishes new immutable package identities,
+and verifies public assets before signing both current channel catalogs.
+The names `pure-beta-common`, `PureBetaFeatures` and configuration marker
+`PB1` are retained for compatibility; availability is determined by the feed.
+
+Surviving lair defenders are part of the core runtime. Current feeds advertise
+`pureLairRecoveryBuiltIn`; effective settings always report LR1 and the UI has
+no separate switch or optional lair package. Historical pinned beta feeds keep
+their original optional LR0/LR1 behavior and the user's saved preference.
+AI, independent hostility, roaming frequency and authored roaming companies
+remain optional. Both supported channels pass the native installation guard.
+
+No city automation, automatic militia, extra building slots, foundation
+distribution or fractional kingdom points are linked. The Pure AI profile
+retains its Vanilla/Immortals compatibility adaptation. Arcane packages and
+local experimental maps, roads, bridges and reconnection work are unchanged.
+
+## Previous stable release: 0.3.0
+
 `build_options.py` builds stable 0.3.0. It creates local,
 verified archives; it never installs, starts the game or publishes releases.
 `build_channels.py` records the previous 0.1.1 / 0.2.0-beta.1 workflow and is

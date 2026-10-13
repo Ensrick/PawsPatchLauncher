@@ -80,6 +80,7 @@ public sealed class ChannelManifest
     public bool ColorDesyncContinue { get; set; }
     public bool IndependentColorHostility { get; set; }
     public bool PureRuntimeOptions { get; set; }
+    public bool PureLairRecoveryBuiltIn { get; set; }
     public int PlayerColorCount { get; set; } = PawsPatchLauncher.PatchGuide.PlayerColorCount;
     public PatchGuideDocument? PatchGuide { get; set; }
     public List<ModGuideDocument> ModGuides { get; set; } = [];

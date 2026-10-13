@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "0.9.2",
+  "publishedAt": "2026-10-13",
+  "title": {
+    "ru": "Paw’s Launcher 0.9.2",
+    "en": "Paw’s Launcher 0.9.2",
+    "de": "Paw’s Launcher 0.9.2",
+    "fr": "Paw’s Launcher 0.9.2",
+    "cs": "Paw’s Launcher 0.9.2",
+    "uk": "Paw’s Launcher 0.9.2"
+  },
+  "body": {
+    "ru": "- Поддержка Paw’s Patch 0.4.0 для Vanilla и Immortals в релизном канале.\n- Защитники логов включены в основной патч; отдельный переключатель больше не нужен.",
+    "en": "- Support for Paw’s Patch 0.4.0 for Vanilla and Immortals in the Release channel.\n- Lair defenders are included in the core patch; the separate switch is no longer needed.",
+    "de": "- Unterstützung für Paw’s Patch 0.4.0 für Vanilla und Immortals im Release-Kanal.\n- Lagerverteidiger sind im Hauptpatch enthalten; der separate Schalter entfällt.",
+    "fr": "- Prise en charge de Paw’s Patch 0.4.0 pour Vanilla et Immortals dans le canal stable.\n- Les défenseurs des repaires font partie du patch principal ; l’interrupteur séparé n’est plus nécessaire.",
+    "cs": "- Podpora Paw’s Patch 0.4.0 pro Vanilla a Immortals ve stabilním kanálu.\n- Obránci doupat jsou součástí hlavního patche; samostatný přepínač již není potřeba.",
+    "uk": "- Підтримка Paw’s Patch 0.4.0 для Vanilla та Immortals у релізному каналі.\n- Захисники лігв включені до основного патча; окремий перемикач більше не потрібен."
+  }
+}

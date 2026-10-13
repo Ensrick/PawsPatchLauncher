@@ -67,7 +67,7 @@ public static class GamePackageSelector
                     baseIds.Add("pure-" + settings.Mod + "-rules");
                     baseIds.Add("pure-localization-bot-ui-" + GameLanguages.Text(settings));
                     if (settings.ImprovedAi) baseIds.Add("pure-ai-improvements");
-                    if (GameMod.PureComponents(settings).WoundedLairDefenders) baseIds.Add("pure-lair-recovery");
+                    if (!channel.PureLairRecoveryBuiltIn && GameMod.PureComponents(settings).WoundedLairDefenders) baseIds.Add("pure-lair-recovery");
                     if (settings.IndependentHostility) { baseIds.Add("pure-independent-hostility"); baseIds.Add("pure-" + settings.Mod + "-hostility"); }
                     baseIds.Add("pure-" + settings.Mod + "-roaming-" + settings.RoamingSpawnMode
                         + (settings.AdditionalRoamingCompanies ? "-with-new" : "-no-new"));

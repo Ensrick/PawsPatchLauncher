@@ -51,8 +51,9 @@ internal static class PawLobbyCompatibility
         var state=Obj(serializer.DeserializeObject(json));var settings=Obj(Value(state,"appliedSettings"));var modules=Obj(Value(state,"modules"));
 #if PAW_PURE_EXTENDED
         string mode = Text(settings,"mod");
-        if((mode!="vanilla" && mode!="immortals") || Text(settings,"channel")!="beta" || !Flag(settings,"pawPatchEnabled") || Flag(settings,"dataOnly"))
-            throw new InvalidDataException("Select the Vanilla or Immortals beta with Paw's Patch enabled.");
+        string channel = Text(settings,"channel");
+        if((mode!="vanilla" && mode!="immortals") || (channel!="stable" && channel!="beta") || !Flag(settings,"pawPatchEnabled") || Flag(settings,"dataOnly"))
+            throw new InvalidDataException("Select Vanilla or Immortals with Paw's Patch enabled.");
         var core=Obj(Value(modules,"pure-fixes-data"));
         if(!Flag(core,"enabled") || Text(core,"version")!=Version)
             throw new InvalidDataException("Update and apply Paw's Patch "+Version+" in the launcher.");

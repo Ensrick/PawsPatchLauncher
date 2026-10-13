@@ -70,15 +70,15 @@ export async function configurationTests(db, login, rpc, user, peer) {
  check((await rpc('paw_offer_create',[peer,'a0850000-0000-0000-0000-000000000004','config','PAW-STABLE-VANILLA-CL1',null,null,null])).status==='invalid_offer','invalid offer denied');
  // Leave the shared fixtures as they were before this suite.
  await db.exec('reset role');
- for(const mod of ['VANILLA','IMMORTALS']) for(const spawn of [1,2,4]) for(let mask=0;mask<16;mask++) {
-  const code=`PAW-BETA-${mod}-PP1-PB1-AI${mask&1?1:0}-LR${mask&2?1:0}-IW${mask&4?1:0}-SP${spawn}-RM${mask&8?1:0}`;
+ for(const channel of ['STABLE','BETA']) for(const mod of ['VANILLA','IMMORTALS']) for(const spawn of [1,2,4]) for(let mask=0;mask<16;mask++) {
+  const code=`PAW-${channel}-${mod}-PP1-PB1-AI${mask&1?1:0}-LR${mask&2?1:0}-IW${mask&4?1:0}-SP${spawn}-RM${mask&8?1:0}`;
   for(const suffix of ['', '-TXUK-VORU']) check((await db.query('select paw_private.valid_social_configuration($1) ok',[code+suffix])).rows[0].ok,'Pure beta '+code+suffix);
-  for(const bad of [code.replace('-BETA-','-STABLE-'),code.replace('-PP1',''),code+'-DATA'])
+  for(const bad of [code.replace('-PP1',''),code+'-DATA'])
    check(!(await db.query('select paw_private.valid_social_configuration($1) ok',[bad])).rows[0].ok,'Pure beta restriction '+bad);
  }
- for(const mod of ['VANILLA','IMMORTALS']) {
-  const code=`PAW-BETA-${mod}-PP1-PB1-AI1-LR1-IW1-SP2-RM1`;
-  await ready(); check((await rpc('paw_presence',[false,'beta',{improved_ai:false,lair_recovery:false},code])).status==='ok','Pure beta presence');
+ for(const channel of ['stable','beta']) for(const mod of ['VANILLA','IMMORTALS']) {
+  const code=`PAW-${channel.toUpperCase()}-${mod}-PP1-PB1-AI1-LR1-IW1-SP2-RM1`;
+  await ready(); check((await rpc('paw_presence',[false,channel,{improved_ai:false,lair_recovery:false},code])).status==='ok','Pure channel presence');
   await login(peer); const p=(await rpc('paw_social_list',[])).players.find(p=>p.id===user);
   check(p.components.improved_ai&&p.components.lair_recovery&&p.components.hostility&&p.components.roaming&&p.components.additional_roaming&&p.components.large_maps,'derive Pure beta flags from code');
   await db.exec('reset role');

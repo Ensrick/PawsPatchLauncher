@@ -17,7 +17,7 @@ internal static class OptionsTests
             bool supported = mod == "arcane-wars" && (channel == "stable" || channel == "beta");
 #if PAW_PURE_EXTENDED
             module = "pure-ai-improvements";
-            supported = (mod == "vanilla" || mod == "immortals") && channel == "beta";
+            supported = (mod == "vanilla" || mod == "immortals") && (channel == "stable" || channel == "beta");
 #endif
             var modules = new Dictionary<string, object> { {module, new Dictionary<string, object> { {"enabled", installed} }} };
             var state = new Dictionary<string, object> { {"appliedSettings",settings}, {"modules",modules} };

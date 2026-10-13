@@ -186,7 +186,7 @@ public partial class MainWindow
             if (modules && !arcane && GameMod.HasPureOptions(_channel))
                 ColorsModuleCard.Visibility = OosModuleCard.Visibility = Visibility.Visible;
             bool pureBeta = modules && !arcane && GameMod.HasPureBeta(_channel);
-            PureLairCard.Visibility = pureBeta ? Visibility.Visible : Visibility.Collapsed;
+            PureLairCard.Visibility = pureBeta && !_channel!.PureLairRecoveryBuiltIn ? Visibility.Visible : Visibility.Collapsed;
             PureLairTitleText.Text = T("Защитники логов", "Lair defenders");
             PureLairDescriptionText.Text = T("Выжившие защитники выходят в бой, не дожидаясь полного здоровья.", "Surviving defenders deploy without waiting for full health.");
             if (pureBeta) IndependentHostilityCard.Visibility = RoamingSpawnCard.Visibility = AdditionalRoamingCard.Visibility = Visibility.Visible;
@@ -197,6 +197,9 @@ public partial class MainWindow
 
     private string PureFixesDescription(bool partial)
     {
+        if (!partial && GameMod.HasPureBeta(GuideChannel()) && GuideChannel()!.PureLairRecoveryBuiltIn)
+            return T("Экономика союзника, камера, исправления рот и вылетов, настройки ботов, интерфейс наблюдателя и звуковая кнопка. Большие карты, 16 королевств и 8 команд, случайные карта и время суток. Выжившие защитники логов выходят в бой, не дожидаясь полного здоровья. Улучшения ботов, странствующие роты и вражда независимых семейств настраиваются отдельно.",
+                "Allied economy, camera, company and crash fixes, bot settings, observer interface and sound button. Larger maps, 16 kingdoms and 8 teams, random map and time of day. Surviving lair defenders deploy without waiting for full health. Bot improvements, roaming companies and independent family hostility have separate settings.");
         if (!partial && GameMod.HasPureBeta(GuideChannel()))
             return T("Экономика союзника, более далёкая камера, исправления рот и вылетов, общие настройки ботов, интерфейс наблюдателя и звуковая кнопка. Добавлены большие карты, 16 королевств и 8 команд, случайные карта и время суток. Улучшения ботов, защитники логов, странствующие роты и вражда независимых семейств настраиваются отдельно.",
                 "Allied economy, extended camera, company and crash fixes, shared bot settings, observer interface and sound button. Adds larger maps, 16 kingdoms and 8 teams, random map and time of day. Bot improvements, lair defenders, roaming companies and independent family hostility have separate settings.");

@@ -42,8 +42,36 @@ namespace PawPureFixes
             }
             return b;
         }
+        static void CheckLobbyIdentity()
+        {
+            var serializer=new System.Web.Script.Serialization.JavaScriptSerializer();
+            foreach(string mode in new[]{"vanilla","immortals"})
+            {
+                string stable=null;
+                foreach(string channel in new[]{"stable","beta","unknown"})
+                foreach(bool patch in new[]{true,false}) foreach(bool dataOnly in new[]{false,true})
+                {
+                    var settings=new {mod=mode,channel=channel,pawPatchEnabled=patch,dataOnly=dataOnly};
+                    var modules=new Dictionary<string,object>{
+                        {"pure-fixes-data",new {enabled=true,version=PureChannel.PatchVersion,files=new object[0]}},
+                        {"immortals",new {enabled=mode=="immortals",version="2.1",files=new object[0]}}
+                    };
+                    string json=serializer.Serialize(new {appliedSettings=settings,modules=modules});
+                    bool allowed=channel!="unknown"&&patch&&!dataOnly, rejected=false, russian;
+                    string token=null;
+                    try { token=PawLobbyCompatibility.Identity(json,new string('A',64),"helper.exe",new string('B',64),out russian); }
+                    catch(InvalidDataException) { rejected=true; }
+                    if(rejected==allowed)throw new Exception("Pure lobby channel gate: "+mode+"/"+channel);
+                    if(!allowed)continue;
+                    if(channel=="stable")stable=token;
+                    else if(token!=stable)throw new Exception("Equivalent Pure channels have different lobby identities");
+                }
+            }
+            Console.WriteLine("PURE_LOBBY_CHANNEL_PASS 24 valid/invalid channel and patch modes");
+        }
         static int Main(string[] args)
         {
+            CheckLobbyIdentity();
             if (PawLobbyCompatibility.Version != PureChannel.PatchVersion) throw new Exception("Pure lobby version mismatch");
             if (AiPolicyPayload.Profile != "pure") throw new Exception("Pure runtime contains another AI profile");
             if(Program.Hash(args[0])!="B865D8206990C4F055C51DE857F0B09B88AB5EE3B6AE74EE5232134001AA591C")throw new Exception("Unverified game snapshot");

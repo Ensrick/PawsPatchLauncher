@@ -31,7 +31,6 @@ internal static class PawAiOptions
         module = "pure-ai-improvements";
         supported = settings.TryGetValue("mod", out value)
             && (Object.Equals(value, "vanilla") || Object.Equals(value, "immortals"));
-        channelSupported = settings.TryGetValue("channel", out value) && Object.Equals(value, "beta");
 #endif
         bool installed = modules.TryGetValue(module, out value)
             && ((Dictionary<string, object>)value).TryGetValue("enabled", out value) && Object.Equals(value, true);

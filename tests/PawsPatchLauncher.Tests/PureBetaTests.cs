@@ -60,7 +60,33 @@ internal static class PureBetaTests
             s.Mod=mod=="vanilla"?"immortals":"vanilla";
             Check(GameMod.PureComponents(s).RoamingSpawnMode=="standard","mode preference isolation");
         }
-        foreach(var bad in new[]{"PAW-STABLE-VANILLA-PP1-PB1-AI1-LR1-IW0-SP1-RM0","PAW-BETA-VANILLA-PB1-AI1-LR1-IW0-SP1-RM0","PAW-BETA-VANILLA-PP1-PB1-AI1-LR1-IW0-SP1-RM0-DATA","PAW-BETA-VANILLA-PP1-PB1-AI1-LR1-IW0-SP3-RM0","PAW-BETA-VANILLA-PP1-PB1-AI1"})
+        foreach(var channel in new[]{"stable","beta"})
+        foreach(var mod in new[]{"vanilla","immortals"})
+        foreach(var frequency in new[]{"standard","x2","x4"})
+        for(int flags=0;flags<32;flags++)
+        {
+            bool Flag(int i)=>(flags&(1<<i))!=0;
+            var released=Feed(channel); released.PureLairRecoveryBuiltIn=true;
+            released.Packages.RemoveAll(p=>p.Id=="pure-lair-recovery");
+            var s=new UserSettings{Mod=mod,Channel=channel,RussianLocalization=false,GameVoiceLanguage="en"};
+            GameMod.SetPawPatch(s,true);var p=GameMod.PureComponents(s);
+            p.Colors=Flag(0);p.IgnoreDesync=Flag(1);p.ImprovedAi=Flag(2);p.WoundedLairDefenders=false;
+            p.IndependentHostility=Flag(3);p.AdditionalRoamingCompanies=Flag(4);p.RoamingSpawnMode=frequency;
+            var active=EffectiveSettings.ForFeed(s,released);var code=ConfigurationCode.Create(active);
+            Check(active.PureBetaFeatures&&GameMod.PureComponents(active).WoundedLairDefenders,"promoted features and core defenders");
+            Check(!p.WoundedLairDefenders,"active core feature must not overwrite legacy pinned preference");
+            Check(FriendConfiguration.TryParse(code,channel,out var peer)&&ConfigurationCode.Create(peer)==code,"stable/beta roundtrip");
+            FriendConfiguration.ValidateFeed(peer,released);
+            var packages=GamePackageSelector.Select(released,active,false,active.CustomPlayerColors);
+            Check(!packages.Any(p=>p.Id=="pure-lair-recovery")&&packages.Any(p=>p.Id=="pure-beta-common"),"defenders belong to the core runtime");
+            Check(packages.Any(p=>p.Id=="pure-ai-improvements")==Flag(2),"stable AI selection");
+            Check(FriendConfiguration.Components(active)["lair_recovery"],"core defender presence");
+            s.DataOnly=true;
+            Check(!EffectiveSettings.ForFeed(s,released).PureBetaFeatures,"promoted data-only gating");
+            s.DataOnly=false;GameMod.SetPawPatch(s,false);
+            Check(!EffectiveSettings.ForFeed(s,released).PureBetaFeatures,"promoted master-off gating");
+        }
+        foreach(var bad in new[]{"PAW-STABLE-VANILLA-PB1-AI1-LR1-IW0-SP1-RM0","PAW-BETA-VANILLA-PB1-AI1-LR1-IW0-SP1-RM0","PAW-BETA-VANILLA-PP1-PB1-AI1-LR1-IW0-SP1-RM0-DATA","PAW-BETA-VANILLA-PP1-PB1-AI1-LR1-IW0-SP3-RM0","PAW-BETA-VANILLA-PP1-PB1-AI1"})
             Check(!FriendConfiguration.TryParse(bad,bad.Contains("STABLE")?"stable":"beta",out _),"invalid contract");
         Console.WriteLine("PURE BETA PASS "+count+": mode isolation, option matrix, native/data pairing, config exchange and legacy gating");
         return count;

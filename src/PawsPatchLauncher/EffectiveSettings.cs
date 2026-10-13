@@ -36,7 +36,7 @@ public static class EffectiveSettings
             active.DisablePowersAndShards = active.LargeMapSizes = false;
             active.RoamingSpawnMode = "standard";
             active.DesyncMode = options.IgnoreDesync ? "continue" : "official";
-            active.PureBetaFeatures &= active.Channel == "beta" && enabled;
+            active.PureBetaFeatures &= enabled;
             if (active.PureBetaFeatures)
             {
                 active.ImprovedAi = options.ImprovedAi;
@@ -53,11 +53,12 @@ public static class EffectiveSettings
     {
         var active = ForChannel(preferences, feed is not null && feed.Channel.Equals(preferences.Channel, StringComparison.OrdinalIgnoreCase)
             && (GameMod.IsArcaneWars(preferences) ? feed.Packages.Any(p => p.Id.Equals("player-colors", StringComparison.OrdinalIgnoreCase)) : GameMod.HasPureOptions(feed)));
-        var pureBeta = active.Channel == "beta" && GameMod.HasPureBeta(feed);
+        var pureBeta = feed?.Channel == active.Channel && GameMod.HasPureBeta(feed);
         active.PureBetaFeatures = !GameMod.IsArcaneWars(active) && pureBeta && active.PawPatchEnabled && !active.DataOnly;
         if (active.PureBetaFeatures)
         {
             var options = GameMod.PureComponents(active);
+            if (feed!.PureLairRecoveryBuiltIn) options.WoundedLairDefenders = true;
             active.ImprovedAi = options.ImprovedAi;
             active.IndependentHostility = options.IndependentHostility;
             active.AdditionalRoamingCompanies = options.AdditionalRoamingCompanies;

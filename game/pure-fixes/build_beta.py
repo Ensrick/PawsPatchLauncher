@@ -53,6 +53,13 @@ def main():
         compiler=[args.dotnet,Path(sdk[1].rstrip(']'))/sdk[0]/'Roslyn/bincore/csc.dll']
         deterministic=['/nostdlib+','/langversion:7.3','/deterministic+','/pathmap:'+str(ROOT)+'=/src']
         deterministic+=['/r:'+str(args.compiler.parent/(n+'.dll')) for n in ('mscorlib','System','System.Core','System.Drawing','System.Windows.Forms','System.Web.Extensions')]
+    for profile in ('pure','arcane'):
+        test=out/('AiOptions-'+profile+'.exe')
+        options=['/nologo','/platform:x86','/target:exe','/main:OptionsTests','/out:'+str(test)]
+        options+=deterministic or ['/r:System.Core.dll','/r:System.Web.Extensions.dll']
+        if profile=='pure':options+=['/define:PAW_PURE_EXTENDED']
+        run(compiler+options+[ROOT/'game/ai-policy/PawAiOptions.cs',ROOT/'game/ai-policy/OptionsTests.cs'])
+        check=run([test]);(out/('ai-options-'+profile+'.txt')).write_text(check);print(profile,check,flush=True)
     for colors in (False,True):
         for sync in (False,True):
             name='k2_paws_pure'+('_colors' if colors else '')+('_sync' if sync else '')+('_fixes' if not(colors or sync) else '')+'_1372.exe'

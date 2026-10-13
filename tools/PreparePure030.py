@@ -149,7 +149,7 @@ def readback(a):
         scoped(verify(read(out/'previous'/(name+'.json')),key()),public)
     assert json.loads(fetch(root+'feed/changelog.history.json'))==read(ROOT/'feed/changelog.history.json')
     write(out/'readback.json',dict(passed=True,catalogCommit=head,patch=PATCH,launcher=VERSION))
-    print('PUBLICATION_PASS pure 0.3.0 / launcher 0.8.10; 4 signed feeds; unchanged Arcane packages; '+head)
+    print('PUBLICATION_PASS pure '+PATCH+' / launcher '+VERSION+'; 4 signed feeds; unchanged Arcane packages; '+head)
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','finalize','promote','readback']);p.add_argument('--out',type=Path,required=True)

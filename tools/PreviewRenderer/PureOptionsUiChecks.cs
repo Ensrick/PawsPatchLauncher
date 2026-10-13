@@ -39,7 +39,8 @@ internal static class PureOptionsUiChecks
                     Call("ApplyLanguage");Call("SetActivePage","modules");Call("RefreshModControls");
                     bool beta=GameMod.HasPureOptions(feed), extended=GameMod.HasPureBeta(feed);
                     foreach(var card in new[]{"ColorsModuleCard","OosModuleCard"})Check(C<Border>(card).Visibility==(beta?Visibility.Visible:Visibility.Collapsed),mod+feed.Channel+card);
-                    foreach(var card in new[]{"IndependentHostilityCard","RoamingSpawnCard","AdditionalRoamingCard","PureLairCard"})Check(C<Border>(card).Visibility==(extended?Visibility.Visible:Visibility.Collapsed),"Pure beta card visibility "+card);
+                    foreach(var card in new[]{"IndependentHostilityCard","RoamingSpawnCard","AdditionalRoamingCard"})Check(C<Border>(card).Visibility==(extended?Visibility.Visible:Visibility.Collapsed),"Pure card visibility "+card);
+                    Check(C<Border>("PureLairCard").Visibility==(extended&&!feed.PureLairRecoveryBuiltIn?Visibility.Visible:Visibility.Collapsed),"Core defenders have no separate toggle");
                     Check(C<Border>("SiegeBalanceCard").Visibility==Visibility.Collapsed,"Siege balance leaked");
                     Check(C<Border>("ImprovedAiCard").Visibility==(extended?Visibility.Visible:Visibility.Collapsed),"Improved AI visibility");
                     var help=(string)Call("CoreHelpText")!;
@@ -65,10 +66,16 @@ internal static class PureOptionsUiChecks
                     if (extended)
                     {
                         var lair=C<CheckBox>("PureLairToggle");var ai=C<CheckBox>("ImprovedAiToggle");
-                        Check(lair.IsEnabled&&ai.IsEnabled,"Pure beta options disabled");
-                        lair.IsChecked=false;Call("GameplayOptionChanged",lair,new RoutedEventArgs());
-                        Check(!GameMod.PureComponents(prefs).WoundedLairDefenders,"Lair choice not saved");
-                        lair.IsChecked=true;Call("GameplayOptionChanged",lair,new RoutedEventArgs());
+                        Check(ai.IsEnabled,"Pure AI option disabled");
+                        if (feed.PureLairRecoveryBuiltIn)
+                            Check(GameMod.PureComponents(EffectiveSettings.ForFeed(prefs,feed)).WoundedLairDefenders,"Core defenders inactive");
+                        else
+                        {
+                            Check(lair.IsEnabled,"Legacy lair option disabled");
+                            lair.IsChecked=false;Call("GameplayOptionChanged",lair,new RoutedEventArgs());
+                            Check(!GameMod.PureComponents(prefs).WoundedLairDefenders,"Lair choice not saved");
+                            lair.IsChecked=true;Call("GameplayOptionChanged",lair,new RoutedEventArgs());
+                        }
                     }
                     Set("_compatibilityState",GameCompatibilityState.Unsupported);Call("RefreshPawComponentDependency");
                     Check(colors.IsChecked==false&&sync.IsChecked==false&&!colors.IsEnabled&&!sync.IsEnabled,"Unsupported EXE controls active");

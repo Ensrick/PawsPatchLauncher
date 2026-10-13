@@ -28,7 +28,7 @@ namespace PawPureFixes
                 + ",\"companyPositionRecoveryRevision\":1,\"exhaustionRecoveryRevision\":1"
                 + ",\"bulkBotLobbyRevision\":3,\"aiPolicyRevision\":39,\"aiPolicyProfile\":\"pure\",\"aiPolicyCompatibilityRevision\":1,\"aiImprovementsSelectable\":true"
                 + ",\"lobbyCompatibilityProtocol\":1,\"observerTeamCommandGuardRevision\":1"
-                + ",\"independentHostilitySelectable\":true,\"woundedLairDefendersSelectable\":true"
+                + ",\"independentHostilitySelectable\":true,\"woundedLairDefendersSelectable\":false,\"woundedLairDefendersBuiltIn\":true"
                 + ",\"builtInGraphicsDiagnosticsRevision\":1,\"goldSoundButton\":true"
                 + ",\"automaticMilitia\":false,\"additionalBuildingSlots\":false"
                 + ",\"foundationDistribution\":false,\"fractionalKingdomPoints\":false}";
@@ -40,9 +40,9 @@ namespace PawPureFixes
                 @"data\UI\Game\PawGoldSound.png",@"data\Audio\paws_gold_button.tgi",@"data\templates\template_rmc_k2.tgi",
                 @"data\game\world_rules_k2.tgi",@"data\randommap\rmc_temperate03.tgi"};
             foreach(string path in required)
-                if(!File.Exists(Path.Combine(root,path)))throw new InvalidDataException("Missing Pure beta data: "+path);
+                if(!File.Exists(Path.Combine(root,path)))throw new InvalidDataException("Missing Pure patch data: "+path);
             if(!ModuleEnabled(root,"pure-beta-common") || !ModuleEnabled(root,"pure-fixes-runtime"))
-                throw new InvalidDataException("Apply the complete Pure beta in the launcher.");
+                throw new InvalidDataException("Apply the complete Pure patch in the launcher.");
             NightmareDifficultyData.Validate(root,PawAiOptions.Read(root));
         }
         internal static void Prepare(string root)
@@ -50,7 +50,7 @@ namespace PawPureFixes
             ReleaseStartup.GameDataDirectory = Path.GetFullPath(root);
             ImprovedAi = PawAiOptions.Read(root);
             PawAiOptions.Enabled = ImprovedAi;
-            WoundedDefenders = ModuleEnabled(root,"pure-lair-recovery");
+            WoundedDefenders = true;
             Hostility = ModuleEnabled(root,"pure-independent-hostility");
             NightmareDifficultyData.Validate(root, ImprovedAi);
             PawLobbyCompatibility.Prepare(root);
