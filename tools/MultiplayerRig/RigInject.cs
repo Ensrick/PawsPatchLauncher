@@ -7,7 +7,9 @@ using System.Threading;
 // Test rig only: installs the multiplayer saves module into one running copy of the game, with exactly the code
 // the pure helper uses (game/multiplayer-saves/MultiplayerSaves.cs, module embedded the same way).
 //   RigInject.exe <process id> <rig folder of this copy> <autosave minutes>
-// The module and its log go to <rig folder>; exit code 0 when it is installed.
+// The module and its log (<rig folder>\Logs\paws_recovery.log) go to <rig folder>. Its save-data directory is the
+// copy's own <rig folder>\Documents\Kohan2\data, through the private-profile mechanism Prepare reads
+// (reconnect-test.marker in <rig folder> plus PAWS_TEST_DOCUMENTS); exit code 0 when it is installed.
 internal static class RigInject
 {
     const string GameHash = "1EB79BBB678668BE5A05F8C98103CD9988048490CE7C53C74C9A1D0813E9CD45";
@@ -36,7 +38,10 @@ internal static class RigInject
                     if (DateTime.UtcNow > until) throw new TimeoutException("no game window after 60 s");
                     Thread.Sleep(250);
                 }
-                MultiplayerSaves.Prepare(args[1]);
+                string folder = Path.GetFullPath(args[1]);
+                File.WriteAllText(Path.Combine(folder, "reconnect-test.marker"), "Paw's multiplayer test rig: this copy's private Documents\r\n");
+                Environment.SetEnvironmentVariable("PAWS_TEST_DOCUMENTS", Path.Combine(folder, "Documents"));
+                MultiplayerSaves.Prepare(folder);
                 bool ready = false;
                 MultiplayerSaves.Install(game, game.MainModule.BaseAddress, delegate(string line)
                 {

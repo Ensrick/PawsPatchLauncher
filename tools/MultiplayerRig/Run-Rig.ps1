@@ -44,7 +44,7 @@ $copies = [ordered]@{
 }
 function Docs($copy) { Join-Path $copies[$copy] 'Documents' }        # the game adds \Kohan2\data
 function Saves($copy) { Join-Path (Docs $copy) 'Kohan2\data\Save' }
-function ModuleLog($copy) { Join-Path $copies[$copy] 'paws_multiplayer_saves_1372.log' }
+function ModuleLog($copy) { Join-Path $copies[$copy] 'Logs\paws_recovery.log' }
 $shfolderInGame = Join-Path $Game 'shfolder.dll'
 $ownFiles = @($shfolderInGame) + @('host', 'client' | ForEach-Object { Join-Path $scripts "$_.txt" })
 
