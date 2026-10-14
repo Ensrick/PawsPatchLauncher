@@ -1,4 +1,4 @@
-/* Test rig only (tools/MultiplayerRig): a stand-in shfolder.dll that lets two copies of Kohan II 1.3.72 play a LAN
+/* Test rig only (tools/MultiplayerRig): a stand-in shfolder.dll that lets two copies of Kohan II (1.3.72 or 1.3.68) play a LAN
  * match against each other on one PC. Never ships to players; Run-Rig.ps1 copies it into the game folder for a run
  * and removes it afterwards.
  *
@@ -7,7 +7,7 @@
  *    K2_RIG_DOCUMENTS=<folder> it answers CSIDL_PERSONAL with that folder; every other call goes to the system DLL.
  *  - Joining by address: no script command fills the Direct IP dialog's editboxes, so with K2_RIG_JOIN=<ip>:<port>
  *    the dialog's two editbox reads (calls of the widget text getter) answer with that address instead. Installed on
- *    the first SHGetFolderPathW call (game code, after the loader lock), only when the bytes are 1.3.72's; the DLL
+ *    the first SHGetFolderPathW call (game code, after the loader lock), only when the bytes are a known build's; the DLL
  *    then pins itself, because the game unloads shfolder.dll after the call.
  */
 #define WIN32_LEAN_AND_MEAN
@@ -18,10 +18,15 @@
 
 #define CSIDL_PERSONAL_ID 0x0005
 #define CSIDL_FLAG_CREATE_BIT 0x8000
-#define WIDGET_TEXT 0x29fc02    /* lea eax, [ecx+0x6c]; ret: the address of a widget's engine string */
-#define JOIN_IP_READ 0xef184    /* KKC_JoinDirectDialog join handler: IP editbox text */
-#define JOIN_PORT_READ 0xef1a6  /* and port editbox text */
-#define STRING_CTOR 0x205de     /* engine string from const wchar_t* (thiscall) */
+#define STRING_CTOR 0x205de     /* engine string from const wchar_t* (thiscall), the same in both builds */
+
+/* Per build: the widget text getter (lea eax, [ecx+0x6c]; ret: the address of a widget's engine string) and the
+ * KKC_JoinDirectDialog join handler's calls of it for the IP and port editboxes. A build is used only when the getter
+ * has those bytes and both calls go to it. */
+static const struct { const char *name; uintptr_t getter, ip, port; } builds[] = {
+    {"1.3.72", 0x29fc02, 0xef184, 0xef1a6},
+    {"1.3.68", 0x29f774, 0xeedd0, 0xeedf2},
+};
 
 typedef HRESULT (WINAPI *FolderPathW)(HWND, int, HANDLE, DWORD, LPWSTR);
 typedef HRESULT (WINAPI *FolderPathA)(HWND, int, HANDLE, DWORD, LPSTR);
@@ -85,10 +90,15 @@ static void install_join(void) {
     wcscpy(joinIp, value);
     wcscpy(joinPort, colon + 1);
     image = (uintptr_t)GetModuleHandleW(0);
-    if (memcmp((const void *)(image + WIDGET_TEXT), getter, sizeof getter)) return;
-    if (redirect(image + JOIN_IP_READ, image + WIDGET_TEXT, ip_text) &&
-        !redirect(image + JOIN_PORT_READ, image + WIDGET_TEXT, port_text))
-        redirect(image + JOIN_IP_READ, (uintptr_t)ip_text, (void *)(image + WIDGET_TEXT));
+    for (size_t i = 0; i < sizeof builds / sizeof builds[0]; i++) {
+        uintptr_t text = image + builds[i].getter;
+        if (memcmp((const void *)text, getter, sizeof getter) || call_target(image + builds[i].ip) != text ||
+            call_target(image + builds[i].port) != text)
+            continue;
+        if (redirect(image + builds[i].ip, text, ip_text) && !redirect(image + builds[i].port, text, port_text))
+            redirect(image + builds[i].ip, (uintptr_t)ip_text, (void *)text);
+        return;
+    }
 }
 
 static HRESULT WINAPI folder_path_w(HWND window, int csidl, HANDLE token, DWORD flags, LPWSTR path) {

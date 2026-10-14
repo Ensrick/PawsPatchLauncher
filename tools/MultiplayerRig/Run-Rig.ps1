@@ -15,13 +15,22 @@
 #   -Scenario HostLeaves  host: LAN lobby, quits once the client is in it. Checks whether the client survives (on 1.3.68
 #                         the client crashed in 4 of 18 such runs, after a failed assertion).
 #
+# Rehearsals of the game as players have it (1.3.68 or 1.3.72, whatever the launcher applied; no module is installed):
+#   -Scenario Match       host: LAN game, random map, launch, save every -SaveEvery minutes for -MatchMinutes, then
+#                         stay until the client has left. client: join, play, leave. Checks the saves, that nobody
+#                         desynced (no sync log) and that both closed normally.
+#   -Scenario Reload      the host hosts the match again from -LoadSave (e.g. "Rig Match 2.RSG" from a Match run); the
+#                         client joins without it, receives it, and both play it for a few minutes.
+#   -Scenario LobbyRejoin the client joins, leaves the lobby and joins again before the host launches (three of four
+#                         desyncs in one evening on 1.3.68 started right after players rejoined the lobby).
+#
 # Each copy gets its own Documents folder (the stand-in shfolder.dll, K2_RIG_DOCUMENTS) and its own module log under
 # %LOCALAPPDATA%\PawsMultiplayerRig; the player's own Documents\Kohan2 is only read. The game folder gets shfolder.dll
 # and PawsRig\host.txt and client.txt for the run; the rig refuses to start if any of them exists already, and removes
 # only those afterwards. Its Logs folder (the game keeps only about ten logs) is copied aside first.
 param(
     [Parameter(Mandatory = $true)][string] $RigBuild,  # tools/MultiplayerRig/build.ps1 -OutputDirectory
-    [ValidateSet('SaveCopy', 'Autosave', 'LoadCopy', 'HostLeaves')] [string] $Scenario = 'SaveCopy',
+    [ValidateSet('SaveCopy', 'Autosave', 'LoadCopy', 'HostLeaves', 'Match', 'Reload', 'LobbyRejoin')] [string] $Scenario = 'SaveCopy',
     [string] $Game = 'C:\Program Files (x86)\Steam\steamapps\common\Kohan II',
     [int] $Port = 5860,                  # the first port the game tries for a LAN host (5860-5869)
     [int] $LaunchAfter = 90,             # seconds the host waits in its lobby for the client before launching
@@ -29,6 +38,8 @@ param(
     [string] $SaveName = 'Rig Test',
     [string] $LoadSave,                  # LoadCopy: the save the host loads (copied into its Save folder)
     [int] $AutosaveMinutes = 1,          # the module's autosave interval for this run (the helper uses 5)
+    [int] $MatchMinutes = 10,            # Match: minutes of play; Reload and LobbyRejoin play a third of it
+    [int] $SaveEvery = 5,                # Match: the host saves every this many minutes
     [switch] $TestSetupFailure           # developer check of the rig itself: fail right after the host copy starts
 )
 $ErrorActionPreference = 'Stop'
@@ -45,13 +56,20 @@ $copies = [ordered]@{
 function Docs($copy) { Join-Path $copies[$copy] 'Documents' }        # the game adds \Kohan2\data
 function Saves($copy) { Join-Path (Docs $copy) 'Kohan2\data\Save' }
 function ModuleLog($copy) { Join-Path $copies[$copy] 'Logs\paws_recovery.log' }
+function SyncLogs($copy) { Join-Path (Docs $copy) 'Kohan2\data\synclogs' }  # each PC writes its sync log here on a desync
 $shfolderInGame = Join-Path $Game 'shfolder.dll'
 $ownFiles = @($shfolderInGame) + @('host', 'client' | ForEach-Object { Join-Path $scripts "$_.txt" })
+# The multiplayer saves module runs only on 1.3.72; the rehearsals run the game exactly as the launcher left it.
+$module = $Scenario -in 'SaveCopy', 'Autosave', 'LoadCopy', 'HostLeaves'
 
 if (Get-Process k2 -ErrorAction SilentlyContinue) { throw 'Kohan II is already running; close it first (never run the rig while someone plays).' }
 if (-not (Get-Process steam -ErrorAction SilentlyContinue)) { throw 'Steam is not running (the game''s copy protection needs it).' }
-foreach ($f in $rigShfolder, $inject) { if (-not (Test-Path $f)) { throw "missing ${f}: run build.ps1 first" } }
-if ((Get-FileHash (Join-Path $Game 'k2.exe')).Hash -ne '1EB79BBB678668BE5A05F8C98103CD9988048490CE7C53C74C9A1D0813E9CD45') { throw 'the game is not 1.3.72 (Steam build 25068126)' }
+foreach ($f in @($rigShfolder) + @(if ($module) { $inject })) { if (-not (Test-Path $f)) { throw "missing ${f}: run build.ps1 first" } }
+$build = @{ '1EB79BBB678668BE5A05F8C98103CD9988048490CE7C53C74C9A1D0813E9CD45' = '1.3.72'
+    'CB64676391EDF1E4677B79038A2C219B11B5E1F4D4C75D96AD9E74A7AFB9DF7A' = '1.3.68' }[(Get-FileHash (Join-Path $Game 'k2.exe')).Hash]
+if (-not $build) { throw 'the game is neither 1.3.72 (Steam build 25068126) nor 1.3.68 (Steam build 24805354)' }
+if ($module -and $build -ne '1.3.72') { throw "-Scenario $Scenario installs the multiplayer saves module, which needs 1.3.72; the game is $build" }
+"game: Kohan II $build"
 # Every path the run creates in the game folder must be new: never overwrite or remove a file the rig did not create
 # in this run (a leftover from an interrupted run included: check it and remove it by hand).
 foreach ($f in $ownFiles) { if (Test-Path -LiteralPath $f) { throw "$f exists already; not touching it" } }
@@ -66,12 +84,12 @@ foreach ($f in Get-ChildItem $logs -File) {
 }
 "game logs copied to $backup"
 
-# LoadCopy: read the save before anything below empties the rig's Save folders (it may be a copy from an earlier run
-# in one of them).
+# LoadCopy, Reload: read the save before anything below empties the rig's Save folders (it may be a copy from an
+# earlier run in one of them).
 $loadLeaf = $loadBytes = $null
-if ($Scenario -eq 'LoadCopy') {
+if ($Scenario -in 'LoadCopy', 'Reload') {
     if (-not $LoadSave -or -not (Test-Path -LiteralPath $LoadSave -PathType Leaf) -or [IO.Path]::GetExtension($LoadSave) -ne '.rsg') {
-        throw 'LoadCopy needs -LoadSave <a .RSG file>'
+        throw "$Scenario needs -LoadSave <a .RSG file>"
     }
     $loadLeaf = Split-Path $LoadSave -Leaf
     $loadBytes = [IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $LoadSave).ProviderPath)
@@ -98,12 +116,13 @@ foreach ($copy in $copies.Keys) {
     robocopy $playerData $data /E /XD Save saves CampaignSave DynamicCampaignSave Films Maps RandomMap Screenshots synclogs User /NFL /NDL /NJH /NJS /NP | Out-Null
     New-Item -ItemType Directory -Force (Join-Path $data 'User'), (Join-Path $data 'Save') | Out-Null
     [IO.File]::WriteAllText((Join-Path $data 'User\UVars.tgi'), $rigSettings.Replace("`r`n", "`n").Replace("`n", "`r`n"), [Text.Encoding]::ASCII)
-    foreach ($old in @(Get-ChildItem (Saves $copy) -Filter '*.RSG' -ErrorAction SilentlyContinue) + @(Get-Item (ModuleLog $copy) -ErrorAction SilentlyContinue)) {
+    foreach ($old in @(Get-ChildItem (Saves $copy) -Filter '*.RSG' -ErrorAction SilentlyContinue) + @(Get-Item (ModuleLog $copy) -ErrorAction SilentlyContinue) +
+        @(Get-ChildItem (SyncLogs $copy) -File -ErrorAction SilentlyContinue)) {
         Remove-Item -LiteralPath $old.FullName
     }
 }
 
-if ($Scenario -eq 'LoadCopy') { [IO.File]::WriteAllBytes((Join-Path (Saves 'host') $loadLeaf), $loadBytes) }
+if ($Scenario -in 'LoadCopy', 'Reload') { [IO.File]::WriteAllBytes((Join-Path (Saves 'host') $loadLeaf), $loadBytes) }
 
 # ---------------------------------------------------------------- scripts
 $join = @"
@@ -130,6 +149,8 @@ Wait 2
 InternetGameCreate RigGame $Port 2
 Wait 3
 "@
+$saveCount = [int][Math]::Max(1, [Math]::Floor($MatchMinutes / $SaveEvery))  # Match
+$shortPlay = [Math]::Max(120, $MatchMinutes * 20)                        # Reload, LobbyRejoin: seconds of play
 # No WaitState before the main menu: it crashes the game then. Wait 45 covers start-up.
 switch ($Scenario) {
     'SaveCopy' {
@@ -150,6 +171,23 @@ switch ($Scenario) {
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait 95`nEcho rig: host leaving`nReallyQuit"
         $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`nWait 150`nEcho rig: client end`nReallyQuit"
     }
+    # Rehearsals: the client always leaves first, as players do at the end of a match, and the host stays until then.
+    'Match' {
+        $hostPlay = (1..$saveCount | ForEach-Object { "Wait $($SaveEvery * 60)`nEcho rig: host saving $_`nGameSave `"Save/Rig Match $_.RSG`"" }) -join "`n"
+        $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait $LaunchAfter`nEcho rig: host launching`nStagingLaunch`nWaitState game`nEcho rig: host in the match`n$hostPlay`nWait $($MatchMinutes * 60 - $saveCount * $SaveEvery * 60 + 180)`nEcho rig: host end`nReallyQuit"
+        $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWaitState game`nEcho rig: client in the match`nWait $($MatchMinutes * 60 + 90)`nEcho rig: client leaving`nReallyQuit"
+    }
+    'Reload' {
+        # As LoadCopy: the load dialog's Commit takes the only save; the first launch waits for the client's copy.
+        $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType LOAD_SAVED_GAME`nWait 3`nCommit`nEcho rig: host waiting in its lobby`nWait $($LaunchAfter + 150)`nEcho rig: host launching`nStagingLaunch`nWait 30`nStagingLaunch`nWaitState game`nEcho rig: host in the match`nWait $($shortPlay + 120)`nEcho rig: host end`nReallyQuit"
+        $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWait 40`nStagingReady 0`nWaitState game`nEcho rig: client in the match`nWait $shortPlay`nEcho rig: client leaving`nReallyQuit"
+    }
+    'LobbyRejoin' {
+        # After leaving, the client goes through the whole join again (RequestMultiplayer first), wherever the game
+        # put it.
+        $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait $($LaunchAfter + 90)`nEcho rig: host launching`nStagingLaunch`nWaitState game`nEcho rig: host in the match`nWait $($shortPlay + 120)`nEcho rig: host end`nReallyQuit"
+        $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`nWait 20`nEcho rig: client leaving the lobby`nStagingExit`nWait 3`nStagingConfirmExit`nWait 15`nEcho rig: client joining again`n$join`nEcho rig: client waiting`nWaitState game`nEcho rig: client in the match`nWait $shortPlay`nEcho rig: client leaving`nReallyQuit"
+    }
 }
 New-Item -ItemType Directory -Force $scripts | Out-Null
 # CR LF once per line, whatever line ends this file has: a checkout with CR LF puts them into the here-strings above,
@@ -160,7 +198,8 @@ function Write-Script($name, $text) {
 Write-Script 'host' $hostScript
 Write-Script 'client' $clientScript.Replace('__NICK__', 'RigClient')
 Copy-Item $rigShfolder $shfolderInGame
-$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } 'HostLeaves' { 420 } 'LoadCopy' { $LaunchAfter + 600 } default { $LaunchAfter + $SaveAfter + 300 } }
+$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } 'HostLeaves' { 420 } 'LoadCopy' { $LaunchAfter + 600 }
+    'Match' { $LaunchAfter + $MatchMinutes * 60 + 600 } { $_ -in 'Reload', 'LobbyRejoin' } { $LaunchAfter + $shortPlay + 600 } default { $LaunchAfter + $SaveAfter + 300 } }
 
 # ---------------------------------------------------------------- starting a copy
 . (Join-Path $PSScriptRoot 'RigLauncher.ps1')
@@ -183,9 +222,11 @@ function Start-Copy($copy, $script) {
     $id = Start-RigGame $Game "+Exec PawsRig/$script.txt" $envText
     if ($TestSetupFailure) { throw "injected setup failure after starting the $copy copy (-TestSetupFailure)" }
     $log = Wait-NewLog $known 60
-    $result = & $inject $id $copies[$copy] $AutosaveMinutes 2>&1
-    Write-Host "$copy ($script): process $id, log $(Split-Path $log -Leaf); $($result -join ' ')"
-    if ($LASTEXITCODE -ne 0) { throw "the module was not installed in the $copy copy" }
+    if ($module) {
+        $result = & $inject $id $copies[$copy] $AutosaveMinutes 2>&1
+        Write-Host "$copy ($script): process $id, log $(Split-Path $log -Leaf); $($result -join ' ')"
+        if ($LASTEXITCODE -ne 0) { throw "the module was not installed in the $copy copy" }
+    } else { Write-Host "$copy ($script): process $id, log $(Split-Path $log -Leaf); the game as the launcher left it" }
     foreach ($i in 1..20) { Start-Sleep -Milliseconds 500; $null = [PawsRig.Launcher]::Park($id) }
     @{ Id = $id; Log = $log }
 }
@@ -234,12 +275,42 @@ $clientLog = Final-Log $clientCopy.Log
 $clientText = if ($clientLog) { Get-Content $clientLog.FullName -Raw } else { '' }
 # A peer survived the run: its log was closed normally (renamed -ok, not -crash) and has no failed assertion, desync,
 # unhandled exception or lock timeout.
-$markers = 'ASSERT: |out of sync|OUT OF SYNC|desync|unhandled exception|caught C\+\+ exception|timeout waiting for mutex'
+$markers = 'ASSERT: |out of sync|OUT OF SYNC|desync|SyncFailure|unhandled exception|caught C\+\+ exception|timeout waiting for mutex'
 function Survived($log, $text) { $log -and $log.Name -like '*-ok.log' -and $text -notmatch $markers }
+function Reached($text, $who) { $text -match "APP:\s+rig: $who in the match" }
+foreach ($pair in @(@('host', $hostText, $hostLog), @('client', $clientText, $clientLog))) {
+    $found = [regex]::Matches($pair[1], "[^\r\n]*($markers)[^\r\n]*") | Select-Object -First 5 | ForEach-Object { $_.Value.Trim() }
+    "$($pair[0]): log $(if ($pair[2]) { $pair[2].Name } else { 'missing' }), $(@([regex]::Matches($pair[1], $markers)).Count) problem line(s)$(if ($found) { ":`n  " + ($found -join "`n  ") })"
+}
 $checks = [ordered]@{ 'client joined the host' = $hostText.Contains('RigClient has joined the game') }
-$checks['host module installed'] = (Module-Text 'host').Contains('installed for k2.exe 1.3.72')
-$checks['client module installed'] = (Module-Text 'client').Contains('installed for k2.exe 1.3.72')
+if ($module) {
+    $checks['host module installed'] = (Module-Text 'host').Contains('installed for k2.exe 1.3.72')
+    $checks['client module installed'] = (Module-Text 'client').Contains('installed for k2.exe 1.3.72')
+} else {
+    # Each PC writes Documents\Kohan2\data\synclogs\synclog_<name><n>.txt when the match desyncs.
+    $syncLogs = @('host', 'client' | ForEach-Object { Get-ChildItem (SyncLogs $_) -File -ErrorAction SilentlyContinue })
+    foreach ($s in $syncLogs) { "sync log: $($s.FullName) ($($s.Length) bytes)" }
+    $checks['no desync (no sync log on either PC)'] = $syncLogs.Count -eq 0
+    $checks['both reached the match'] = (Reached $hostText 'host') -and (Reached $clientText 'client')
+    $checks['both peers survived'] = (Survived $hostLog $hostText) -and (Survived $clientLog $clientText)
+}
 switch ($Scenario) {
+    'Match' {
+        '--- saves'
+        $made = @(Get-ChildItem (Saves 'host') -Filter 'Rig Match *.RSG' -ErrorAction SilentlyContinue)
+        foreach ($s in $made) { '{0}: {1} bytes' -f $s.Name, $s.Length }
+        $checks["host saved $saveCount time(s)"] = $made.Count -eq $saveCount -and -not ($made | Where-Object Length -eq 0)
+    }
+    'Reload' {
+        foreach ($pair in @(@('host', $hostText), @('client', $clientText))) {
+            $at = $pair[1].LastIndexOf("Loading File: <Save/$loadLeaf>")
+            $checks["the $($pair[0]) is in a match loaded from the save"] = $at -ge 0 -and $pair[1].IndexOf('ChangeToState(2,', $at) -gt 0
+        }
+        $checks['the client received the save'] = Test-Path (Join-Path (Saves 'client') $loadLeaf)
+    }
+    'LobbyRejoin' {
+        $checks['the client left the lobby and joined again'] = ([regex]::Matches($hostText, 'RigClient has joined the game')).Count -ge 2
+    }
     'SaveCopy' {
         '--- saves'
         $save = Join-Path (Saves 'host') "$SaveName.RSG"; $copy = Join-Path (Saves 'client') "$SaveName (copy).RSG"
