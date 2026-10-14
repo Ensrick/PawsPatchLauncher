@@ -5,3 +5,5 @@ src/PawsPatchLauncher/Assets/Vanilla1372/options_dialog.tgi -text
 game/ai-policy/data/data/**/*.tgi -text -whitespace
 # Accepted foundation payloads also retain their manifest-verified bytes.
 game/foundation-placement/data/data/**/*.tgi -text -whitespace
+# The terrain texture pool overlay is the retail UVars_k2.tgi plus one line; validate.py checks its exact bytes.
+game/terrain-texture-pool/data/data/*.tgi -text -whitespace

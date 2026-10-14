@@ -1,0 +1,22 @@
+[Vars]
+{
+		;;;;;; warnings that are normally on in dev
+
+		flag MemoryShowLeakReport = false
+		flag WarningsDisplayedAtEnd = false
+		flag DataReportInvalidIDSWarnings = false		;; Report warning on invalid IDS lookups
+		flag RenderDrawTerrainTexPoolWarning = false
+
+		;;;;;; warnings and errors		
+		
+		flag DataMissingResourceWarning = false
+		flag LogsEchoArtToGame = false
+		flag WarningsDisplayedImmediately = false
+		flag WarningsCheckPartitions = false			;; NIF checking, disable in release
+		flag ResourceReportUnused = false			;; enable this to track unused resources	
+		
+		string CombatValueCSV = null
+
+		flag EditorMapStringsSeparate = false
+		int TerrainTexturePoolDesiredNumEntries = 1024		;; terrain-texture-pool overlay: gameplay zoom 2.0 and far plane 1024 need more than the stock 120
+}
