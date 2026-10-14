@@ -72,6 +72,12 @@ internal static class CustomModsChecks
             Check(C<StackPanel>("ModManagerPanel").IsVisible && C<Button>("ModManagerNav").IsVisible, "mod manager is a page of its own");
             Check(!C<Button>("ModManagerApply").IsEnabled && !C<Button>("ModManagerRevert").IsEnabled && C<Button>("CustomModsAdd").IsEnabled, "empty state");
             Check(C<StackPanel>("CustomModsBody").Children.Count == 2, "base game row and empty hint");
+            // No account and no release list: Vanilla is active, Immortals waits for a release list, Arcane Wars is locked with its reason.
+            var gameRows = Field<List<(string Mod, Button Button, bool Allowed)>>("_baseGameButtons");
+            Check(C<StackPanel>("ModManagerGamesBody").Children.Count == 3 && gameRows.Count == 2 && gameRows.All(r => r.Mod != GameMod.Vanilla), "game card lists three games, active Vanilla without action");
+            Check(gameRows.All(r => !r.Button.IsEnabled), "games without a release list or access cannot be installed");
+            Check(gameRows.Single(r => r.Mod == GameMod.ArcaneWars).Button.ToolTip is string reason && reason == (string)typeof(MainWindow).GetProperty("ArcaneAccessReason", flags)!.GetValue(w)!,
+                "locked Arcane Wars explains why");
             Call("OpenGameSettings"); w.UpdateLayout();
             Check(C<Border>("GameSettingsOverlay").IsVisible && w.FindName("CustomModsTab") is null, "game settings dialog keeps only game options");
             Click("GameSettingsCancel"); w.UpdateLayout();

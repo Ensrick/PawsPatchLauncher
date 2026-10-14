@@ -17,7 +17,7 @@ namespace PreviewRenderer;
 // The fake executable is text and no Launch command is invoked. No native window is shown.
 internal static class ModLibraryChecks
 {
-    internal static void Run(string language)
+    internal static void Run(string language, bool modManager = false)
     {
         if (!ActivityStore.IsSmokeTest || ActivityStore.LocalTestProfile is not null)
             throw new InvalidOperationException("Mod library UI checks require a disposable --smoke-test profile.");
@@ -216,7 +216,7 @@ internal static class ModLibraryChecks
             await File.WriteAllTextAsync(configuration.FeedUrls[0], JsonSerializer.Serialize(signed, LauncherJsonContext.Default.SignedFeedEnvelope));
         }
 
-        async Task Scenario()
+        async Task<(ChannelManifest Feed, string Exe)> InitialFeed()
         {
             var originalExe = await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe"));
             var initial = new ChannelManifest { PublishedAt = "2026-09-10T10:00:00Z", Game = new() { K2ExeSha256 = [originalExe] } };
@@ -234,10 +234,16 @@ internal static class ModLibraryChecks
             initial.Packages.Add(await Package("immortals", "2.1.0", 10, new() { ["data/shared.txt"] = "IMM", ["data/imm.txt"] = "Immortals" }));
             initial.Packages.Add(await Package("immortals-localization-ru", "1.0.0", 100, new() { ["startup/language.txt"] = "ru" }));
             await WriteFeed(initial);
-            var initialRelease = ChannelFingerprint.Create(initial);
             new SettingsStore().Save(new UserSettings { Language = language, Mod = GameMod.ArcaneWars, ModNoticeSeen = true, GamePath = game,
                 Channel = "stable", PawPatchEnabled = false, LargeMapSizes = false, RussianLocalization = true, IndependentHostility = false,
                 RoamingSpawnMode = "standard", AdditionalRoamingCompanies = false, SiegeBalance = false, DisablePowersAndShards = false });
+            return (initial, originalExe);
+        }
+
+        async Task Scenario()
+        {
+            var (initial, originalExe) = await InitialFeed();
+            var initialRelease = ChannelFingerprint.Create(initial);
             var window = Window();
             Connection(window, false);
             Check(!Control<RadioButton>(window, "ArcaneWarsModRadio").IsEnabled, "Offline membership allowed an uninstalled mod.");
@@ -353,10 +359,72 @@ internal static class ModLibraryChecks
             Console.WriteLine($"MOD LIBRARY UI PASS {count} {language}: install-only, gold Apply, launch lock, offline component/language switching, active-mod updates, fresh-window installed release; signed local ZIPs; no native window/game/network.");
         }
 
+        // Mod manager Game rows: one click selects the game and runs the same install or apply as Components.
+        Button? GameButton(MainWindow window, string mod) => ((List<(string Mod, Button Button, bool Allowed)>)Field(window, "_baseGameButtons")!)
+            .Where(row => row.Mod == mod).Select(row => row.Button).FirstOrDefault();
+        long? DownloadSize(MainWindow window, string mod) => (long?)Call(window, "BaseGameDownloadSize", mod);
+        async Task OneClick(MainWindow window, string mod)
+        {
+            var button = GameButton(window, mod);
+            Check(button is { IsEnabled: true }, mod + " has no usable Game row action.");
+            button!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(15);
+            while ((Flag(window, "_busy") || Flag(window, "_baseGameSwitching")) && DateTimeOffset.UtcNow < deadline) await Task.Delay(20);
+            Check(!Flag(window, "_busy") && !Flag(window, "_baseGameSwitching"), mod + " Game row action did not finish.");
+            Ready(window, mod);
+            Check((string)Field(window, "_activePage")! == "modmanager" && Control<StackPanel>(window, "ModManagerPanel").Visibility == Visibility.Visible,
+                "A Game row action left the Mod manager.");
+            Check(Control<Border>(window, "CoreModuleCard").Visibility != Visibility.Visible && Control<Border>(window, "SiegeBalanceCard").Visibility != Visibility.Visible,
+                "A Game row action revealed Components cards on the Mod manager page.");
+            Check(GameButton(window, mod) is null, "The active game still offers an action.");
+        }
+        async Task ModManagerScenario()
+        {
+            var (initial, originalExe) = await InitialFeed();
+            var window = Window();
+            Connection(window, true);
+            Check(await CheckFeed(window), "Signed local feed was not accepted.");
+            Call(window, "SetActivePage", "modmanager"); window.UpdateLayout();
+            var text = (PawsPatchLauncher.Localization)Field(window, "_text")!;
+            var switchLabel = (string)Call(window, "T", "Переключить", "Switch")!;
+            Check(LauncherIcon.GetKind(Control<Button>(window, "ModManagerNav")) == IconKind.Mods, "Mod manager navigation has no icon.");
+            Check(Control<StackPanel>(window, "ModManagerGamesBody").Children.Count == 3, "Game card does not list Vanilla, Immortals and Arcane Wars.");
+            var immortalsBytes = ModLibrary.Packages(initial, GameMod.Immortals).Sum(p => p.Size);
+            Check(immortalsBytes > 0 && DownloadSize(window, GameMod.Immortals) == immortalsBytes, "Immortals download size is wrong.");
+            Check(Equals(GameButton(window, GameMod.Immortals)?.Content, text["button.install"])
+                && Equals(GameButton(window, GameMod.ArcaneWars)?.Content, text["button.install"]), "A game that is not stored is not offered as Install.");
+            await OneClick(window, GameMod.Immortals);
+            Check(new ModLibrary(game).Find(GameMod.Immortals, "stable") is not null && File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM",
+                "One click did not download, store and apply Immortals.");
+            await OneClick(window, GameMod.ArcaneWars);
+            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "AW" && !File.Exists(Path.Combine(game, "data/imm.txt")),
+                "One click did not switch the files to Arcane Wars.");
+            Check(DownloadSize(window, GameMod.Immortals) == 0 && Equals(GameButton(window, GameMod.Immortals)?.Content, switchLabel),
+                "Stored Immortals is not offered as a switch.");
+            RemoveDownloadSources(); // A stored game must switch with nothing left to download.
+            await OneClick(window, GameMod.Immortals);
+            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM" && new ModLibrary(game).Find(GameMod.ArcaneWars, "stable") is not null,
+                "Switching back to stored Immortals failed or dropped the stored Arcane Wars release.");
+            var stateText = StateText();
+            Set(window, "_customModsDirty", true);
+            GameButton(window, GameMod.ArcaneWars)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(StateText() == stateText && Settings(window).Mod == GameMod.Immortals && Field(window, "_customModsError") is string,
+                "Unapplied custom mod edits did not block a game switch.");
+            Set(window, "_customModsDirty", false); Call(window, "ReloadCustomMods");
+            Set(window, "_busy", true); Call(window, "RefreshCustomModsState", false);
+            Check(!GameButton(window, GameMod.ArcaneWars)!.IsEnabled, "A Game row action is enabled during another operation.");
+            Set(window, "_busy", false); Call(window, "RefreshCustomModsState", false);
+            Check(GameButton(window, GameMod.ArcaneWars)!.IsEnabled, "Game row actions stay disabled after the operation.");
+            Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == originalExe, "UI test altered the base executable.");
+            Check((await new ModuleInstaller(game).VerifyAsync()).Count == 0, "Final active game files do not match their signed package payloads.");
+            Check(blockedNetwork.Attempts == 0, "Fixture attempted an external network request.");
+            Console.WriteLine($"MOD MANAGER GAMES PASS {count} {language}: nav icon, three Game rows, one-click download+install of Immortals and Arcane Wars, offline switch of a stored game, dirty and busy guards; signed local ZIPs; no native window/game/network.");
+        }
+
         var dispatcher = Dispatcher.CurrentDispatcher;
         try
         {
-            var task = dispatcher.InvokeAsync(Scenario).Task.Unwrap();
+            var task = dispatcher.InvokeAsync(modManager ? (Func<Task>)ModManagerScenario : Scenario).Task.Unwrap();
             var frame = new DispatcherFrame();
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(45) };
             timer.Tick += (_, _) => frame.Continue = false;

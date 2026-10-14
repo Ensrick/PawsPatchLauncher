@@ -1226,7 +1226,6 @@
   "Test build · custom mods": "Testversion · benutzerdefinierte Mods",
   "No custom mods yet. Add an .rwd archive; the original file will stay where it is.": "Noch keine benutzerdefinierten Mods. Füge ein .rwd-Archiv hinzu; die Originaldatei bleibt an ihrem Speicherort.",
   "For multiplayer, use compatible mods in the same load order. This selection is saved only on this computer.": "Verwende für Mehrspieler kompatible Mods in derselben Ladereihenfolge. Diese Auswahl wird nur auf diesem Computer gespeichert.",
-  "First apply the selected game and components on the Components page.": "Wende zuerst das ausgewählte Spiel und die Komponenten auf der Seite Komponenten an.",
   "Could not add the archive. Choose a valid Kohan II RWD up to 2 GB.": "Das Archiv konnte nicht hinzugefügt werden. Wähle ein gültiges Kohan-II-RWD mit höchstens 2 GB.",
   "Mod manager": "Mod-Manager",
   "Load your own RWD mods on top of the selected game. Mods load from top to bottom; when two mods change the same file, the lower one wins.": "Lade eigene RWD-Mods zusätzlich zum ausgewählten Spiel. Mods werden von oben nach unten geladen; ändern zwei Mods dieselbe Datei, gewinnt der untere.",
@@ -1236,5 +1235,13 @@
   "Replaced with the new file: ": "Durch die neue Datei ersetzt: ",
   "Use Undo to keep the previous one.": "Mit „Rückgängig“ behältst du die vorherige Datei.",
   "Could not apply mods. Check the files and try again.": "Die Mods konnten nicht angewendet werden. Prüfe die Dateien und versuche es erneut.",
-  "Changes are not applied yet.": "Die Änderungen sind noch nicht angewendet."
+  "Changes are not applied yet.": "Die Änderungen sind noch nicht angewendet.",
+  "Choose the game. Missing files download and install in one click; the mods below load on top of it.": "Wähle das Spiel. Fehlende Dateien werden mit einem Klick heruntergeladen und installiert; die Mods unten werden darüber geladen.",
+  "Installed and active": "Installiert und aktiv",
+  "The release list is not loaded yet. Connect to the internet and check for updates.": "Die Versionsliste ist noch nicht geladen. Verbinde dich mit dem Internet und suche nach Updates.",
+  "Stored on this computer · switches without a download": "Auf diesem Computer gespeichert · Wechsel ohne Download",
+  "Download: ": "Download: ",
+  "Switch": "Wechseln",
+  "Apply or undo your mod changes first.": "Wende deine Mod-Änderungen zuerst an oder mache sie rückgängig.",
+  "First install or switch to the selected game above.": "Installiere zuerst das ausgewählte Spiel oben oder wechsle dazu."
 }

@@ -1226,7 +1226,6 @@
   "Test build · custom mods": "Testovací verze · vlastní mody",
   "No custom mods yet. Add an .rwd archive; the original file will stay where it is.": "Zatím žádné vlastní mody. Přidejte archiv .rwd; původní soubor zůstane na svém místě.",
   "For multiplayer, use compatible mods in the same load order. This selection is saved only on this computer.": "Pro hru po síti používejte kompatibilní mody ve stejném pořadí. Tento výběr se ukládá pouze v tomto počítači.",
-  "First apply the selected game and components on the Components page.": "Nejdříve použijte vybranou hru a komponenty na stránce Komponenty.",
   "Could not add the archive. Choose a valid Kohan II RWD up to 2 GB.": "Archiv se nepodařilo přidat. Vyberte platný RWD pro Kohan II do 2 GB.",
   "Mod manager": "Správce modů",
   "Load your own RWD mods on top of the selected game. Mods load from top to bottom; when two mods change the same file, the lower one wins.": "Načítejte vlastní RWD mody nad vybranou hru. Mody se načítají shora dolů; když dva mody mění stejný soubor, vyhrává ten níže.",
@@ -1236,5 +1235,13 @@
   "Replaced with the new file: ": "Nahrazeno novým souborem: ",
   "Use Undo to keep the previous one.": "Tlačítkem „Vrátit zpět“ ponecháte předchozí soubor.",
   "Could not apply mods. Check the files and try again.": "Mody se nepodařilo použít. Zkontrolujte soubory a zkuste to znovu.",
-  "Changes are not applied yet.": "Změny zatím nejsou použity."
+  "Changes are not applied yet.": "Změny zatím nejsou použity.",
+  "Choose the game. Missing files download and install in one click; the mods below load on top of it.": "Vyberte hru. Chybějící soubory se stáhnou a nainstalují jedním kliknutím; mody níže se načtou nad ní.",
+  "Installed and active": "Nainstalováno a aktivní",
+  "The release list is not loaded yet. Connect to the internet and check for updates.": "Seznam vydání ještě není načten. Připojte se k internetu a zkontrolujte aktualizace.",
+  "Stored on this computer · switches without a download": "Uloženo v tomto počítači · přepne se bez stahování",
+  "Download: ": "Ke stažení: ",
+  "Switch": "Přepnout",
+  "Apply or undo your mod changes first.": "Nejprve použijte nebo vraťte změny modů.",
+  "First install or switch to the selected game above.": "Nejprve nainstalujte vybranou hru výše nebo na ni přepněte."
 }

@@ -58,8 +58,15 @@ public partial class MainWindow
     private async void Mod_Checked(object sender, RoutedEventArgs e)
     {
         if (_initializing || sender is not RadioButton { Tag: string mod } || mod == _settings.Mod) return;
-        if (_busy || ConfirmationActive) { RefreshModControls(); return; }
-        if (mod == GameMod.ArcaneWars && !CanSelectArcaneWars) { RefreshModControls(); return; }
+        await SelectModAsync(mod);
+    }
+
+    // Shared by the Components choice and the Mod manager. Returns false when the choice is refused.
+    private async Task<bool> SelectModAsync(string mod)
+    {
+        if (mod == _settings.Mod) return true;
+        if (_busy || ConfirmationActive) { RefreshModControls(); return false; }
+        if (mod == GameMod.ArcaneWars && !CanSelectArcaneWars) { RefreshModControls(); return false; }
         CancelBackgroundFeed();
         ModChannelSelection.SelectMod(_settings, mod);
         if (mod == GameMod.ArcaneWars && !LiveArcaneAccess && !CanUseArcaneSelection)
@@ -81,8 +88,12 @@ public partial class MainWindow
         RefreshStatus();
         RefreshNews();
         ApplyPatchChannelLanguage();
-        if (mod != GameMod.ArcaneWars) Motion.Reveal(GameMod.HasPureFixes(_channel) ? CoreModuleCard : VanillaEmptyCard);
-        else foreach (var card in ArcaneComponentCards()) Motion.Reveal(card);
+        // The cards live on the Components page; revealing them elsewhere would show them there.
+        if (_activePage == "modules")
+        {
+            if (mod != GameMod.ArcaneWars) Motion.Reveal(GameMod.HasPureFixes(_channel) ? CoreModuleCard : VanillaEmptyCard);
+            else foreach (var card in ArcaneComponentCards()) Motion.Reveal(card);
+        }
         // Selection is local. The normal startup/periodic/manual checks refresh releases.
         // Fetch only when this channel has never been loaded in this session.
         if (_feedClient.KnownChannel(_settings.Channel) is null)
@@ -90,6 +101,7 @@ public partial class MainWindow
             await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
             await CheckFeedAsync(background: true);
         }
+        return true;
     }
 
     private Border[] ArcaneComponentCards() => [CoreModuleCard, ColorsModuleCard,

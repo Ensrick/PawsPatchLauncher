@@ -799,6 +799,13 @@
                                     </Border>
                                     <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                                         <StackPanel>
+                                            <TextBlock x:Name="ModManagerGamesTitleText" Style="{StaticResource FieldTitle}"/>
+                                            <TextBlock x:Name="ModManagerGamesDescriptionText" Style="{StaticResource CardDescription}" Margin="0,4,0,0"/>
+                                            <StackPanel x:Name="ModManagerGamesBody" Margin="0,10,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                                        <StackPanel>
                                             <TextBlock x:Name="ModManagerOrderTitleText" Style="{StaticResource FieldTitle}"/>
                                             <StackPanel x:Name="CustomModsBody" Margin="0,10,0,0"/>
                                             <TextBlock x:Name="ModManagerStatusText" Style="{StaticResource CardDescription}" Foreground="#F4C877" Margin="0,4,0,0" Visibility="Collapsed"/>

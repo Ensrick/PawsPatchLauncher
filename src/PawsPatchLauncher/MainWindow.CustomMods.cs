@@ -34,7 +34,8 @@ public partial class MainWindow
         ModManagerComponentsButton.Content = _text["nav.modules"];
         ModManagerMultiplayerText.Text = T("Для сетевой игры используйте совместимые моды и одинаковый порядок загрузки. Выбор сохраняется только на этом компьютере.",
             "For multiplayer, use compatible mods in the same load order. This selection is saved only on this computer.");
-        if (_activePage == "modmanager") BuildCustomMods();
+        ApplyModManagerGamesLanguage();
+        if (_activePage == "modmanager") { BuildBaseGames(); BuildCustomMods(); }
     }
 
     private void ModManagerNav_Click(object sender, RoutedEventArgs e) => SetActivePage("modmanager");
@@ -44,7 +45,7 @@ public partial class MainWindow
     private void OpenCustomMods()
     {
         if (_customModsBusy) return;
-        if (_customModsDirty && _customModsState is not null && _customModsGame == _settings.Mod) { BuildCustomMods(); RefreshCustomModsState(IsGameRunning()); return; }
+        if (_customModsDirty && _customModsState is not null && _customModsGame == _settings.Mod) { BuildBaseGames(); BuildCustomMods(); RefreshCustomModsState(IsGameRunning()); return; }
         ReloadCustomMods();
     }
 
@@ -61,6 +62,7 @@ public partial class MainWindow
             }
         }
         catch (Exception ex) { ActivityStore.Log(ex); _customModsError = T("Не удалось прочитать список модов.", "Could not read the mod list."); }
+        BuildBaseGames();
         BuildCustomMods();
         RefreshCustomModsState(IsGameRunning());
     }
@@ -179,12 +181,13 @@ public partial class MainWindow
         // Never read IsEnabled back: it also reflects a disabled ancestor, such as the window body under a dialog.
         var editable = CanEditCustomMods && !running && !_customModsBusy;
         CustomModsBody.IsEnabled = editable;
+        RefreshBaseGameButtons(running);
         CustomModsAdd.IsEnabled = editable && CurrentCustomMods.Count < CustomRwdMods.MaximumMods;
         var gated = _customModsState is not null && !CanEditCustomMods;
         ModManagerComponentsButton.Visibility = gated ? Visibility.Visible : Visibility.Collapsed;
         ModManagerStatusText.Text = _customModsError ?? (_customModsBusy ? T("Проверяю и применяю моды…", "Checking and applying mods…")
             : running ? T("Закройте игру, чтобы сохранить изменения.", "Close the game to save changes.")
-            : gated ? T("Сначала примените выбранную игру и компоненты на вкладке «Компоненты».", "First apply the selected game and components on the Components page.")
+            : gated ? T("Сначала установите или переключите выбранную игру выше.", "First install or switch to the selected game above.")
             : string.Join(" ", new[] { _customModsNotice, _customModsDirty ? T("Изменения ещё не применены.", "Changes are not applied yet.") : null }.Where(s => s is not null)));
         ModManagerStatusText.Visibility = ModManagerStatusText.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         ModManagerApply.IsEnabled = CanEditCustomMods && _customModsDirty && !running && !_customModsBusy && !_busy && !_launchStarting;

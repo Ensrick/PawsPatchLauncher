@@ -1226,7 +1226,6 @@
   "Test build · custom mods": "Version de test · mods personnalisés",
   "No custom mods yet. Add an .rwd archive; the original file will stay where it is.": "Aucun mod personnalisé pour le moment. Ajoutez une archive .rwd ; le fichier original restera à son emplacement.",
   "For multiplayer, use compatible mods in the same load order. This selection is saved only on this computer.": "En multijoueur, utilisez des mods compatibles dans le même ordre de chargement. Cette sélection est enregistrée uniquement sur cet ordinateur.",
-  "First apply the selected game and components on the Components page.": "Appliquez d’abord le jeu et les composants sélectionnés sur la page Composants.",
   "Could not add the archive. Choose a valid Kohan II RWD up to 2 GB.": "Impossible d’ajouter l’archive. Choisissez un RWD Kohan II valide de 2 Go maximum.",
   "Mod manager": "Gestionnaire de mods",
   "Load your own RWD mods on top of the selected game. Mods load from top to bottom; when two mods change the same file, the lower one wins.": "Chargez vos propres mods RWD par-dessus le jeu sélectionné. Les mods se chargent de haut en bas ; si deux mods modifient le même fichier, celui du bas l’emporte.",
@@ -1236,5 +1235,13 @@
   "Replaced with the new file: ": "Remplacé par le nouveau fichier : ",
   "Use Undo to keep the previous one.": "Utilisez « Annuler » pour conserver l’ancien fichier.",
   "Could not apply mods. Check the files and try again.": "Impossible d’appliquer les mods. Vérifiez les fichiers et réessayez.",
-  "Changes are not applied yet.": "Les modifications ne sont pas encore appliquées."
+  "Changes are not applied yet.": "Les modifications ne sont pas encore appliquées.",
+  "Choose the game. Missing files download and install in one click; the mods below load on top of it.": "Choisissez le jeu. Les fichiers manquants se téléchargent et s’installent en un clic ; les mods ci-dessous se chargent par-dessus.",
+  "Installed and active": "Installé et actif",
+  "The release list is not loaded yet. Connect to the internet and check for updates.": "La liste des versions n’est pas encore chargée. Connectez-vous à Internet et recherchez des mises à jour.",
+  "Stored on this computer · switches without a download": "Stocké sur cet ordinateur · bascule sans téléchargement",
+  "Download: ": "Téléchargement : ",
+  "Switch": "Basculer",
+  "Apply or undo your mod changes first.": "Appliquez ou annulez d’abord vos modifications de mods.",
+  "First install or switch to the selected game above.": "Installez d’abord le jeu sélectionné ci-dessus ou basculez dessus."
 }

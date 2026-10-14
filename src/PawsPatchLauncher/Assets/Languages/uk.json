@@ -1226,7 +1226,6 @@
   "Test build · custom mods": "Тестова збірка · користувацькі моди",
   "No custom mods yet. Add an .rwd archive; the original file will stay where it is.": "Користувацьких модів ще немає. Додайте архів .rwd — початковий файл залишиться на місці.",
   "For multiplayer, use compatible mods in the same load order. This selection is saved only on this computer.": "Для мережевої гри використовуйте сумісні моди в однаковому порядку завантаження. Вибір зберігається лише на цьому комп’ютері.",
-  "First apply the selected game and components on the Components page.": "Спочатку застосуйте вибрану гру та компоненти на сторінці «Компоненти».",
   "Could not add the archive. Choose a valid Kohan II RWD up to 2 GB.": "Не вдалося додати архів. Виберіть справний RWD для Kohan II розміром до 2 ГБ.",
   "Mod manager": "Менеджер модів",
   "Load your own RWD mods on top of the selected game. Mods load from top to bottom; when two mods change the same file, the lower one wins.": "Підключайте власні RWD-моди поверх вибраної гри. Моди завантажуються згори донизу: якщо два моди змінюють один файл, перемагає нижній.",
@@ -1236,5 +1235,13 @@
   "Replaced with the new file: ": "Замінено новим файлом: ",
   "Use Undo to keep the previous one.": "Натисніть «Скасувати», щоб залишити попередній файл.",
   "Could not apply mods. Check the files and try again.": "Не вдалося застосувати моди. Перевірте файли й спробуйте ще раз.",
-  "Changes are not applied yet.": "Зміни ще не застосовано."
+  "Changes are not applied yet.": "Зміни ще не застосовано.",
+  "Choose the game. Missing files download and install in one click; the mods below load on top of it.": "Виберіть гру. Відсутні файли завантажуються та встановлюються одним натисканням; моди нижче завантажуються поверх неї.",
+  "Installed and active": "Встановлено й активно",
+  "The release list is not loaded yet. Connect to the internet and check for updates.": "Список випусків ще не завантажено. Підключіться до інтернету й перевірте оновлення.",
+  "Stored on this computer · switches without a download": "Збережено на цьому комп'ютері · перемикання без завантаження",
+  "Download: ": "Завантаження: ",
+  "Switch": "Перемкнути",
+  "Apply or undo your mod changes first.": "Спочатку застосуйте або скасуйте зміни модів.",
+  "First install or switch to the selected game above.": "Спочатку встановіть вибрану гру вище або перемкніться на неї."
 }

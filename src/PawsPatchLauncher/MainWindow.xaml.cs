@@ -489,7 +489,10 @@ public partial class MainWindow : Window
         button.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active ? "#FFF4CF" : "#E8EDF5"));
     }
 
-    private async void UpdateButton_Click(object sender, RoutedEventArgs e)
+    private async void UpdateButton_Click(object sender, RoutedEventArgs e) => await InstallSelectedModAsync();
+
+    // Downloads every package of the selected mod into the library, then applies the selection.
+    private async Task InstallSelectedModAsync()
     {
         var target = _offeredModChannel ?? _channel;
         if (_game is null || target is null || _busy || ArcaneAccessBlocked || _selectionRequiresUpdate && !_selectionUpdateAvailable) return;
