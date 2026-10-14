@@ -182,16 +182,18 @@ switch ($Scenario) {
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait $LaunchAfter`nEcho rig: host launching`nStagingLaunch`nWaitState game`nEcho rig: host in the match`n$hostPlay`nWait $($MatchMinutes * 60 - $saveCount * $SaveEvery * 60 + 180)`nEcho rig: host end`nReallyQuit"
         $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWaitState game`nEcho rig: client in the match`nWait $($MatchMinutes * 60 + 90)`nEcho rig: client leaving`nReallyQuit"
     }
+    # WaitState gives up after about 60 s and the game then stops with an unhandled exception, so a client that waits
+    # longer than that for the host's launch uses a plain Wait; the checks read the match from ChangeToState(2, ...).
     'Reload' {
         # As LoadCopy: the load dialog's Commit takes the only save; the first launch waits for the client's copy.
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType LOAD_SAVED_GAME`nWait 3`nCommit`nEcho rig: host waiting in its lobby`nWait $($LaunchAfter + 150)`nEcho rig: host launching`nStagingLaunch`nWait 30`nStagingLaunch`nWaitState game`nEcho rig: host in the match`nWait $($shortPlay + 120)`nEcho rig: host end`nReallyQuit"
-        $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWait 40`nStagingReady 0`nWaitState game`nEcho rig: client in the match`nWait $shortPlay`nEcho rig: client leaving`nReallyQuit"
+        $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWait 40`nStagingReady 0`nWait $($LaunchAfter + 140)`nEcho rig: client in the match`nWait $shortPlay`nEcho rig: client leaving`nReallyQuit"
     }
     'LobbyRejoin' {
         # After leaving, the client goes through the whole join again (RequestMultiplayer first), wherever the game
         # put it.
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait $($LaunchAfter + 90)`nEcho rig: host launching`nStagingLaunch`nWaitState game`nEcho rig: host in the match`nWait $($shortPlay + 120)`nEcho rig: host end`nReallyQuit"
-        $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`nWait 20`nEcho rig: client leaving the lobby`nStagingExit`nWait 3`nStagingConfirmExit`nWait 15`nEcho rig: client joining again`n$join`nEcho rig: client waiting`nWaitState game`nEcho rig: client in the match`nWait $shortPlay`nEcho rig: client leaving`nReallyQuit"
+        $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`nWait 20`nEcho rig: client leaving the lobby`nStagingExit`nWait 3`nStagingConfirmExit`nWait 15`nEcho rig: client joining again`n$join`nEcho rig: client waiting`nWait $($LaunchAfter + 40)`nEcho rig: client in the match`nWait $shortPlay`nEcho rig: client leaving`nReallyQuit"
     }
 }
 New-Item -ItemType Directory -Force $scripts | Out-Null
@@ -282,7 +284,10 @@ $clientText = if ($clientLog) { Get-Content $clientLog.FullName -Raw } else { ''
 # unhandled exception or lock timeout.
 $markers = 'ASSERT: |out of sync|OUT OF SYNC|desync|SyncFailure|unhandled exception|caught C\+\+ exception|timeout waiting for mutex'
 function Survived($log, $text) { $log -and $log.Name -like '*-ok.log' -and $text -notmatch $markers }
-function Reached($text, $who) { $text -match "APP:\s+rig: $who in the match" }
+# In a match: the application went from loading (6) to the game (4) after the rig's script started. Every peer logs
+# this; a client entering a loaded save does not log KKC_Session::ChangeToState(2, ...).
+$inMatch = 'changing app_state 6 -> 4'
+function Reached($text) { $at = $text.IndexOf('rig: '); $at -ge 0 -and $text.IndexOf($inMatch, $at) -gt 0 }
 foreach ($pair in @(@('host', $hostText, $hostLog), @('client', $clientText, $clientLog))) {
     $found = [regex]::Matches($pair[1], "[^\r\n]*($markers)[^\r\n]*") | Select-Object -First 5 | ForEach-Object { $_.Value.Trim() }
     "$($pair[0]): log $(if ($pair[2]) { $pair[2].Name } else { 'missing' }), $(@([regex]::Matches($pair[1], $markers)).Count) problem line(s)$(if ($found) { ":`n  " + ($found -join "`n  ") })"
@@ -296,7 +301,7 @@ if ($module) {
     $syncLogs = @('host', 'client' | ForEach-Object { Get-ChildItem (SyncLogs $_) -File -ErrorAction SilentlyContinue })
     foreach ($s in $syncLogs) { "sync log: $($s.FullName) ($($s.Length) bytes)" }
     $checks['no desync (no sync log on either PC)'] = $syncLogs.Count -eq 0
-    $checks['both reached the match'] = (Reached $hostText 'host') -and (Reached $clientText 'client')
+    $checks['both reached the match'] = (Reached $hostText) -and (Reached $clientText)
     $checks['both peers survived'] = (Survived $hostLog $hostText) -and (Survived $clientLog $clientText)
 }
 switch ($Scenario) {
@@ -309,7 +314,7 @@ switch ($Scenario) {
     'Reload' {
         foreach ($pair in @(@('host', $hostText), @('client', $clientText))) {
             $at = $pair[1].LastIndexOf("Loading File: <Save/$loadLeaf>")
-            $checks["the $($pair[0]) is in a match loaded from the save"] = $at -ge 0 -and $pair[1].IndexOf('ChangeToState(2,', $at) -gt 0
+            $checks["the $($pair[0]) is in a match loaded from the save"] = $at -ge 0 -and $pair[1].IndexOf($inMatch, $at) -gt 0
         }
         $checks['the client received the save'] = Test-Path (Join-Path (Saves 'client') $loadLeaf)
     }
