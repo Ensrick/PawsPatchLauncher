@@ -23,6 +23,7 @@
 #                         client joins without it, receives it, and both play it for a few minutes.
 #   -Scenario LobbyRejoin the client joins, leaves the lobby and joins again before the host launches (three of four
 #                         desyncs in one evening on 1.3.68 started right after players rejoined the lobby).
+#   -Scenario LobbyHostLeaves  HostLeaves without the module: does the client survive the host quitting the lobby?
 #
 # Each copy gets its own Documents folder (the stand-in shfolder.dll, K2_RIG_DOCUMENTS) and its own module log under
 # %LOCALAPPDATA%\PawsMultiplayerRig; the player's own Documents\Kohan2 is only read. The game folder gets shfolder.dll
@@ -30,7 +31,7 @@
 # only those afterwards. Its Logs folder (the game keeps only about ten logs) is copied aside first.
 param(
     [Parameter(Mandatory = $true)][string] $RigBuild,  # tools/MultiplayerRig/build.ps1 -OutputDirectory
-    [ValidateSet('SaveCopy', 'Autosave', 'LoadCopy', 'HostLeaves', 'Match', 'Reload', 'LobbyRejoin')] [string] $Scenario = 'SaveCopy',
+    [ValidateSet('SaveCopy', 'Autosave', 'LoadCopy', 'HostLeaves', 'Match', 'Reload', 'LobbyRejoin', 'LobbyHostLeaves')] [string] $Scenario = 'SaveCopy',
     [string] $Game = 'C:\Program Files (x86)\Steam\steamapps\common\Kohan II',
     [int] $Port = 5860,                  # the first port the game tries for a LAN host (5860-5869)
     [int] $LaunchAfter = 90,             # seconds the host waits in its lobby for the client before launching
@@ -172,7 +173,7 @@ switch ($Scenario) {
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType LOAD_SAVED_GAME`nWait 3`nCommit`nEcho rig: host waiting in its lobby`nWait $($LaunchAfter + 150)`nEcho rig: host launching`nStagingLaunch`nWait 30`nStagingLaunch`nWait 90`nEcho rig: host end`nReallyQuit"
         $clientScript = "Wait 45`n$join`nEcho rig: client waiting`nWait 40`nStagingReady 0`nWait $($LaunchAfter + 230)`nEcho rig: client end`nReallyQuit"
     }
-    'HostLeaves' {
+    { $_ -in 'HostLeaves', 'LobbyHostLeaves' } {
         $hostScript = "Wait 45`n$hostOpen`nSelectLaunchType RANDOM_MAP`nEcho rig: host waiting in its lobby`nWait 95`nEcho rig: host leaving`nReallyQuit"
         $clientScript = "Wait 45`n$join`nEcho rig: client in the lobby`nWait 150`nEcho rig: client end`nReallyQuit"
     }
@@ -205,7 +206,7 @@ function Write-Script($name, $text) {
 Write-Script 'host' $hostScript
 Write-Script 'client' $clientScript.Replace('__NICK__', 'RigClient')
 Copy-Item $rigShfolder $shfolderInGame
-$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } 'HostLeaves' { 420 } 'LoadCopy' { $LaunchAfter + 600 }
+$runLimit = switch ($Scenario) { 'Autosave' { $LaunchAfter + $AutosaveMinutes * 120 + 300 } { $_ -in 'HostLeaves', 'LobbyHostLeaves' } { 420 } 'LoadCopy' { $LaunchAfter + 600 }
     'Match' { $LaunchAfter + $MatchMinutes * 60 + 600 } { $_ -in 'Reload', 'LobbyRejoin' } { $LaunchAfter + $shortPlay + 600 } default { $LaunchAfter + $SaveAfter + 300 } }
 
 # ---------------------------------------------------------------- starting a copy
@@ -301,8 +302,10 @@ if ($module) {
     $syncLogs = @('host', 'client' | ForEach-Object { Get-ChildItem (SyncLogs $_) -File -ErrorAction SilentlyContinue })
     foreach ($s in $syncLogs) { "sync log: $($s.FullName) ($($s.Length) bytes)" }
     $checks['no desync (no sync log on either PC)'] = $syncLogs.Count -eq 0
-    $checks['both reached the match'] = (Reached $hostText) -and (Reached $clientText)
-    $checks['both peers survived'] = (Survived $hostLog $hostText) -and (Survived $clientLog $clientText)
+    if ($Scenario -ne 'LobbyHostLeaves') {   # there the host quits in the lobby on purpose
+        $checks['both reached the match'] = (Reached $hostText) -and (Reached $clientText)
+        $checks['both peers survived'] = (Survived $hostLog $hostText) -and (Survived $clientLog $clientText)
+    }
 }
 switch ($Scenario) {
     'Match' {
@@ -355,7 +358,7 @@ switch ($Scenario) {
         $checks['the client module never autosaved the match it cannot save'] = -not $clientModule.Contains('autosave: saving')
         $checks['both peers survived'] = (Survived $hostLog $hostText) -and (Survived $clientLog $clientText)
     }
-    'HostLeaves' {
+    { $_ -in 'HostLeaves', 'LobbyHostLeaves' } {
         "client: $(([regex]::Matches($clientText, 'ASSERT: ')).Count) failed assertion(s), log $(if ($clientLog) { $clientLog.Name } else { 'missing' })"
         $checks['client took over when the host left'] = $clientText.Contains('has taken over as host')
         $checks['client survived'] = Survived $clientLog $clientText
