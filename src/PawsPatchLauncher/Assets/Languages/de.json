@@ -600,7 +600,6 @@
   "Mod not installed": "Mod nicht installiert",
   "Mod update available": "Mod-Update verfügbar",
   "Mode": "Modus",
-  "Mods and components": "Mods und Komponenten",
   "Mods and their authors": "Mods und deren Autoren",
   "Monitoring refresh": "Überwachungsaktualisierung",
   "Multiplayer": "Mehrspieler",
@@ -1243,5 +1242,7 @@
   "Download: ": "Download: ",
   "Switch": "Wechseln",
   "Apply or undo your mod changes first.": "Wende deine Mod-Änderungen zuerst an oder mache sie rückgängig.",
-  "First install or switch to the selected game above.": "Installiere zuerst das ausgewählte Spiel oben oder wechsle dazu."
+  "First install or switch to the selected game above.": "Installiere zuerst das ausgewählte Spiel oben oder wechsle dazu.",
+  "Change game": "Spiel wechseln",
+  "The game is chosen in the Mod manager.": "Das Spiel wird im Mod-Manager ausgewählt."
 }

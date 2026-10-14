@@ -40,6 +40,7 @@ public partial class MainWindow
 
     private void ModManagerNav_Click(object sender, RoutedEventArgs e) => SetActivePage("modmanager");
     private void ModManagerComponents_Click(object sender, RoutedEventArgs e) => SetActivePage("modules");
+    private void ComponentsChangeGame_Click(object sender, RoutedEventArgs e) => SetActivePage("modmanager");
 
     // Unapplied edits survive page changes while the same game stays selected.
     private void OpenCustomMods()

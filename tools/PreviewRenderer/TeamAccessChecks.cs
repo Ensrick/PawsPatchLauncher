@@ -26,6 +26,7 @@ internal static class TeamAccessChecks
             typeof(AccountService).GetProperty("State")!.SetValue(service,state);
             Call("RenderAccount");Call("RefreshStatus");w.UpdateLayout();
         }
+        Button ArcaneRow()=>Field<List<(string Mod,Button Button,bool Allowed)>>("_baseGameButtons").Single(r=>r.Mod==GameMod.ArcaneWars).Button;
         async Task Scenario()
         {
             Field<PawsPatchLauncher.Localization>("_text").SetLanguage(language);Call("ApplyLanguage");
@@ -35,16 +36,18 @@ internal static class TeamAccessChecks
                 Role(0,false,state);
                 Check(!C<RadioButton>("ArcaneWarsModRadio").IsEnabled,"ordinary account can select Arcane Wars");
                 Check(C<RadioButton>("VanillaModRadio").IsEnabled&&C<RadioButton>("ImmortalsModRadio").IsEnabled,"public modes blocked");
-                Check(C<Button>("ArcaneAccessButton").IsVisible&&C<Button>("ArcaneAccessButton").IsEnabled,"missing accessible author notice button");
+                Call("BuildBaseGames");
+                Check(ArcaneRow().ToolTip is string reason&&reason==(string)typeof(MainWindow).GetProperty("ArcaneAccessReason",F)!.GetValue(w)!&&!ArcaneRow().IsEnabled,
+                    "Mod manager does not explain the Arcane Wars restriction");
                 C<RadioButton>("ArcaneWarsModRadio").IsChecked=true;await Task.Delay(10);
                 Check(settings.Mod==GameMod.Vanilla,"checked event bypassed role guard");
             }
-            Check(C<RadioButton>("ArcaneWarsModRadio").ToolTip is null && C<Button>("ArcaneAccessButton").ToolTip is not null,
-                "Access explanation must use its separate button");
+            Check(C<RadioButton>("ArcaneWarsModRadio").ToolTip is null,"Access explanation belongs to the Mod manager row");
             foreach(var (level,team) in new[]{(0,true),(1,false),(2,false)})
             {
                 Role(level,team);
-                Check(C<RadioButton>("ArcaneWarsModRadio").IsEnabled&&C<Button>("ArcaneAccessButton").IsVisible,"trusted member denied");
+                Call("BuildBaseGames");
+                Check(C<RadioButton>("ArcaneWarsModRadio").IsEnabled&&ArcaneRow().ToolTip is null,"trusted member denied");
                 Check((Call("PlayerRoleBadge",level,team,true) as Border)?.Child is TextBlock,"trusted badge missing");
             }
             Role(0,true);Check(service.AdminLevel==0&&C<Button>("AdminNav").Visibility==Visibility.Collapsed,"team gained admin panel");

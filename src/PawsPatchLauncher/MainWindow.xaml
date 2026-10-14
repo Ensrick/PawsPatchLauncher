@@ -944,6 +944,7 @@
                                 <Grid x:Name="ModulesHeader" Margin="2,0,0,10" Visibility="Collapsed">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                     <TextBlock x:Name="ModulesTitleText" Style="{StaticResource CardTitle}" Margin="0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                    <Button x:Name="ComponentsChangeGameButton" Grid.Column="1" Style="{StaticResource GhostButton}" Padding="14,7" VerticalAlignment="Center" Click="ComponentsChangeGame_Click"/>
                                 </Grid>
 
                                 <Border x:Name="CompatibilityBanner" CornerRadius="10" Padding="14" Background="#532732" BorderBrush="#A55462" BorderThickness="1" Margin="0,0,0,12" Visibility="Collapsed">
@@ -954,7 +955,8 @@
                                 </Border>
                                 <Border x:Name="ModSelectorCard" Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10" Visibility="Collapsed">
     <StackPanel>
-        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <!-- The game is chosen in the Mod manager. These selectors stay as the hidden selection that Mod_Checked handles. -->
+        <Grid x:Name="ModChoiceGrid" Visibility="Collapsed"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
     <RadioButton x:Name="VanillaModRadio" Grid.Column="0" GroupName="GameMod" Tag="vanilla" Content="Vanilla" Style="{StaticResource ModeRadio}" Padding="10,13" MinHeight="48" FontSize="16" FontWeight="SemiBold" Checked="Mod_Checked"/>
     <RadioButton x:Name="ImmortalsModRadio" Grid.Column="2" GroupName="GameMod" Tag="immortals" Content="Immortals" Style="{StaticResource ModeRadio}" Padding="10,13" MinHeight="48" FontSize="16" FontWeight="SemiBold" Checked="Mod_Checked"/>
 <Grid Grid.Column="4">
@@ -962,7 +964,7 @@
     <Button x:Name="ArcaneAccessButton" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0" Width="22" Height="22" Padding="0" Style="{StaticResource GhostButton}" Background="#652E3D" BorderBrush="#D26A80" Foreground="#FFD4DC" local:Motion.HoverBackground="#8B4054" Click="ArcaneAccess_Click"><TextBlock Text="!" FontSize="16" FontWeight="Bold"/></Button>
 </Grid>
         </Grid>
-        <Grid x:Name="ModePreferencesRow" Margin="0,12,0,0">
+        <Grid x:Name="ModePreferencesRow">
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="20"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <Border x:Name="RussianModuleCard" CornerRadius="6" Padding="0" BorderThickness="0" Background="Transparent">

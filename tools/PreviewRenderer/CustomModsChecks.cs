@@ -46,10 +46,10 @@ internal static class CustomModsChecks
             Check(!Field<bool>("_customModsBusy"), "async operation completed");
             w.UpdateLayout();
         }
-        void Snapshot(string name)
+        void Snapshot(string name, FrameworkElement? target = null)
         {
             w.UpdateLayout();
-            var view = C<StackPanel>("ModManagerPanel");
+            var view = target ?? C<StackPanel>("ModManagerPanel");
             Check(view.ActualWidth > 0 && view.ActualWidth <= 1000, "page fits small window: " + name);
             var draw = new DrawingVisual(); using (var dc = draw.RenderOpen())
             {
@@ -81,6 +81,11 @@ internal static class CustomModsChecks
             Call("OpenGameSettings"); w.UpdateLayout();
             Check(C<Border>("GameSettingsOverlay").IsVisible && w.FindName("CustomModsTab") is null, "game settings dialog keeps only game options");
             Click("GameSettingsCancel"); w.UpdateLayout();
+            Call("SetActivePage", "modules"); w.UpdateLayout();
+            Check(C<Grid>("ModChoiceGrid").Visibility == Visibility.Collapsed && C<Button>("ComponentsChangeGameButton").IsVisible,
+                "components page names the game and links to the Mod manager instead of choosing it");
+            Snapshot("components", C<Grid>("MainOptionsHost"));
+            Open();
             // Exercise real resource decoding, including when LauncherTestName changes the assembly.
             var glyphText = string.Join(" ", ChatGlyphs.All.Select(g => g.Token));
             var message = new ChatMessageText { Text = glyphText };

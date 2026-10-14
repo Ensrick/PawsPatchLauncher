@@ -165,7 +165,9 @@ public partial class MainWindow
         {
             var vanilla = GameMod.IsVanilla(_settings);
             var arcane = GameMod.IsArcaneWars(_settings);
-            ModulesTitleText.Text = T("Моды и компоненты", "Mods and components");
+            ModulesTitleText.Text = _text["nav.modules"] + " · " + GameMod.Name(_settings.Mod, _text.Language == "ru");
+            ComponentsChangeGameButton.Content = T("Сменить игру", "Change game");
+            ComponentsChangeGameButton.ToolTip = T("Игра выбирается в менеджере модов.", "The game is chosen in the Mod manager.");
             VanillaModRadio.Content = GameMod.Name(GameMod.Vanilla);
             ImmortalsModRadio.Content = "Immortals";
             ImmortalsModRadio.ToolTip = null;

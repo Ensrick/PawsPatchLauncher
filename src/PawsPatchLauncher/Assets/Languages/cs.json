@@ -600,7 +600,6 @@
   "Mod not installed": "Mod není nainstalován",
   "Mod update available": "K dispozici aktualizace modu",
   "Mode": "Režim",
-  "Mods and components": "Mody a komponenty",
   "Mods and their authors": "Mody a jejich autoři",
   "Monitoring refresh": "Aktualizace monitorování",
   "Multiplayer": "Multiplayer",
@@ -1243,5 +1242,7 @@
   "Download: ": "Ke stažení: ",
   "Switch": "Přepnout",
   "Apply or undo your mod changes first.": "Nejprve použijte nebo vraťte změny modů.",
-  "First install or switch to the selected game above.": "Nejprve nainstalujte vybranou hru výše nebo na ni přepněte."
+  "First install or switch to the selected game above.": "Nejprve nainstalujte vybranou hru výše nebo na ni přepněte.",
+  "Change game": "Změnit hru",
+  "The game is chosen in the Mod manager.": "Hra se vybírá ve správci modů."
 }

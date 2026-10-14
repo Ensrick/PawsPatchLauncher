@@ -600,7 +600,6 @@
   "Mod not installed": "Мод не встановлено",
   "Mod update available": "Доступне оновлення моди",
   "Mode": "Режим",
-  "Mods and components": "Моди і компоненти",
   "Mods and their authors": "Моди та їх автори",
   "Monitoring refresh": "Оновлення моніторингу",
   "Multiplayer": "Мережева гра",
@@ -1243,5 +1242,7 @@
   "Download: ": "Завантаження: ",
   "Switch": "Перемкнути",
   "Apply or undo your mod changes first.": "Спочатку застосуйте або скасуйте зміни модів.",
-  "First install or switch to the selected game above.": "Спочатку встановіть вибрану гру вище або перемкніться на неї."
+  "First install or switch to the selected game above.": "Спочатку встановіть вибрану гру вище або перемкніться на неї.",
+  "Change game": "Змінити гру",
+  "The game is chosen in the Mod manager.": "Гра вибирається в менеджері модів."
 }
