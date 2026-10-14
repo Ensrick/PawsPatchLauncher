@@ -63,6 +63,26 @@ function Start-RigGame([string] $Game, [string] $Arguments, [string] $Environmen
     foreach ($i in 1..60) { if ([PawsRig.Launcher]::Park($id) -gt 0) { break }; Start-Sleep -Milliseconds 500 }
     $id
 }
+# Starts a copy through a rig build of Paw's runtime helper (it starts k2.exe itself, with the arguments in K2_RIG_ARGS,
+# and installs its patches); records both processes and returns the game's process id.
+function Start-RigHelper([string] $Helper, [string] $Game, [string] $Arguments, [string] $Environment) {
+    # $Environment is NUL-terminated entries; a second NUL in a row would end the environment block early.
+    $hid = [PawsRig.Launcher]::Start($Helper, (Split-Path $Helper), "--game-dir `"$Game`"", "$($Environment.TrimEnd([char]0))`0K2_RIG_ARGS=$Arguments")
+    $h = Get-CimInstance Win32_Process -Filter "ProcessId=$hid" -ErrorAction SilentlyContinue
+    if ($h) { [void]$RigStarted.Add(@{ Id = $hid; Created = $h.CreationDate; Path = $h.ExecutablePath }) }
+    # No Select-Object -First here: run inside a piped script, its pipeline stop ended this function without a value.
+    $child = $null
+    foreach ($i in 1..120) {
+        $child = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$hid AND Name='k2.exe'" -ErrorAction SilentlyContinue)[0]
+        if ($child) { break }
+        if (-not (Get-Process -Id $hid -ErrorAction SilentlyContinue)) { throw "the runtime helper $hid exited before starting the game" }
+        Start-Sleep -Milliseconds 250
+    }
+    if (-not $child) { throw 'the runtime helper did not start the game' }
+    [void]$RigStarted.Add(@{ Id = [int]$child.ProcessId; Created = $child.CreationDate; Path = $child.ExecutablePath })
+    foreach ($i in 1..60) { if ([PawsRig.Launcher]::Park([int]$child.ProcessId) -gt 0) { break }; Start-Sleep -Milliseconds 500 }
+    [int]$child.ProcessId
+}
 # The recorded copies still running: same process id, creation time and executable as when they were started.
 function Get-RigCopies {
     foreach ($s in $RigStarted) {

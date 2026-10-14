@@ -40,6 +40,9 @@ param(
     [int] $AutosaveMinutes = 1,          # the module's autosave interval for this run (the helper uses 5)
     [int] $MatchMinutes = 10,            # Match: minutes of play; Reload and LobbyRejoin play a third of it
     [int] $SaveEvery = 5,                # Match: the host saves every this many minutes
+    [string] $Helper,                    # rehearsals on 1.3.72: a rig build of the launcher's runtime helper (Paw's
+                                         # helper with its single-copy check off and K2_RIG_ARGS passed to k2.exe), which
+                                         # starts each copy and installs its patches the way the launcher's Play does
     [switch] $TestSetupFailure           # developer check of the rig itself: fail right after the host copy starts
 )
 $ErrorActionPreference = 'Stop'
@@ -69,6 +72,8 @@ $build = @{ '1EB79BBB678668BE5A05F8C98103CD9988048490CE7C53C74C9A1D0813E9CD45' =
     'CB64676391EDF1E4677B79038A2C219B11B5E1F4D4C75D96AD9E74A7AFB9DF7A' = '1.3.68' }[(Get-FileHash (Join-Path $Game 'k2.exe')).Hash]
 if (-not $build) { throw 'the game is neither 1.3.72 (Steam build 25068126) nor 1.3.68 (Steam build 24805354)' }
 if ($module -and $build -ne '1.3.72') { throw "-Scenario $Scenario installs the multiplayer saves module, which needs 1.3.72; the game is $build" }
+if ($Helper -and ($module -or $build -ne '1.3.72' -or -not (Test-Path -LiteralPath $Helper))) { throw '-Helper is for the rehearsals on 1.3.72 and must exist' }
+if ($Helper) { "copies start through $(Split-Path $Helper -Leaf)" }
 "game: Kohan II $build"
 # Every path the run creates in the game folder must be new: never overwrite or remove a file the rig did not create
 # in this run (a leftover from an interrupted run included: check it and remove it by hand).
@@ -219,7 +224,7 @@ function Start-Copy($copy, $script) {
     $known = Log-Names
     $envText = "K2_RIG_DOCUMENTS=$(Docs $copy)`0"
     if ($copy -ne 'host') { $envText += "K2_RIG_JOIN=127.0.0.1:$Port`0" }
-    $id = Start-RigGame $Game "+Exec PawsRig/$script.txt" $envText
+    $id = if ($Helper) { Start-RigHelper $Helper $Game "+Exec PawsRig/$script.txt" $envText } else { Start-RigGame $Game "+Exec PawsRig/$script.txt" $envText }
     if ($TestSetupFailure) { throw "injected setup failure after starting the $copy copy (-TestSetupFailure)" }
     $log = Wait-NewLog $known 60
     if ($module) {
