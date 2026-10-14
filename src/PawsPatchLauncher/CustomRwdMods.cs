@@ -42,6 +42,34 @@ public sealed class CustomRwdMods(string gameRoot)
     string Cache(string hash) => Path.Combine(game, ".pawpatch", "custom-rwd", hash.ToLowerInvariant() + ".rwd");
     static string Mounted(string hash) => "PawsCustom/" + hash.ToLowerInvariant() + ".rwd";
 
+    // Resource names of a stored archive, for the load-order view only. Installation never relies on this list.
+    public HashSet<string> Resources(string sha256)
+    {
+        if (sha256 is not { Length: 64 } || !sha256.All(Uri.IsHexDigit)) throw new ArgumentException("Invalid archive digest.", nameof(sha256));
+        var path = Cache(sha256);
+        RemovalSafety.CheckNoLinks(path);
+        using var archive = RwdArchive.Open(path);
+        return archive.Entries.Select(e => e.Name.Replace('\\', '/')).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// For each mod in load order, the earlier mods whose resources it replaces and how many. A null entry
+    /// (disabled or unreadable mod) neither replaces nor is replaced, because only enabled mods are mounted.
+    /// </summary>
+    public static List<(int Earlier, int Files)>[] Overrides(IReadOnlyList<IReadOnlySet<string>?> resources)
+    {
+        var result = new List<(int Earlier, int Files)>[resources.Count];
+        for (int later = 0; later < resources.Count; later++)
+        {
+            result[later] = [];
+            if (resources[later] is not { } names) continue;
+            for (int earlier = 0; earlier < later; earlier++)
+                if (resources[earlier] is { } replaced && names.Count(replaced.Contains) is > 0 and var files)
+                    result[later].Add((earlier, files));
+        }
+        return result;
+    }
+
     // Copy first, then validate that exact immutable copy. Source replacement cannot change the imported content.
     public CustomRwdMod Import(string path, CancellationToken ct = default)
     {

@@ -1213,7 +1213,6 @@
   "When enabled, skips all detected desyncs, including serious ones that can substantially affect the match. This does not repair divergent states: players may see different events, company positions and actions, resources or battle outcomes. When disabled, the game stops the match on a desync. Every participant must use the same setting. A diagnostic log of the first error in the match is saved; loading a save enables recording again.": "Lorsque cette option est activée, le jeu ignore tous les décalages détectés, y compris les décalages graves qui peuvent affecter le match de manière significative. Cela ne corrige pas les différences: les joueurs peuvent avoir des événements, des positions et des actions de bouche, des ressources et des résultats de combat différents. Un journal de diagnostic de la première erreur de la partie est enregistré ; charger une sauvegarde permet un nouvel enregistrement.",
   "Speeds up the game's native saved-game transfers to multiplayer lobby participants. Included with Paw's Patch; no separate switch is needed.\n\nRequires the supported Kohan II 1.3.72 executable. Transfer stays at regular speed in file-only mode and with the patch disabled.": "Accélère le transfert natif des sauvegardes aux participants du salon multijoueur. Inclus dans Paw's Patch, sans option séparée.\n\nNécessite l'exécutable compatible de Kohan II 1.3.72. Le transfert conserve sa vitesse habituelle en mode Fichiers du jeu uniquement et lorsque le patch est désactivé.",
   "Allied economy, camera, interface, maps and game fixes": "Économie des alliés, caméra, interface, cartes et correctifs du jeu",
-  "Custom mods": "Mods personnalisés",
   "Apply mods": "Appliquer les mods",
   "Add RWD…": "Ajouter un RWD…",
   "Files: ": "Fichiers : ",
@@ -1225,10 +1224,17 @@
   "Custom mods applied.": "Mods personnalisés appliqués.",
   "Checking and applying mods…": "Vérification et application des mods…",
   "Test build · custom mods": "Version de test · mods personnalisés",
-  "Add RWD archives for the selected game. Enabled mods lower in the list take priority when files overlap.": "Ajoutez des archives RWD pour le jeu sélectionné. En cas de fichiers communs, les mods activés plus bas dans la liste sont prioritaires.",
   "No custom mods yet. Add an .rwd archive; the original file will stay where it is.": "Aucun mod personnalisé pour le moment. Ajoutez une archive .rwd ; le fichier original restera à son emplacement.",
   "For multiplayer, use compatible mods in the same load order. This selection is saved only on this computer.": "En multijoueur, utilisez des mods compatibles dans le même ordre de chargement. Cette sélection est enregistrée uniquement sur cet ordinateur.",
   "First apply the selected game and components on the Components page.": "Appliquez d’abord le jeu et les composants sélectionnés sur la page Composants.",
   "Could not add the archive. Choose a valid Kohan II RWD up to 2 GB.": "Impossible d’ajouter l’archive. Choisissez un RWD Kohan II valide de 2 Go maximum.",
-  "Could not apply mods. Check the files and reopen this window.": "Impossible d’appliquer les mods. Vérifiez les fichiers et rouvrez cette fenêtre."
+  "Mod manager": "Gestionnaire de mods",
+  "Load your own RWD mods on top of the selected game. Mods load from top to bottom; when two mods change the same file, the lower one wins.": "Chargez vos propres mods RWD par-dessus le jeu sélectionné. Les mods se chargent de haut en bas ; si deux mods modifient le même fichier, celui du bas l’emporte.",
+  "Load order": "Ordre de chargement",
+  "Base game · always loads first": "Jeu de base · toujours chargé en premier",
+  "Overrides files from: ": "Remplace des fichiers de : ",
+  "Replaced with the new file: ": "Remplacé par le nouveau fichier : ",
+  "Use Undo to keep the previous one.": "Utilisez « Annuler » pour conserver l’ancien fichier.",
+  "Could not apply mods. Check the files and try again.": "Impossible d’appliquer les mods. Vérifiez les fichiers et réessayez.",
+  "Changes are not applied yet.": "Les modifications ne sont pas encore appliquées."
 }
