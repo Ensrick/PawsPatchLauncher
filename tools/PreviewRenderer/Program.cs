@@ -182,7 +182,11 @@ public static class Program
         if (gameExitChecks || modLibraryChecks)
         {
             if (gameExitChecks) GameExitRecoveryChecks.Run(language);
-            if (modLibraryChecks) { ModLibraryChecks.Run(language); ModLibraryChecks.Run(language, modManager: true); }
+            if (modLibraryChecks)
+            {
+                ModLibraryChecks.Run(language); ModLibraryChecks.Run(language, modManager: true);
+                ModLibraryChecks.Run(language, modManager: true, legacyGame: true);
+            }
             app.Shutdown(); return;
         }
         if (modModeChecks) ModModeChecks.Run(language);

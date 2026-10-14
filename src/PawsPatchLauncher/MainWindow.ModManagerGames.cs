@@ -56,7 +56,11 @@ public partial class MainWindow
             var name = GameMod.Name(mod, _text.Language == "ru");
             if (mod == applied)
             {
-                ModManagerGamesBody.Children.Add(CustomModRow(null, true, null, name, T("Установлена и активна", "Installed and active"), null, null));
+                // On a game build without Paw's engine fixes (e.g. 1.3.68) the game runs with file changes only.
+                var active = T("Установлена и активна", "Installed and active");
+                if (_customModsState?.AppliedSettings?.DataOnly == true)
+                    active += " · " + T("Только файловые изменения", "File changes only") + (_installedGameVersion.Length > 0 ? " · Kohan II " + _installedGameVersion : "");
+                ModManagerGamesBody.Children.Add(CustomModRow(null, true, null, name, active, null, null));
                 continue;
             }
             var locked = mod == GameMod.ArcaneWars && !CanSelectArcaneWars;
