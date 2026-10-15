@@ -152,4 +152,25 @@ for image,cave in [(0x460000,0x10000000),(0xe40000,0x21000000),(0x12000000,0x610
   assert u.reg_read(UC_X86_REG_ESI)==0
  checks+=1
 
-print('ENGINE_CRASH_NATIVE_PASS',checks,'cases; observer F crash reproduced; all macro stages; unchanged player behavior; stock-loop differential; ABI; three ASLR bases')
+ # Network enum-read assertions (Serialize.h): from each `call AssertionHandler` (its three arguments pushed) through
+ # `add esp,0xc; mov [site flag],al`. Patched: Ignore (AL=1), the site's flag set, one count, the handler never
+ # entered. Stock: the handler (a stand-in returning 7) is entered and its result stored the same way.
+ for site,flag in [(0x6AD8C,0x6AD95),(0x6ADC5,0x6ADCE)]:
+  for patched in (False,True):
+   u,w,r=setup(image,cave,patched)
+   address=struct.unpack_from('<I',raw,flag)[0]+image-0x460000;w(image+flag,address)
+   u.mem_write(image+0x30154e,bytes.fromhex('b007c3'))
+   entered=[]
+   u.hook_add(UC_HOOK_CODE,lambda uc,addr,size,user:entered.append(addr),begin=image+0x30154e,end=image+0x30154e)
+   sp=STACK+0xF000-12;u.reg_write(UC_X86_REG_ESP,sp);u.reg_write(UC_X86_REG_EAX,0x12345600)
+   saved={UC_X86_REG_EBX:0x1234,UC_X86_REG_ESI:0x5678,UC_X86_REG_EDI:0x9abc,UC_X86_REG_EBP:0xdef0}
+   for reg,v in saved.items():u.reg_write(reg,v)
+   u.emu_start(image+site,image+site+13,count=100)
+   assert u.reg_read(UC_X86_REG_ESP)==sp+12
+   for reg,v in saved.items():assert u.reg_read(reg)==v
+   value=u.mem_read(address,1)[0]
+   if patched:assert value==1 and u.reg_read(UC_X86_REG_EAX)&255==1 and not entered and r(cave+0x1000+56)==1
+   else:assert value==7 and entered and r(cave+0x1000+56)==0
+   checks+=1
+
+print('ENGINE_CRASH_NATIVE_PASS',checks,'cases; observer F crash reproduced; all macro stages; unchanged player behavior; stock-loop differential; network-read assertions; ABI; three ASLR bases')

@@ -1,4 +1,5 @@
-"""Shared animation-target validation and missing network-client handling, 1.3.72.
+"""Shared animation-target validation, missing network-client handling and the network enum-read assertion,
+1.3.72.
 
 The vectored probe handler catches only reads in its own validation block. It
 never catches an exception from a game function or resumes a failed instruction.
@@ -8,10 +9,12 @@ from pathlib import Path
 
 IMAGE=0x460000
 CAVE=0x10000000
-SITES=[0x31EAA6,0x14C047,0xB764B,0xB766C,0xB7688,0xB77D2]
+SITES=[0x31EAA6,0x14C047,0xB764B,0xB766C,0xB7688,0xB77D2,0x6AD8C,0x6ADC5]
 ORIGINALS=['8b4e34894df8','8b400c83782800','56ff7424088bf1',
-           'c781dc01000002000000','535556578bf9','b874fd8700']
-OFFSETS=[0,0x100,0x500,0x600,0x700,0x800]
+           'c781dc01000002000000','535556578bf9','b874fd8700',
+           # call AssertionHandler for Serialize.h `_data>=0` / `_data<_n_possibilities`
+           'e8bd672900','e884672900']
+OFFSETS=[0,0x100,0x500,0x600,0x700,0x800,0x900,0x980]
 # TeamCommand starts with an absolute SEH descriptor address.
 ORIGINAL_FIXUPS=[(5,1)]
 PROBE=0x200
@@ -99,6 +102,15 @@ def build(ks,image,cave):
         player:
             popad; popfd; {replay}
             jmp {image+SITES[index]+len(bytes.fromhex(ORIGINALS[index]))};
+        '''
+    # The network enum read (Serialize.h) asserts on a value outside its range, on the simulation thread and while
+    # it holds the session lock; the main thread then gives up waiting for that lock while the dialog waits. Both
+    # call sites get Ignore, as if a player had clicked it (AL=1: the site stops checking for this run), and a count.
+    # Every other assertion keeps its dialog.
+    for offset,site in [(0x900,0x6AD8C),(0x980,0x6ADC5)]:
+        parts[offset]=f'''
+            inc dword ptr [{data+56}]; mov al,1;
+            jmp {image+site+5};
         '''
     code=bytearray(DATA)
     lengths={}
