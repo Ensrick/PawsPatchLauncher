@@ -51,22 +51,46 @@ public static class MultiplayerCheck
                 || parts[0].Equals("Local_base_" + code, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static async Task<ReadinessReport> CreateAsync(string game, InstallState state, UserSettings settings, string executable, string build, CancellationToken ct = default)
+    // The engine mounts "%USERDATA%/data/" (Documents\Kohan2\data) at priority 1 in startup\autoexec.txt, so its
+    // loose files override every game-folder and module file, and the game's join check does not cover them. Report
+    // entries use this prefix; a game-folder directory of that name is not scanned, so the two never collide.
+    public const string UserDataPrefix = "%USERDATA%\\data\\";
+    // Top-level folders of that depot that hold the player's own files (settings, saves, films, logs), not shared data.
+    static readonly HashSet<string> PlayerFolders = new(StringComparer.OrdinalIgnoreCase)
+        { "User", "Save", "saves", "CampaignSave", "DynamicCampaignSave", "Films", "Maps", "RandomMap", "Screenshots", "synclogs" };
+
+    static IEnumerable<string> GameplayFiles(string root, Func<string, bool> includeTopFolder)
+    {
+        // Include extra gameplay data left by manual installs; do not traverse launcher backups or junctions.
+        var pending = new Stack<string>();
+        pending.Push(root);
+        while (pending.TryPop(out var folder))
+        {
+            foreach (var file in Directory.EnumerateFiles(folder))
+                if (Path.GetExtension(file).ToLowerInvariant() is ".tgi" or ".dll" or ".rwd") yield return CryptoAndIO.NormalizeRelativePath(Path.GetRelativePath(root, file));
+            foreach (var directory in Directory.EnumerateDirectories(folder))
+                if (!Path.GetFileName(directory).StartsWith('.') && (File.GetAttributes(directory) & FileAttributes.ReparsePoint) == 0
+                    && (folder != root || includeTopFolder(Path.GetFileName(directory)))) pending.Push(directory);
+        }
+    }
+
+    /// <param name="userData">The Documents\Kohan2\data folder, or null to leave it out.</param>
+    public static async Task<ReadinessReport> CreateAsync(string game, InstallState state, UserSettings settings, string executable, string build, string? userData = null, CancellationToken ct = default)
     {
         var expected = Expected(state);
         var paths = expected.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         paths.Add("k2.exe");
         paths.Add(Path.GetFileName(executable));
-        // Include extra gameplay data left by manual installs; do not traverse launcher backups or junctions.
-        var pending = new Stack<string>();
-        pending.Push(game);
-        while (pending.TryPop(out var folder))
-        {
-            foreach (var file in Directory.EnumerateFiles(folder))
-                if (Path.GetExtension(file).ToLowerInvariant() is ".tgi" or ".dll" or ".rwd") paths.Add(CryptoAndIO.NormalizeRelativePath(Path.GetRelativePath(game, file)));
-            foreach (var directory in Directory.EnumerateDirectories(folder))
-                if (!Path.GetFileName(directory).StartsWith('.') && (File.GetAttributes(directory) & FileAttributes.ReparsePoint) == 0) pending.Push(directory);
-        }
+        foreach (var relative in GameplayFiles(game, folder => !UserDataPrefix.StartsWith(folder + "\\", StringComparison.OrdinalIgnoreCase))) paths.Add(relative);
+        // The depot root is followed like the engine follows it (it may be a moved Documents folder); junctions
+        // inside it are skipped as in the game folder.
+        var userFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (userData is not null && Directory.Exists(userData))
+            foreach (var relative in GameplayFiles(userData, folder => !PlayerFolders.Contains(folder)))
+            {
+                userFiles[UserDataPrefix + relative] = Path.Combine(userData, relative);
+                paths.Add(UserDataPrefix + relative);
+            }
         var errors = new List<string>();
         var details = new MultiplayerManifest { Configuration = ConfigurationCode.Create(settings), GameBuild = build,
             Executable = Path.GetFileName(executable), Modules = state.Modules.Select(x => new MultiplayerModule {
@@ -82,7 +106,7 @@ public static class MultiplayerCheck
         foreach (var relative in paths.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
         {
             ct.ThrowIfCancellationRequested();
-            var path = PatchRecovery.GamePath(game, relative);
+            var path = userFiles.TryGetValue(relative, out var userFile) ? userFile : PatchRecovery.GamePath(game, relative);
             var hash = File.Exists(path) ? await CryptoAndIO.Sha256Async(path, ct) : "MISSING";
             details.Files.Add(new MultiplayerFile { Path = relative, Sha256 = hash });
             Add(relative.ToLowerInvariant() + "|" + hash);

@@ -358,7 +358,7 @@ public partial class MainWindow
             if (!ModLibrary.IsActive(state, _settings) || UpdateDetector.HasModuleChanges(state, ResolveSelectedPackages(_channel))) throw new IOException(T("Сначала примените выбранные настройки и версию патча.", "Apply the selected settings and patch version first."));
             var critical = await MultiplayerCheck.CriticalAsync(_game.Directory, state, ResolveLaunchExecutable(_game.Directory), !CompatibilityRelevant || DataOnlyMode ? new GameRequirement() : SelectedGameRequirement);
             _fileCheckFailed = critical.Count > 0;
-            _readiness = await MultiplayerCheck.CreateAsync(_game.Directory, state, GetEffectiveSettings(), ResolveLaunchExecutable(_game.Directory), _game.SteamBuild ?? "?");
+            _readiness = await MultiplayerCheck.CreateAsync(_game.Directory, state, GetEffectiveSettings(), ResolveLaunchExecutable(_game.Directory), _game.SteamBuild ?? "?", _userDataDirectory());
             var integrity = _readiness.Errors.Concat(critical).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             _readiness = _readiness with { Errors = integrity };
             if (_readiness.Details is not null) _readiness.Details.IntegrityErrors = integrity;

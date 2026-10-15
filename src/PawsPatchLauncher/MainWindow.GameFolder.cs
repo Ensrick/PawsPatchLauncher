@@ -31,6 +31,8 @@ public partial class MainWindow
     private bool _openingSavesFolder;
     private Func<string> _savesDirectory = () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Kohan2", "data", "Save");
     private string SavesDirectory => _savesDirectory();
+    // The game's own data depot in Documents (autoexec.txt: adddepot %USERDATA%/data/ 1), included in file checks.
+    private Func<string> _userDataDirectory = () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Kohan2", "data");
 
     private async void OpenSavesFolderButton_Click(object sender, RoutedEventArgs e) => await OpenSavesFolderAsync();
 

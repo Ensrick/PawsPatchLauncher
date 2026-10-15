@@ -76,6 +76,8 @@ internal static class ModLibraryChecks
             Set(window, "_game", new GameInstallation(game, Path.Combine(game, "k2.exe"), "fixture", "stable"));
             // A user's open game must neither block nor be inspected by this isolated fixture.
             Set(window, "_gameRunningProbe", new Func<bool>(() => false));
+            var userData = Path.Combine(root, "documents", "Kohan2", "data");
+            Set(window, "_userDataDirectory", new Func<string>(() => userData));
             Call(window, "ApplyLanguage");
             Call(window, "SetActivePage", "modules");
             window.Measure(new Size(1050, 680)); window.Arrange(new Rect(0, 0, 1050, 680)); window.UpdateLayout();

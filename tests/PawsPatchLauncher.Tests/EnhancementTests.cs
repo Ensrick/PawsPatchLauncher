@@ -58,6 +58,35 @@ public static class EnhancementTests
         var oversizeRejected = false; try { await MultiplayerDetails.LoadAsync(oversized); } catch (InvalidDataException) { oversizeRejected = true; }
         Check(oversizeRejected, "Oversized peer report accepted");
 
+        // The Documents\Kohan2\data depot outranks the game folder and is outside the game's join check: its gameplay
+        // files are reported under a prefix, the player's own folders are not, and an empty depot keeps the legacy code.
+        var userData = Path.Combine(root, "enhancements", "documents", "Kohan2", "data");
+        Directory.CreateDirectory(userData);
+        Check((await MultiplayerCheck.CreateAsync(game, state, new UserSettings { ImprovedAi = false }, Path.Combine(game, "helper.exe"), "25068126", userData)).Fingerprint == report.Fingerprint,
+            "An empty user data folder changed the fingerprint");
+        foreach (var (relative, text) in new[] { ("Units\\Test\\loose.tgi", "loose"), ("User\\UVars.tgi", "settings"), ("Maps\\Mine\\map.tgi", "map"),
+            ("Save\\game.rsg", "save"), ("readme.txt", "notes"), (".hidden\\x.tgi", "hidden") })
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(userData, relative))!);
+            await File.WriteAllTextAsync(Path.Combine(userData, relative), text);
+        }
+        var shadow = Path.Combine(game, "%USERDATA%", "data", "Units", "Test"); Directory.CreateDirectory(shadow);
+        await File.WriteAllTextAsync(Path.Combine(shadow, "loose.tgi"), "game folder copy");
+        var withUser = (await MultiplayerCheck.CreateAsync(game, state, new UserSettings { ImprovedAi = false }, Path.Combine(game, "helper.exe"), "25068126", userData)).Details!;
+        var userEntries = withUser.Files.Where(x => x.Path.StartsWith(MultiplayerCheck.UserDataPrefix, StringComparison.Ordinal)).ToList();
+        Check(userEntries.Count == 1 && userEntries[0].Path == MultiplayerCheck.UserDataPrefix + "Units\\Test\\loose.tgi"
+            && userEntries[0].Sha256 == await CryptoAndIO.Sha256Async(Path.Combine(userData, "Units", "Test", "loose.tgi")), "User data gameplay file not reported exactly once with its own hash");
+        Check(withUser.Files.Count == local.Files.Count + 1, "The player's own files or a game-folder %USERDATA% directory were reported");
+        MultiplayerDetails.Validate(withUser);
+        var userComparison = MultiplayerDetails.Compare(withUser, local);
+        Check(!userComparison.Matches && userComparison.Differences.Single().Name == userEntries[0].Path && userComparison.Differences[0].Peer == "NOT_LISTED",
+            "A loose user data file was not identified against a clean install");
+        var userReportPath = Path.Combine(root, "friend-user-data.pawmp.json");
+        await MultiplayerDetails.SaveAsync(userReportPath, withUser);
+        Check(!(await File.ReadAllTextAsync(userReportPath)).Contains(root.Replace("\\", "\\\\"), StringComparison.OrdinalIgnoreCase), "Report exposed the user data path");
+        Check(MultiplayerDetails.Compare(withUser, await MultiplayerDetails.LoadAsync(userReportPath)).Matches, "User data report roundtrip failed");
+        File.Delete(Path.Combine(shadow, "loose.tgi"));
+
         foreach (var (exception, code) in new (Exception, string)[] {
             (new AggregateException(new HttpRequestException("raw", null, HttpStatusCode.NotFound)), "http-404"),
             (new HttpRequestException("raw", null, HttpStatusCode.Forbidden), "http-access"),
