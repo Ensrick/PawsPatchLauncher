@@ -17,7 +17,7 @@ namespace PreviewRenderer;
 // The fake executable is text and no Launch command is invoked. No native window is shown.
 internal static class ModLibraryChecks
 {
-    internal static void Run(string language)
+    internal static void Run(string language, bool modManager = false, bool legacyGame = false)
     {
         if (!ActivityStore.IsSmokeTest || ActivityStore.LocalTestProfile is not null)
             throw new InvalidOperationException("Mod library UI checks require a disposable --smoke-test profile.");
@@ -26,7 +26,15 @@ internal static class ModLibraryChecks
         var sources = Path.Combine(root, "sources");
         var cache = Path.Combine(root, "cache");
         Directory.CreateDirectory(game); Directory.CreateDirectory(sources);
-        File.WriteAllText(Path.Combine(game, "k2.exe"), "Non-executable isolated UI fixture; never launch.");
+        if (legacyGame)
+        {
+            // Kohan II has no version resource; the launcher reads its NUL-delimited UTF-16 version string.
+            // 1.3.68 is the public Steam build; the feed's engine runtime below targets 1.3.72.
+            File.WriteAllBytes(Path.Combine(game, "k2.exe"), Encoding.Unicode.GetBytes("Non-executable isolated UI fixture; never launch.\u00001.3.68\u0000"));
+            Directory.CreateDirectory(Path.Combine(game, "startup"));
+            File.WriteAllText(Path.Combine(game, "startup", "autoexec.txt"), "adddepot data.rwd\r\n");
+        }
+        else File.WriteAllText(Path.Combine(game, "k2.exe"), "Non-executable isolated UI fixture; never launch.");
         var settingsPath = Path.Combine(ActivityStore.Root, "settings.json");
         var oldSettings = File.Exists(settingsPath) ? File.ReadAllBytes(settingsPath) : null;
         var windows = new List<MainWindow>();
@@ -216,10 +224,22 @@ internal static class ModLibraryChecks
             await File.WriteAllTextAsync(configuration.FeedUrls[0], JsonSerializer.Serialize(signed, LauncherJsonContext.Default.SignedFeedEnvelope));
         }
 
-        async Task Scenario()
+        async Task<(ChannelManifest Feed, string Exe)> InitialFeed()
         {
             var originalExe = await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe"));
-            var initial = new ChannelManifest { PublishedAt = "2026-09-10T10:00:00Z", Game = new() { K2ExeSha256 = [originalExe] } };
+            var initial = new ChannelManifest { PublishedAt = "2026-09-10T10:00:00Z", Game = legacyGame
+                ? new() { Version = "1.3.72", SteamBuild = "25068126", K2ExeSha256 = [KohanActivityReader.SupportedSha256] }
+                : new() { K2ExeSha256 = [originalExe] } };
+            if (legacyGame)
+            {
+                // Paw's Patch for Vanilla and Immortals: a file part and an engine part that only runs on 1.3.72.
+                var pureData = await Package("pure-fixes-data", "1.0.0", 50, new() { ["data/pure.txt"] = "PURE" });
+                var pureRuntime = await Package("pure-fixes-runtime", "1.0.0", 60, new() { ["k2_paws_pure_fixes_1372.exe"] = "Engine fixes for 1.3.72; never launch." });
+                pureRuntime.ExecutableIndependent = false;
+                pureData.Mods = pureRuntime.Mods = [GameMod.Vanilla, GameMod.Immortals];
+                initial.Packages.AddRange([pureData, pureRuntime]);
+                initial.Packages.Add(await Package("pawpatch-data-ru", "1.0.0", 30, new() { ["data/paw.txt"] = "PAW files" }));
+            }
             initial.Packages.Add(await Package("arcane-wars", "0.82.0", 10, new() { ["data/shared.txt"] = "AW", ["data/aw.txt"] = "AW base" }, true));
             initial.Packages.Add(await Package("startup-base", "1.0.0", 20, new() { ["startup/base.txt"] = "base" }, true));
             initial.Packages.Add(await Package("pawpatch-core", "1.0.0", 30, new() { ["data/shared.txt"] = "PAW", ["data/cost.txt"] = "0.75" }, true));
@@ -234,10 +254,17 @@ internal static class ModLibraryChecks
             initial.Packages.Add(await Package("immortals", "2.1.0", 10, new() { ["data/shared.txt"] = "IMM", ["data/imm.txt"] = "Immortals" }));
             initial.Packages.Add(await Package("immortals-localization-ru", "1.0.0", 100, new() { ["startup/language.txt"] = "ru" }));
             await WriteFeed(initial);
-            var initialRelease = ChannelFingerprint.Create(initial);
-            new SettingsStore().Save(new UserSettings { Language = language, Mod = GameMod.ArcaneWars, ModNoticeSeen = true, GamePath = game,
-                Channel = "stable", PawPatchEnabled = false, LargeMapSizes = false, RussianLocalization = true, IndependentHostility = false,
+            new SettingsStore().Save(new UserSettings { Language = language, Mod = legacyGame ? GameMod.Vanilla : GameMod.ArcaneWars, ModNoticeSeen = true, GamePath = game,
+                Channel = "stable", PawPatchEnabled = legacyGame, VanillaPawPatchEnabled = legacyGame, ImmortalsPawPatchEnabled = legacyGame,
+                LargeMapSizes = false, RussianLocalization = true, IndependentHostility = false,
                 RoamingSpawnMode = "standard", AdditionalRoamingCompanies = false, SiegeBalance = false, DisablePowersAndShards = false });
+            return (initial, originalExe);
+        }
+
+        async Task Scenario()
+        {
+            var (initial, originalExe) = await InitialFeed();
+            var initialRelease = ChannelFingerprint.Create(initial);
             var window = Window();
             Connection(window, false);
             Check(!Control<RadioButton>(window, "ArcaneWarsModRadio").IsEnabled, "Offline membership allowed an uninstalled mod.");
@@ -353,10 +380,149 @@ internal static class ModLibraryChecks
             Console.WriteLine($"MOD LIBRARY UI PASS {count} {language}: install-only, gold Apply, launch lock, offline component/language switching, active-mod updates, fresh-window installed release; signed local ZIPs; no native window/game/network.");
         }
 
+        // Mod manager Game rows: one click selects the game and runs the same install or apply as Components.
+        Button? GameButton(MainWindow window, string mod) => ((List<(string Mod, Button Button, bool Allowed)>)Field(window, "_baseGameButtons")!)
+            .Where(row => row.Mod == mod).Select(row => row.Button).FirstOrDefault();
+        long? DownloadSize(MainWindow window, string mod) => (long?)Call(window, "BaseGameDownloadSize", mod);
+        async Task OneClick(MainWindow window, string mod)
+        {
+            var button = GameButton(window, mod);
+            Check(button is { IsEnabled: true }, mod + " has no usable Game row action.");
+            button!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(15);
+            while ((Flag(window, "_busy") || Flag(window, "_baseGameSwitching")) && DateTimeOffset.UtcNow < deadline) await Task.Delay(20);
+            Check(!Flag(window, "_busy") && !Flag(window, "_baseGameSwitching"), mod + " Game row action did not finish.");
+            Ready(window, mod);
+            Check((string)Field(window, "_activePage")! == "modmanager" && Control<StackPanel>(window, "ModManagerPanel").Visibility == Visibility.Visible,
+                "A Game row action left the Mod manager.");
+            Check(Control<Border>(window, "CoreModuleCard").Visibility != Visibility.Visible && Control<Border>(window, "SiegeBalanceCard").Visibility != Visibility.Visible,
+                "A Game row action revealed Components cards on the Mod manager page.");
+            Check(GameButton(window, mod) is null, "The active game still offers an action.");
+        }
+        async Task ModManagerScenario()
+        {
+            var (initial, originalExe) = await InitialFeed();
+            var window = Window();
+            Connection(window, true);
+            Check(await CheckFeed(window), "Signed local feed was not accepted.");
+            Call(window, "SetActivePage", "modmanager"); window.UpdateLayout();
+            var text = (PawsPatchLauncher.Localization)Field(window, "_text")!;
+            var switchLabel = (string)Call(window, "T", "Переключить", "Switch")!;
+            Check(LauncherIcon.GetKind(Control<Button>(window, "ModManagerNav")) == IconKind.Mods, "Mod manager navigation has no icon.");
+            Check(Control<StackPanel>(window, "ModManagerGamesBody").Children.Count == 3, "Game card does not list Vanilla, Immortals and Arcane Wars.");
+            var immortalsBytes = ModLibrary.Packages(initial, GameMod.Immortals).Sum(p => p.Size);
+            Check(immortalsBytes > 0 && DownloadSize(window, GameMod.Immortals) == immortalsBytes, "Immortals download size is wrong.");
+            Check(Equals(GameButton(window, GameMod.Immortals)?.Content, text["button.install"])
+                && Equals(GameButton(window, GameMod.ArcaneWars)?.Content, text["button.install"]), "A game that is not stored is not offered as Install.");
+            await OneClick(window, GameMod.Immortals);
+            Check(new ModLibrary(game).Find(GameMod.Immortals, "stable") is not null && File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM",
+                "One click did not download, store and apply Immortals.");
+            await OneClick(window, GameMod.ArcaneWars);
+            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "AW" && !File.Exists(Path.Combine(game, "data/imm.txt")),
+                "One click did not switch the files to Arcane Wars.");
+            Check(DownloadSize(window, GameMod.Immortals) == 0 && Equals(GameButton(window, GameMod.Immortals)?.Content, switchLabel),
+                "Stored Immortals is not offered as a switch.");
+            RemoveDownloadSources(); // A stored game must switch with nothing left to download.
+            await OneClick(window, GameMod.Immortals);
+            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM" && new ModLibrary(game).Find(GameMod.ArcaneWars, "stable") is not null,
+                "Switching back to stored Immortals failed or dropped the stored Arcane Wars release.");
+            var stateText = StateText();
+            Set(window, "_customModsDirty", true);
+            GameButton(window, GameMod.ArcaneWars)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(StateText() == stateText && Settings(window).Mod == GameMod.Immortals && Field(window, "_customModsError") is string,
+                "Unapplied custom mod edits did not block a game switch.");
+            Set(window, "_customModsDirty", false); Call(window, "ReloadCustomMods");
+            Set(window, "_busy", true); Call(window, "RefreshCustomModsState", false);
+            Check(!GameButton(window, GameMod.ArcaneWars)!.IsEnabled, "A Game row action is enabled during another operation.");
+            Set(window, "_busy", false); Call(window, "RefreshCustomModsState", false);
+            Check(GameButton(window, GameMod.ArcaneWars)!.IsEnabled, "Game row actions stay disabled after the operation.");
+            Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == originalExe, "UI test altered the base executable.");
+            Check((await new ModuleInstaller(game).VerifyAsync()).Count == 0, "Final active game files do not match their signed package payloads.");
+            Check(blockedNetwork.Attempts == 0, "Fixture attempted an external network request.");
+            Console.WriteLine($"MOD MANAGER GAMES PASS {count} {language}: nav icon, three Game rows, one-click download+install of Immortals and Arcane Wars, offline switch of a stored game, dirty and busy guards; signed local ZIPs; no native window/game/network.");
+        }
+
+        IEnumerable<object> Logical(object node)
+        {
+            yield return node;
+            if (node is DependencyObject parent)
+                foreach (var child in LogicalTreeHelper.GetChildren(parent))
+                    foreach (var item in Logical(child)) yield return item;
+        }
+        string GameRowsText(MainWindow window) => string.Join("\n", Logical(Control<StackPanel>(window, "ModManagerGamesBody")).OfType<TextBlock>().Select(t => t.Text));
+        string Startup() => File.ReadAllText(Path.Combine(game, "startup", "autoexec.txt"));
+        // What Play checks before it starts the game, without starting it.
+        async Task PlayReady(MainWindow window, string why)
+        {
+            var state = State();
+            var exe = (string)Call(window, "ResolveLaunchExecutable", game)!;
+            var selected = (List<PackageRelease>)Call(window, "ResolveSelectedPackages", Selected(window))!;
+            Check(Path.GetFileName(exe) == "k2.exe" && File.Exists(exe), why + ": Play would not start the game's own k2.exe.");
+            Check(!UpdateDetector.HasSettingsChanges(state, selected, (UserSettings)Call(window, "GetEffectiveSettings")!), why + ": Play would ask to apply settings again.");
+            var problems = (await MultiplayerCheck.CriticalAsync(game, state, exe, new GameRequirement()))
+                .Concat(await new ModuleInstaller(game).VerifyAsync(allowCustomHotkeys: true)).ToList();
+            Check(problems.Count == 0, why + ": Play's file check fails: " + string.Join("; ", problems));
+        }
+        // The public Steam build 1.3.68: Paw's engine runtime targets 1.3.72, so each game installs and plays with file changes only.
+        async Task ModManagerLegacyGameScenario()
+        {
+            var (_, originalExe) = await InitialFeed();
+            var window = Window();
+            Connection(window, true);
+            Check(await CheckFeed(window), "Signed local feed was not accepted.");
+            await (Task<bool>)Call(window, "CheckGameCompatibilityAsync", true)!;
+            Check((GameCompatibilityState)Field(window, "_compatibilityState")! == GameCompatibilityState.Unsupported && (string)Field(window, "_installedGameVersion")! == "1.3.68",
+                "The 1.3.68 executable was not read as a file-only game build.");
+            Call(window, "SetActivePage", "modmanager"); window.UpdateLayout();
+            var fileOnly = (string)Call(window, "T", "Только файловые изменения", "File changes only")!;
+            async Task FileOnly(string mod, string marker, string why)
+            {
+                await OneClick(window, mod);
+                Check(State().AppliedSettings?.DataOnly == true && File.Exists(Path.Combine(game, marker)), why + ": the game's files were not applied in file-only mode.");
+                Check(!File.Exists(Path.Combine(game, "k2_paws_pure_fixes_1372.exe")), why + ": 1.3.72 engine files were installed on 1.3.68.");
+                Check(GameRowsText(window).Contains(fileOnly + " · Kohan II 1.3.68"), why + ": the active row does not say it runs with file changes only.");
+                await PlayReady(window, why);
+            }
+            await FileOnly(GameMod.Vanilla, "data/pure.txt", "Vanilla with Paw's Patch");
+            Check(new ModuleInstaller(game).IsPrepared(Selected(window).Packages.Single(p => p.Id == "pure-fixes-runtime")),
+                "The engine part was not stored for a later switch to 1.3.72.");
+
+            // A custom RWD mod mounts through the startup file, which 1.3.68 reads like 1.3.72.
+            var rwd = Path.Combine(root, "Battle mod.rwd");
+            PawsPatchLauncher.Rwd.RwdArchive.Write(rwd, new Dictionary<string, byte[]> { ["test.tgi"] = [1] });
+            Set(window, "_chooseRwdMod", (Func<string?>)(() => rwd));
+            async Task CustomIdle()
+            {
+                for (var i = 0; i < 200 && Flag(window, "_customModsBusy"); i++) await Task.Delay(20);
+                Check(!Flag(window, "_customModsBusy"), "A custom mod action did not finish.");
+                window.UpdateLayout();
+            }
+            Control<Button>(window, "CustomModsAdd").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await CustomIdle();
+            Call(window, "ChangeCustomMod", 0, (Func<CustomRwdMod, CustomRwdMod>)(m => m with { Enabled = true }));
+            Control<Button>(window, "ModManagerApply").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await CustomIdle();
+            const string mountHeader = "# Paw's Launcher: local RWD mods";
+            Check(State().CustomMods.GetValueOrDefault(GameMod.Vanilla)?.SingleOrDefault()?.Enabled == true && Startup().StartsWith("adddepot data.rwd") && Startup().Contains(mountHeader),
+                "The custom mod was not mounted after the game's own data on 1.3.68.");
+            Check(State().AppliedSettings?.DataOnly == true && !File.Exists(Path.Combine(game, "k2_paws_pure_fixes_1372.exe")), "Applying a custom mod left file-only mode.");
+            await PlayReady(window, "Vanilla with a custom mod");
+
+            await FileOnly(GameMod.Immortals, "data/imm.txt", "Immortals");
+            Check(!Startup().Contains(mountHeader), "Vanilla's custom mod was mounted for Immortals.");
+            await FileOnly(GameMod.ArcaneWars, "data/paw.txt", "Arcane Wars");
+            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "AW" && !File.Exists(Path.Combine(game, "data/imm.txt")), "Arcane Wars kept Immortals files.");
+            RemoveDownloadSources(); // Back to the stored Vanilla, offline.
+            await FileOnly(GameMod.Vanilla, "data/pure.txt", "Back to Vanilla");
+            Check(Startup().Contains(mountHeader), "Vanilla's custom mod was not mounted again after switching back.");
+            Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == originalExe, "UI test altered the base executable.");
+            Check(blockedNetwork.Attempts == 0, "Fixture attempted an external network request.");
+            Console.WriteLine($"MOD MANAGER 1.3.68 PASS {count} {language}: file-only install of Vanilla with Paw's Patch, Immortals and Arcane Wars from the Mod manager, engine part stored but not installed, custom RWD mount, Play checks with k2.exe, offline switch back; no native window/game/network.");
+        }
+
         var dispatcher = Dispatcher.CurrentDispatcher;
         try
         {
-            var task = dispatcher.InvokeAsync(Scenario).Task.Unwrap();
+            Func<Task> scenario = !modManager ? Scenario : legacyGame ? ModManagerLegacyGameScenario : ModManagerScenario;
+            var task = dispatcher.InvokeAsync(scenario).Task.Unwrap();
             var frame = new DispatcherFrame();
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(45) };
             timer.Tick += (_, _) => frame.Continue = false;

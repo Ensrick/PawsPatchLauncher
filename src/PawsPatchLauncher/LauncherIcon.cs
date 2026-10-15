@@ -4,7 +4,7 @@ using System.Windows.Media;
 
 namespace PawsPatchLauncher;
 
-public enum IconKind { None, Home, Components, Multiplayer, Settings, Shield, Language, Palette, Sync, Swords, Clock, Route, Siege, Copy, Paste, Check, Warning, Help, Play, Download, Folder, Diagnostics, Undo, Trash, Compare, Save, Search, Close, Minimize, Person, Logout, More, Send, Profile, Camera, AddFriend, Requests, BlockedUsers, Discord, Smile, ChevronUp, Bot, Gear, History, ReleaseNotes, Chat, Bell, BellMuted }
+public enum IconKind { None, Home, Components, Multiplayer, Settings, Shield, Language, Palette, Sync, Swords, Clock, Route, Siege, Copy, Paste, Check, Warning, Help, Play, Download, Folder, Diagnostics, Undo, Trash, Compare, Save, Search, Close, Minimize, Person, Logout, More, Send, Profile, Camera, AddFriend, Requests, BlockedUsers, Discord, Smile, ChevronUp, Bot, Gear, History, ReleaseNotes, Chat, Bell, BellMuted, Mods }
 
 /// <summary>Font-independent vector icons on a shared 24-unit grid.</summary>
 public sealed class LauncherIcon : FrameworkElement
@@ -42,6 +42,7 @@ public sealed class LauncherIcon : FrameworkElement
             [IconKind.More] = "M5,11 A1,1 0 1 1 4.99,11 M12,11 A1,1 0 1 1 11.99,11 M19,11 A1,1 0 1 1 18.99,11",
             [IconKind.Send] = "M3,3 L22,12 3,21 6,12 Z M6,12 L22,12",
             [IconKind.Home] = "M3,11 L12,3 21,11 M5,10 L5,21 10,21 10,15 14,15 14,21 19,21 19,10",
+            [IconKind.Mods] = "M4,7 L9,7 C8,3 15,3 14,7 L19,7 19,11 C23,10 23,17 19,16 L19,21 4,21 4,16 C8,17 8,10 4,11 Z",
             [IconKind.Components] = "M12,3 L21,8 12,13 3,8 Z M3,12 L12,17 21,12 M3,16 L12,21 21,16",
             [IconKind.Multiplayer] = "M12,3 A3,3 0 1 1 11.99,3 M5,21 L5,18 Q5,13 12,13 Q19,13 19,18 L19,21 M3,7 A2.5,2.5 0 0 1 3,12 M3,15 Q1,16 1,19 M21,7 A2.5,2.5 0 0 0 21,12 M21,15 Q23,16 23,19",
             [IconKind.Person] = "M12,3 A4,4 0 1 1 11.99,3 M4,21 L4,19 C4,12 20,12 20,19 L20,21",

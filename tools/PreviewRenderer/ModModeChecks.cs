@@ -54,12 +54,18 @@ internal static class ModModeChecks
             Call("SetActivePage","home");
             Check(Control<Border>("ModSelectorCard").Visibility==Visibility.Collapsed,"Tabs leaked onto Home");
             Call("SetActivePage","modules");
+            // The game is chosen in the Mod manager; Components names it and links there.
+            var title=Control<TextBlock>("ModulesTitleText");var change=Control<Button>("ComponentsChangeGameButton");
+            Check(Control<Grid>("ModChoiceGrid").Visibility==Visibility.Collapsed,"Game choice shown on Components");
+            Check(title.Text.EndsWith(GameMod.Name(settings.Mod,language=="ru")),"Components header does not name the game");
             foreach(var size in new[]{(1050d,680d),(1280d,800d),(1600d,1000d)})
             {
                 w.Width=size.Item1;w.Height=size.Item2;w.Measure(new Size(w.Width,w.Height));w.Arrange(new Rect(0,0,w.Width,w.Height));w.UpdateLayout();
-                Check(arcane.ActualWidth>100&&vanilla.ActualWidth>100,"Mod tab clipped at "+size);
+                Check(title.ActualWidth>100&&change.IsVisible&&change.ActualWidth>60,"Components header clipped at "+size);
             }
-            Console.WriteLine($"MOD UI PASS {checks} {language}: tabs, empty state, preserved preferences, independent core switch, busy lock, three widths.");
+            change.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<StackPanel>("ModManagerPanel").IsVisible&&!Control<Border>("CoreModuleCard").IsVisible,"Change game does not open the Mod manager");
+            Console.WriteLine($"MOD UI PASS {checks} {language}: game header and Mod manager link, empty state, preserved preferences, independent core switch, busy lock, three widths.");
         }
         finally { Set("_busy",false);ConfigurationCode.Apply(new UserSettings(),settings);new SettingsStore().Save(settings);w.Close(); }
     }

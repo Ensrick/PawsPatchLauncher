@@ -62,6 +62,14 @@ internal static class CustomRwdModTests
         RwdArchive.Write(sourceA, new Dictionary<string, byte[]> { ["test/sample.tgi"] = [1, 2, 3] });
         RwdArchive.Write(sourceB, new Dictionary<string, byte[]> { ["test/sample.tgi"] = [4, 5, 6] });
         var a = library.Import(sourceA); var b = library.Import(sourceB);
+        // Load-order view: names compare case-insensitively, a disabled (null) mod neither replaces nor is replaced.
+        var namesA = library.Resources(a.Sha256); var namesB = library.Resources(b.Sha256);
+        Check(namesA.SetEquals(["test/sample.tgi"]) && namesA.Contains("TEST/Sample.tgi"), "resource names of a stored archive");
+        var overlaps = CustomRwdMods.Overrides([namesA, null, namesB, new HashSet<string>(["other.tgi"])]);
+        Check(overlaps[0].Count == 0 && overlaps[1].Count == 0 && overlaps[2].SequenceEqual([(0, 1)]) && overlaps[3].Count == 0,
+            "only later enabled mods override earlier ones");
+        Check(new[] { "", "../escape", new string('g', 64) }.All(bad =>
+        { try { library.Resources(bad); return false; } catch (ArgumentException) { return true; } }), "resource listing rejects unsafe identifiers");
         if (OperatingSystem.IsWindows())
         {
             var alias = Path.Combine(root, "relocated mod downloads");

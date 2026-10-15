@@ -163,6 +163,7 @@ public partial class MainWindow : Window
         System.Windows.Automation.AutomationProperties.SetName(CloseWindowButton, (string)CloseWindowButton.ToolTip);
         ApplyPatchChannelLanguage();
         ApplyGameSettingsLanguage();
+        ApplyModManagerLanguage();
         HomeWelcomeTitleText.Text = _text["home.welcome.title"];
         HomeWelcomeBodyText.Text = _text["home.welcome.body"];
         SettingsTitleText.Text = _text["settings.title"];
@@ -488,7 +489,10 @@ public partial class MainWindow : Window
         button.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active ? "#FFF4CF" : "#E8EDF5"));
     }
 
-    private async void UpdateButton_Click(object sender, RoutedEventArgs e)
+    private async void UpdateButton_Click(object sender, RoutedEventArgs e) => await InstallSelectedModAsync();
+
+    // Downloads every package of the selected mod into the library, then applies the selection.
+    private async Task InstallSelectedModAsync()
     {
         var target = _offeredModChannel ?? _channel;
         if (_game is null || target is null || _busy || ArcaneAccessBlocked || _selectionRequiresUpdate && !_selectionUpdateAvailable) return;
@@ -1166,6 +1170,8 @@ public partial class MainWindow : Window
         var settings = page == "settings";
         AboutPatchPanel.Visibility = page == "about" ? Visibility.Visible : Visibility.Collapsed;
         AboutModsPanel.Visibility = page == "mods" ? Visibility.Visible : Visibility.Collapsed;
+        ModManagerPanel.Visibility = page == "modmanager" ? Visibility.Visible : Visibility.Collapsed;
+        if (page == "modmanager" && changed) OpenCustomMods();
         FriendsPanel.Visibility = page == "friends" ? Visibility.Visible : Visibility.Collapsed;
         FriendsConversationScroll.Visibility = page == "friends" ? Visibility.Visible : Visibility.Collapsed;
         ChangelogCard.Visibility = Visibility.Visible;
@@ -1207,6 +1213,7 @@ public partial class MainWindow : Window
 
         SetNavState(HomeNav, home);
         SetNavState(ModulesNav, modules);
+        SetNavState(ModManagerNav, page == "modmanager");
         SetNavState(SettingsNav, settings);
         SetNavState(AboutNav, page == "about");
         SetNavState(AboutModsNav, page == "mods");

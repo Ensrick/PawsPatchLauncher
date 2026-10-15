@@ -393,6 +393,7 @@
                                     <TextBlock Text="!" FontSize="12" FontWeight="Bold" Foreground="White" TextAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                             </Grid>
+                            <Button x:Name="ModManagerNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="ModManagerNav_Click"/>
                             <Grid Margin="0,0,0,8">
                                 <Button x:Name="FriendsNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Click="FriendsNav_Click"/>
                                 <Border x:Name="FriendsNavBadge" Background="#B94757" CornerRadius="9" MinWidth="18" Height="18" Padding="4,0" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" IsHitTestVisible="False" Visibility="Collapsed">
@@ -785,6 +786,38 @@
                                     </Border>
                                     <StackPanel x:Name="AboutEntriesPanel"/>
                                 </StackPanel>
+                                <StackPanel x:Name="ModManagerPanel" Visibility="Collapsed">
+                                    <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="ModManagerTitleText" Style="{StaticResource CardTitle}" VerticalAlignment="Center"/>
+                                                <Button x:Name="CustomModsAdd" Grid.Column="1" Style="{StaticResource GhostButton}" Padding="14,7" VerticalAlignment="Center" Margin="12,0,0,8" Click="CustomModsAdd_Click"/>
+                                            </Grid>
+                                            <TextBlock x:Name="ModManagerDescriptionText" Style="{StaticResource CardDescription}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <TextBlock x:Name="ModManagerGamesTitleText" Style="{StaticResource FieldTitle}"/>
+                                            <TextBlock x:Name="ModManagerGamesDescriptionText" Style="{StaticResource CardDescription}" Margin="0,4,0,0"/>
+                                            <StackPanel x:Name="ModManagerGamesBody" Margin="0,10,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <TextBlock x:Name="ModManagerOrderTitleText" Style="{StaticResource FieldTitle}"/>
+                                            <StackPanel x:Name="CustomModsBody" Margin="0,10,0,0"/>
+                                            <TextBlock x:Name="ModManagerStatusText" Style="{StaticResource CardDescription}" Foreground="#F4C877" Margin="0,4,0,0" Visibility="Collapsed"/>
+                                            <WrapPanel HorizontalAlignment="Right" Margin="0,12,0,0">
+                                                <Button x:Name="ModManagerComponentsButton" Style="{StaticResource GhostButton}" Padding="16,9" Margin="0,0,8,0" Visibility="Collapsed" Click="ModManagerComponents_Click"/>
+                                                <Button x:Name="ModManagerRevert" Style="{StaticResource GhostButton}" Padding="18,9" Margin="0,0,8,0" Click="ModManagerRevert_Click"/>
+                                                <Button x:Name="ModManagerApply" Style="{StaticResource GoldButton}" Padding="22,9" Click="ModManagerApply_Click"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock x:Name="ModManagerMultiplayerText" Style="{StaticResource CardDescription}" Margin="4,0,4,14"/>
+                                </StackPanel>
                                 <Border x:Name="SettingsPanel" Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="Collapsed">
                                     <StackPanel>
                                         <TextBlock x:Name="SettingsTitleText" Style="{StaticResource CardTitle}"/>
@@ -911,6 +944,7 @@
                                 <Grid x:Name="ModulesHeader" Margin="2,0,0,10" Visibility="Collapsed">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                     <TextBlock x:Name="ModulesTitleText" Style="{StaticResource CardTitle}" Margin="0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                    <Button x:Name="ComponentsChangeGameButton" Grid.Column="1" Style="{StaticResource GhostButton}" Padding="14,7" VerticalAlignment="Center" Click="ComponentsChangeGame_Click"/>
                                 </Grid>
 
                                 <Border x:Name="CompatibilityBanner" CornerRadius="10" Padding="14" Background="#532732" BorderBrush="#A55462" BorderThickness="1" Margin="0,0,0,12" Visibility="Collapsed">
@@ -921,7 +955,8 @@
                                 </Border>
                                 <Border x:Name="ModSelectorCard" Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10" Visibility="Collapsed">
     <StackPanel>
-        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <!-- The game is chosen in the Mod manager. These selectors stay as the hidden selection that Mod_Checked handles. -->
+        <Grid x:Name="ModChoiceGrid" Visibility="Collapsed"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
     <RadioButton x:Name="VanillaModRadio" Grid.Column="0" GroupName="GameMod" Tag="vanilla" Content="Vanilla" Style="{StaticResource ModeRadio}" Padding="10,13" MinHeight="48" FontSize="16" FontWeight="SemiBold" Checked="Mod_Checked"/>
     <RadioButton x:Name="ImmortalsModRadio" Grid.Column="2" GroupName="GameMod" Tag="immortals" Content="Immortals" Style="{StaticResource ModeRadio}" Padding="10,13" MinHeight="48" FontSize="16" FontWeight="SemiBold" Checked="Mod_Checked"/>
 <Grid Grid.Column="4">
@@ -929,7 +964,7 @@
     <Button x:Name="ArcaneAccessButton" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0" Width="22" Height="22" Padding="0" Style="{StaticResource GhostButton}" Background="#652E3D" BorderBrush="#D26A80" Foreground="#FFD4DC" local:Motion.HoverBackground="#8B4054" Click="ArcaneAccess_Click"><TextBlock Text="!" FontSize="16" FontWeight="Bold"/></Button>
 </Grid>
         </Grid>
-        <Grid x:Name="ModePreferencesRow" Margin="0,12,0,0">
+        <Grid x:Name="ModePreferencesRow">
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="20"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <Border x:Name="RussianModuleCard" CornerRadius="6" Padding="0" BorderThickness="0" Background="Transparent">
@@ -1449,10 +1484,6 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                             <StackPanel Margin="0,0,18,0">
                                 <TextBlock x:Name="GameSettingsTitle" FontSize="23" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
-                                    <RadioButton x:Name="GameOptionsTab" GroupName="GameSettingsPages" Style="{StaticResource ModeRadio}" IsChecked="True" Padding="12,7" Margin="0,0,8,0" Checked="GameSettingsTab_Checked"/>
-                                    <RadioButton x:Name="CustomModsTab" GroupName="GameSettingsPages" Style="{StaticResource ModeRadio}" Padding="12,7" Checked="GameSettingsTab_Checked"/>
-                                </StackPanel>
                                 <TextBlock x:Name="GameSettingsHint" Style="{StaticResource CardDescription}" Margin="0,12,0,0"/>
                             </StackPanel>
                             <Button x:Name="GameSettingsClose" Grid.Column="1" Style="{StaticResource GhostButton}" Width="32" Height="32" Padding="8" VerticalAlignment="Top" Click="GameSettingsCancel_Click">
@@ -1462,17 +1493,6 @@
                         <ScrollViewer x:Name="GameSettingsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0">
                             <StackPanel x:Name="GameSettingsBody"/>
                         </ScrollViewer>
-                        <Grid x:Name="CustomModsPanel" Grid.Row="1" Visibility="Collapsed" MinHeight="300">
-                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                            <Grid Margin="0,0,0,14">
-                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <TextBlock x:Name="CustomModsGameLabel" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource GoldBrightBrush}" FontWeight="SemiBold"/>
-                                <Button x:Name="CustomModsAdd" Grid.Column="1" Style="{StaticResource GhostButton}" Padding="12,7" Click="CustomModsAdd_Click"/>
-                            </Grid>
-                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
-                                <StackPanel x:Name="CustomModsBody"/>
-                            </ScrollViewer>
-                        </Grid>
                         <StackPanel Grid.Row="2" Margin="0,12,0,0">
                             <TextBlock x:Name="GameSettingsStatus" Style="{StaticResource CardDescription}" Foreground="#F4C877" Margin="0,0,0,10"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
