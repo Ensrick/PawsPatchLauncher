@@ -49,7 +49,6 @@ public static class Program
         var updateRefreshChecks = args.Contains("--update-refresh-checks");
         var appearanceChecks = args.Contains("--appearance");
         var changelogChecks = args.Contains("--changelog");
-        var aboutChecks = args.Contains("--about-checks");
         var launcherUpdateChecks = args.Contains("--launcher-update-checks");
         var gameSettingsChecks = args.Contains("--game-settings-checks");
         var customModsChecks = args.Contains("--custom-mods-checks");
@@ -58,9 +57,6 @@ public static class Program
         var progressMotionChecks=args.Contains("--progress-motion-checks");
         var compatibilityChecks=args.Contains("--compatibility-checks");
         var compatibilityDemo=args.Contains("--compatibility-demo");
-        var aboutCategory = args.FirstOrDefault(arg => arg.StartsWith("--about-category="))?.Split('=')[1];
-        var guideSubject = args.FirstOrDefault(arg => arg.StartsWith("--guide="))?.Split('=')[1];
-        var guideVariant = args.FirstOrDefault(arg => arg.StartsWith("--guide-variant="))?.Split('=')[1];
         var guideFeed = args.FirstOrDefault(arg => arg.StartsWith("--guide-feed="))?["--guide-feed=".Length..];
         var guideChannel = args.FirstOrDefault(arg => arg.StartsWith("--guide-channel="))?["--guide-channel=".Length..] ?? "beta";
         var diagnosticsChecks = args.Contains("--diagnostics");
@@ -132,7 +128,6 @@ public static class Program
         if (motionChecks) SmoothExperienceChecks.Run(language);
         if (appearanceChecks) AppearanceChecks.Run(language, args[0]);
         if (changelogChecks) ChangelogChecks.Run(language);
-        if (aboutChecks) AboutChecks.Run(language);
         if (launcherUpdateChecks) LauncherUpdateChecks.Run();
         if (gameSettingsChecks) { GameSettingsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (customModsChecks) { CustomModsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
@@ -189,13 +184,6 @@ public static class Program
         if (enhancements) PopulateEnhancementsPreview(window);
         if (args.Length >= 2)
             typeof(MainWindow).GetMethod("SetActivePage", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [args[1]]);
-        if (guideSubject is not null || aboutCategory is not null)
-        {
-            typeof(MainWindow).GetField("_guideSubject", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, guideSubject ?? "general");
-            typeof(MainWindow).GetField("_guideVariant", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, guideVariant ?? (aboutCategory is null ? "mod" : "patch"));
-            Invoke(window, "RefreshAboutPage");
-        }
-        if (aboutCategory is not null) ((Task)Invoke(window, "SwitchAboutCategoryAsync", aboutCategory)!).GetAwaiter().GetResult();
         if(compatibilityDemo)CompatibilityChecks.Populate(window);
         var content = (FrameworkElement)window.Content;
         content.Measure(new Size(width, height));
@@ -238,11 +226,11 @@ public static class Program
         }
         CheckOptionsLayout(window, content, args.Length >= 2 ? args[1] : "home");
         TypographyChecks.Layout(window, content, args.Length >= 2 ? args[1] : "home");
-        AboutChecks.Layout(window, content);
+        NavigationLayoutChecks.Layout(window, content);
         if (args.Length >= 2 && args[1] == "settings") CheckStorageLabelGap(window);
         if (args.Length >= 2 && args[1] == "modules") CheckMultiplayerNoteAlignment(window);
         CheckScrollbars(window, content);
-        foreach (var name in new[] { "HomeNav", "ModulesNav", "ModManagerNav", "SettingsNav", "AboutNav" })
+        foreach (var name in new[] { "HomeNav", "ModulesNav", "ModManagerNav", "SettingsNav" })
         {
             var button = (Button)window.FindName(name);
             if (button.Visibility != Visibility.Visible) continue;
@@ -317,11 +305,6 @@ public static class Program
         finally { animationTimer.Stop(); }
         content.UpdateLayout();
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-        if (args.Length >= 2 && args[1] == "about" && ((WrapPanel)window.FindName("AboutTabsPanel")).Visibility == Visibility.Visible)
-        {
-            var selected = ((WrapPanel)window.FindName("AboutTabsPanel")).Children.OfType<Button>().Single(t => ((SolidColorBrush)t.Background).Color == (Color)ColorConverter.ConvertFromString("#5B451D"));
-            if ((string)selected.Tag != (aboutCategory ?? "always")) throw new InvalidOperationException("Guide preview has a stale category selection.");
-        }
         bitmap.Render(content);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));

@@ -151,31 +151,6 @@ internal static class PerModChannelChecks
             Check(!((string)Control<Button>("CoreHelpButton").ToolTip).Contains("Dvorak"),"Pinned historical tooltip advertises latest features");
             settings.PinnedRelease=null;
             typeof(MainWindow).GetField("_latestChannel",flags)!.SetValue(window,null);
-            // Exercise the actual rendered guide: pure modes have no category
-            // tabs, so a Beta entry must remain visible in their single section.
-            foreach(var mod in new[] { GameMod.Vanilla,GameMod.Immortals })
-            {
-                var guide=JsonSerializer.Deserialize<ModGuideDocument>(JsonSerializer.Serialize(GuideCatalog.Resolve(null,mod)))!;
-                guide.PatchGuide=new() { Version="2-beta.1",Entries=[
-                    new("dvorak","always","Камера Dvorak","Dvorak camera","Клавиши камеры.","Camera keys."),
-                    new("fast-save-transfer","beta","Передача сохранений","Save transfer","Быстрая передача.","Faster transfer.")] };
-                beta.ModGuides=[guide]; settings.Channel="beta";settings.Mod=mod;
-                typeof(MainWindow).GetField("_channel",flags)!.SetValue(window,beta);
-                typeof(MainWindow).GetField("_latestChannel",flags)!.SetValue(window,beta);
-                typeof(MainWindow).GetField("_guideSubject",flags)!.SetValue(window,mod);
-                typeof(MainWindow).GetField("_guideVariant",flags)!.SetValue(window,"patch");
-                Call("RefreshAboutPage"); window.UpdateLayout();
-                var cards=Control<StackPanel>("AboutEntriesPanel").Children.OfType<Border>().ToArray();
-                Check(cards.Any(c=>Equals(c.Tag,"fast-save-transfer"))&&Control<WrapPanel>("AboutTabsPanel").Visibility==Visibility.Collapsed,
-                    mod+" Beta transfer is hidden in the single-section guide");
-                guide.PatchGuide.Version="1";guide.PatchGuide.Entries.RemoveAt(1);
-                stable.ModGuides=[guide];settings.Channel="stable";
-                typeof(MainWindow).GetField("_channel",flags)!.SetValue(window,stable);
-                typeof(MainWindow).GetField("_latestChannel",flags)!.SetValue(window,stable);
-                Call("RefreshAboutPage");window.UpdateLayout();
-                Check(!Control<StackPanel>("AboutEntriesPanel").Children.OfType<Border>().Any(c=>Equals(c.Tag,"fast-save-transfer")),
-                    mod+" stable guide retained the previous Beta feature");
-            }
             Console.WriteLine($"PER-MOD CHANNEL UI PASS {count} {language}: actual controls, independent choices, first notice, pins, restart and language; local feeds only");
         }
         try

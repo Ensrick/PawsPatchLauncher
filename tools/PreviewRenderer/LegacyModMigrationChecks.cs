@@ -107,7 +107,6 @@ internal static class LegacyModMigrationChecks
             Set("_gameRunningProbe", new Func<bool>(() => false));
             Call("SetActivePage", "modules");
             Check(Equals(Control<RadioButton>("VanillaModRadio").Content, "Vanilla"), "Vanilla selector name is translated.");
-            Check(Equals(Control<Button>("GuideVanillaTab").Content, "Vanilla"), "Vanilla guide tab name is translated.");
             var stateBefore = File.ReadAllText(Path.Combine(game, ".pawpatch", "state.json"));
             Check(await (Task<bool>)Call("CheckFeedAsync", false)!, "Current signed catalog was rejected.");
             InstallAvailable();

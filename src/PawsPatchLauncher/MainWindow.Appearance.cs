@@ -21,7 +21,7 @@ public partial class MainWindow
         RefreshActionLayout();
         foreach (var (button, kind) in new (Button, IconKind)[]
         {
-            (HomeNav, IconKind.Home), (ModulesNav, IconKind.Components), (ModManagerNav, IconKind.Mods), (ComponentsChangeGameButton, IconKind.Mods), (SettingsNav, IconKind.Settings), (AboutNav, IconKind.Help),
+            (HomeNav, IconKind.Home), (ModulesNav, IconKind.Components), (ModManagerNav, IconKind.Mods), (ComponentsChangeGameButton, IconKind.Mods), (SettingsNav, IconKind.Settings),
             (BrowseButton, IconKind.Folder), (OpenGameFolderButton, IconKind.Folder), (OpenSavesFolderButton, IconKind.Folder), (ApplySettingsButton, IconKind.Check), (DiagnosticsButton, IconKind.Diagnostics), (ShowDiagnosticsArchiveButton, IconKind.Folder), (CopyConfigurationButton, IconKind.Copy),
             (CheckUpdatesButton, IconKind.Sync), (LaunchButton, IconKind.Play), (LauncherUpdateButton, IconKind.Download),
             (SettingsRepairButton, IconKind.Shield), (RemovePatchButton, IconKind.Trash), (RemoveLauncherButton, IconKind.Trash)

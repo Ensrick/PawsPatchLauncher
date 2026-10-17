@@ -76,7 +76,7 @@ public partial class MainWindow
         HelpBodyText.Text = T("Тестовая ветка Paw's Patch для этого режима. Для совместной игры участникам нужна совместимая версия и конфигурация. Переключение вступит в силу после установки или применения настроек.",
             "The test branch of Paw's Patch for this mode. Multiplayer participants need a compatible version and configuration. Switching takes effect after installation or applying settings.")
             + "\n\n" + (entries.Length > 0 ? string.Join("\n\n", entries.Select(e => e.Title(_text.Language) + "\n" + e.Body(_text.Language)))
-                : T("Подробности выбранного выпуска доступны в справке и истории изменений.", "See the guide and changelog for details of the selected release."));
+                : T("Подробности выбранного выпуска доступны в истории изменений.", "See the changelog for details of the selected release."));
         Motion.Reveal(HelpOverlay);
         RevealDialogCard(HelpCard);
         HelpCloseButton.Focus();

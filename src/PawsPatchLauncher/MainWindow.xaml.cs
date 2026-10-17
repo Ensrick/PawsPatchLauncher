@@ -84,7 +84,6 @@ public partial class MainWindow : Window
         _updateTimer.Tick += async (_, _) => await CheckFeedAsync(background: true);
         Closed += (_, _) => { _updateTimer.Stop(); CancelBackgroundFeed(); };
         Closed += (_, _) => CancelChangelogTransition();
-        Closed += (_, _) => CancelAboutTransition();
         Closed += (_, _) => _historyWindow?.Close();
         Closing += (_, e) =>
         {
@@ -151,9 +150,7 @@ public partial class MainWindow : Window
         HomeNav.Content = _text["nav.home"];
         ModulesNav.Content = _text["nav.modules"];
         SettingsNav.Content = _text["nav.settings"];
-        AboutNav.Content = T("Справка", "Guide");
         RefreshModNoticeBadge();
-        RefreshAboutPage();
         MinimizeWindowButton.ToolTip = T("Свернуть", "Minimize");
         CloseWindowButton.ToolTip = T("Закрыть", "Close");
         System.Windows.Automation.AutomationProperties.SetName(MinimizeWindowButton, (string)MinimizeWindowButton.ToolTip);
@@ -838,7 +835,7 @@ public partial class MainWindow : Window
 
     private void RefreshModuleAvailability()
     {
-        RefreshAboutFeed();
+        RememberGuideChannel();
         var wasInitializing = _initializing;
         _initializing = true;
         try
@@ -1141,7 +1138,7 @@ public partial class MainWindow : Window
 
     private void SetActivePage(string page)
     {
-        if (page is not ("home" or "modules" or "modmanager" or "settings" or "about")) page = "home";
+        if (page is not ("home" or "modules" or "modmanager" or "settings")) page = "home";
         if (_activePage != page) ActionJournal.Record("navigation", page);
         var changed = _activePage != page;
         _activePage = page;
@@ -1149,14 +1146,11 @@ public partial class MainWindow : Window
         var modules = page == "modules";
         RefreshActionLayout();
         var settings = page == "settings";
-        AboutPatchPanel.Visibility = page == "about" ? Visibility.Visible : Visibility.Collapsed;
         ModManagerPanel.Visibility = page == "modmanager" ? Visibility.Visible : Visibility.Collapsed;
         if (page == "modmanager" && changed) OpenCustomMods();
         ChangelogCard.Visibility = Visibility.Visible;
         if (!home) CancelChangelogTransition();
         RefreshOperationPlacement();
-        if (page != "about") CancelAboutTransition();
-        else if (changed) RefreshAboutPage();
 
         HomeWelcomeCard.Visibility = home ? Visibility.Visible : Visibility.Collapsed;
         UpdateNoticeBorder.Visibility = home && !ArcaneAccessBlocked && (_patchUpdateAvailable || !_patchInstalled && _game is not null) ? Visibility.Visible : Visibility.Collapsed;
@@ -1185,7 +1179,6 @@ public partial class MainWindow : Window
         SetNavState(ModulesNav, modules);
         SetNavState(ModManagerNav, page == "modmanager");
         SetNavState(SettingsNav, settings);
-        SetNavState(AboutNav, page == "about");
         MainOptionsScroll.ScrollToTop();
         if (modules) VisitComponents();
         RenderCompatibility();

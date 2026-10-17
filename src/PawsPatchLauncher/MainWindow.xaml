@@ -232,7 +232,6 @@
                             </Grid>
                             <Button x:Name="ModManagerNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="ModManagerNav_Click"/>
                             <Button x:Name="SettingsNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="SettingsNav_Click"/>
-                            <Button x:Name="AboutNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="AboutNav_Click"/>
                         </StackPanel>
                         <StackPanel Grid.Row="4">
                             <TextBlock x:Name="LauncherVersionLabel" Style="{StaticResource SmallMetadataText}" Foreground="#708098"/>
@@ -296,35 +295,6 @@
                         <ScrollViewer x:Name="MainOptionsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled" ClipToBounds="True">
                             <StackPanel Margin="0,0,12,0">
-                                <StackPanel x:Name="AboutPatchPanel" Visibility="Collapsed">
-                                    <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                                        <StackPanel>
-                                            <TextBlock x:Name="GuideTitleText" Style="{StaticResource CardTitle}"/>
-                                            <WrapPanel Margin="0,4,0,0">
-                                                <Button x:Name="GuideGeneralTab" Tag="general" Style="{StaticResource GhostButton}" Padding="14,7" Margin="0,0,8,8" Click="GuideSubject_Click"/>
-                                                <Button x:Name="GuideVanillaTab" Tag="vanilla" Style="{StaticResource GhostButton}" Padding="14,7" Margin="0,0,8,8" Click="GuideSubject_Click"/>
-                                                <Button x:Name="GuideImmortalsTab" Tag="immortals" Content="Immortals" Style="{StaticResource GhostButton}" Padding="14,7" Margin="0,0,0,8" Click="GuideSubject_Click"/>
-                                            </WrapPanel>
-                                            <WrapPanel x:Name="GuideVariantTabs" Visibility="Collapsed" Margin="0,8,0,0">
-                                                <Button x:Name="GuideModTab" Tag="mod" Style="{StaticResource GhostButton}" Padding="13,6" Margin="0,0,8,0" Click="GuideVariant_Click"/>
-                                                <Button x:Name="GuidePatchTab" Tag="patch" Content="Paw's Patch" Style="{StaticResource GhostButton}" Padding="13,6" Click="GuideVariant_Click"/>
-                                            </WrapPanel>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border x:Name="AboutIntroCard" Style="{StaticResource Card}" Margin="0,0,0,14">
-                                        <StackPanel>
-                                            <TextBlock x:Name="AboutTitleText" Style="{StaticResource CardTitle}"/>
-                                            <TextBlock x:Name="AboutIntroText" Style="{StaticResource CardDescription}" Margin="0,0,0,14"/>
-                                            <WrapPanel x:Name="AboutTabsPanel" Margin="0,0,0,6">
-                                                <Button x:Name="AboutAlwaysTab" Tag="always" Style="{StaticResource GhostButton}" Padding="14,6" Margin="0,0,8,8" Click="AboutCategory_Click"/>
-                                                <Button x:Name="AboutOptionalTab" Tag="optional" Style="{StaticResource GhostButton}" Padding="14,6" Margin="0,0,8,8" Click="AboutCategory_Click"/>
-                                                <Button x:Name="AboutBetaTab" Tag="beta" Style="{StaticResource GhostButton}" Padding="14,6" Margin="0,0,0,8" Click="AboutCategory_Click"/>
-                                            </WrapPanel>
-                                            <TextBlock x:Name="AboutCategoryText" Style="{StaticResource CardDescription}"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <StackPanel x:Name="AboutEntriesPanel"/>
-                                </StackPanel>
                                 <StackPanel x:Name="ModManagerPanel" Visibility="Collapsed">
                                     <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                                         <StackPanel>
