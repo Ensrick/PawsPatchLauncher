@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PawsPatchLauncher"
         Title="Paw's Launcher" Width="1600" Height="1000" MinWidth="1050" MinHeight="680"
-        FontFamily="Arial" Icon="Assets/PawsPatch.ico"
+        FontFamily="Arial" Icon="Assets/K2Launcher.ico"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResizeWithGrip"
         Background="{StaticResource NightBrush}">
     <WindowChrome.WindowChrome>
@@ -383,7 +383,7 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <Image x:Name="BrandMark" Source="{StaticResource PawAppMark}" Width="108" Height="108" HorizontalAlignment="Center"
+                        <Image x:Name="BrandMark" Source="{StaticResource AppMark}" Width="108" Height="108" HorizontalAlignment="Center"
                                AutomationProperties.Name="Paw's Launcher"/>
                         <StackPanel Grid.Row="2">
                             <Button x:Name="HomeNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="HomeNav_Click"/>

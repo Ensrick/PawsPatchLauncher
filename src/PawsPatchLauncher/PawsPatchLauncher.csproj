@@ -11,7 +11,7 @@
     <Version>0.9.7</Version>
     <AssemblyVersion>0.9.7.0</AssemblyVersion>
     <FileVersion>0.9.7.0</FileVersion>
-    <ApplicationIcon>Assets\PawsPatch.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\K2Launcher.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -25,7 +25,7 @@
     <PackageReference Include="Concentus.Oggfile" Version="1.0.7" />
     <PackageReference Include="Concentus" Version="2.2.2" />
     <PackageReference Include="XamlAnimatedGif" Version="2.3.2" />
-    <Resource Include="Assets\PawsPatch.ico" />
+    <Resource Include="Assets\K2Launcher.ico" />
     <Resource Include="Assets\ChatGlyphs\*.png" />
     <EmbeddedResource Include="launcher.config.json" />
     <EmbeddedResource Include="ThirdPartyNotices.txt" />

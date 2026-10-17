@@ -794,7 +794,7 @@ public static class Program
         }
         Visit(root);
         if (checkedElements < 15) throw new InvalidOperationException("Insufficient rendered font coverage.");
-        var info = Application.GetResourceStream(new Uri("pack://application:,,,/PawsPatchLauncher;component/Assets/PawsPatch.ico"))!;
+        var info = Application.GetResourceStream(new Uri("pack://application:,,,/PawsPatchLauncher;component/Assets/K2Launcher.ico"))!;
         using var iconStream = info.Stream;
         var decoder = new IconBitmapDecoder(iconStream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
         if (!decoder.Frames.Select(f => f.PixelWidth).SequenceEqual(new[] { 16, 20, 24, 32, 40, 48, 64, 128, 256 }))

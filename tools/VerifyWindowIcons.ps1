@@ -12,7 +12,7 @@ public static class LauncherWindowIcons {
 '@
 $build=[IO.Path]::GetFullPath($BuildDirectory)
 $exe=Join-Path $build 'PawsPatchLauncher.exe'
-$sourceIcon=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\src\PawsPatchLauncher\Assets\PawsPatch.ico'))
+$sourceIcon=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\src\PawsPatchLauncher\Assets\K2Launcher.ico'))
 $process=Start-Process -FilePath $exe -WorkingDirectory $build -ArgumentList '--smoke-test' -WindowStyle Hidden -PassThru
 $marker=Join-Path ([IO.Path]::GetTempPath()) "PawsPatchLauncherSmoke\$($process.Id)\window-ready.txt"
 try {

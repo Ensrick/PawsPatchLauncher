@@ -12,7 +12,7 @@ internal static class Program
         if (args.Length != 3) throw new ArgumentException("Pass Brand.xaml, output.ico and preview.png.");
         using var source = File.OpenRead(args[0]);
         var resources = (ResourceDictionary)XamlReader.Load(source);
-        var image = (DrawingImage)resources["PawAppMark"];
+        var image = (DrawingImage)resources["AppMark"];
         byte[] Render(int size)
         {
             var visual = new DrawingVisual();
