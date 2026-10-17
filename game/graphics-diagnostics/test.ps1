@@ -14,6 +14,7 @@ foreach($case in @(
     @{Name='normal-no-gpu';Mode='normal';Module='missing-driver.dll';Dump=$false;Exit=0},
     @{Name='handled-outside';Mode='handled';Module='kernel32.dll';Dump=$false;Exit=0},
     @{Name='first-chance';Mode='handled';Module='fixture.exe';Dump=$true;Exit=0},
+    @{Name='invalid-call';Mode='invalid-call';Module='missing-driver.dll';Dump=$true;Exit=0},
     @{Name='second-chance';Mode='unhandled';Module='kernel32.dll';Dump=$true;Exit=-1073741819},
     @{Name='original-filter';Mode='filter';Module='fixture.exe';Dump=$true;Exit=77},
     @{Name='recorder-exit';Mode='normal';Module='kernel32.dll';Dump=$false;Exit=0},
@@ -46,6 +47,7 @@ foreach($case in @(
         if($case.Dump -and $log -notmatch 'DUMP result=1'){throw ('Dump failure '+$case.Name)}
         if($case.Name -eq 'second-chance' -and $log -notmatch 'first_chance=0'){throw 'Missing second chance'}
         if($case.Name -eq 'first-chance' -and $log -notmatch 'first_chance=1'){throw 'Missing first chance'}
+        if($case.Name -eq 'invalid-call' -and ($log -notmatch 'INVALID_CALL address=00000062' -or $log -notmatch 'first_chance=1')){throw 'Missing invalid-call first chance'}
     }
     if($case.Name -eq 'original-filter' -and (Get-Content -LiteralPath $marker -Raw) -notmatch 'unhandled-filter'){throw 'Original crash handler suppressed'}
     $results+=@{test=$case.Name;passed=$true;targetExit=$fixture.ExitCode;dump=$dump;stem=$stem}

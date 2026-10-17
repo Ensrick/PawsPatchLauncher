@@ -1,4 +1,4 @@
-# Shared crash guards, revision 3
+# Shared crash guards, revision 2
 
 Opt-in `-EngineCrashFixes` for the full Arcane Wars helper build. This does not
 publish a release or alter game assets. For a helper launched outside the game
@@ -34,7 +34,8 @@ remains until process exit, like the patch code. Failed registration preserves
 stock behavior and records a failure once; there is no per-controller retry.
 
 This addresses the observed invalid animation-target class, not every possible
-animation crash, nor the underlying lifetime bug or a readable recycled object.
+animation crash or the underlying lifetime bug. The separate stop guard below
+also rejects readable objects recycled into a different native class.
 The guard does not call `VirtualQuery` or allocate per frame. The one-time
 handler registration uses the verified corresponding Windows DLL entry point.
 
@@ -45,31 +46,6 @@ existing active-client count. Keep the original result for all valid entries
 and continue through the list. Do not change membership, packets, loading state,
 kingdom ownership, saves, simulation or the optional desync bypass.
 
-## Network enum-read assertion
-
-A network enum read (`Serialize.h`, 1.3.72 RVAs `6AD8C` and `6ADC5`) asserts
-`_data>=0` or `_data<_n_possibilities` when a received value is out of range.
-It runs on the simulation thread while that thread holds the session lock. The
-assertion box then waits, and the main thread gives up locking the session and
-stops the game with "timeout waiting for mutex".
-
-Seen when a client waits in a LAN lobby and the host's game goes away, right
-after "<name> has taken over as host" (two game copies on one PC):
-- 1.3.68: 4 of 18 client runs crashed this way;
-- 1.3.72: 1 of 3 (`ASSERT: _data<_n_possibilities`, then `thread <MAIN>
-  timeout locking mutex <session> (owned by <SIM>)`);
-- 1.3.72 with revision 3: 8 of 8 survived. In 4 of them the assertion was
-  ignored here (`networkReadAssertionsIgnored=1`).
-
-Revision 3 redirects only these two calls of the assertion handler. Each
-returns Ignore (`AL=1`), exactly what clicking Ignore returns: the site stores
-it in its own flag and stops checking for this run. Each also increments
-`networkReadAssertionsIgnored`. After the check the stock Ignore path runs, so
-the value goes back to the caller unchanged. The game's `ASSERT:` log line is
-not written for these two sites, because the skipped handler writes it. Every
-other assertion keeps its dialog, and the `IgnoreAsserts` command and its flag
-are untouched.
-
 ## Installation and diagnostics
 
 All hooks have exact instruction/context checks before mutation. The code page
@@ -79,9 +55,8 @@ the allocation. Installation applies only to the newly launched verified process
 `ENGINE_CRASH_FIXES` and changed `ENGINE_CRASH_COUNTERS` are appended to the
 existing helper status log, already covered by launcher diagnostics. Counters
 distinguish dead targets, invalid vtables, invalid type-function addresses,
-unreadable targets, missing network clients and ignored network-read
-assertions. These are skipped operations, not a proven count of crashes
-prevented. No automatic upload is added.
+unreadable targets and missing network clients. These are skipped operations,
+not a proven count of crashes prevented. No automatic upload is added.
 
 ## Observer team commands
 
@@ -93,21 +68,54 @@ instructions with registers and flags preserved. The `TeamCommand` SEH descripto
 is relocated in both validation and rollback. No simulation state is changed.
 The diagnostic counter is `observerTeamCommandsIgnored`.
 
+## Sequence deactivation (October 16 local candidate)
+
+The friend's October 15 `log-70.dmp` calls RVA `31CEAE` with the
+`NiMaterialProperty` vtable at RVA `53C3C0`. Its purported Stop slot (`+40`)
+is actually the end of the adjacent `m_amb` string, value `0x62`. This is an
+invalid controller identity, not a valid controller with a broken animation.
+
+Replace the complete virtual-call sequence at `31CEAA` with a bounded probe.
+The pinned executable's MSVC RTTI supplies all 36 `NiTimeController` family
+vtables at build time. A positive reference count, exact family vtable and an
+executable Stop slot are required. No virtual type getter is called on the
+suspect object. Read faults are handled only inside this new probe, using the
+existing scoped Windows VEH. All registers/flags are restored before either
+the original Stop(0) call or the stock next-controller branch (`31CEB1`).
+
+An invalid entry skips only that Stop call. The array, reference counts and
+ownership remain untouched. `ENGINE_ANIMATION_STOP` reports the reason,
+controller, sequence and last readable vtable. This guards the demonstrated
+call, but does not establish which code freed/recycled the controller or
+guarantee that every subsequent use of that object is safe. It does not catch
+errors thrown by a valid Stop function or graphics driver.
+
+The recorder now also captures first-chance execute access violations, such
+as a call to `0x62`, outside driver modules. It still propagates the exception
+unchanged, takes at most one full dump per run and detaches. Safe read probes
+do not trigger this new capture condition. Resource creation/release hooks
+are not added: these dumps do not yet justify changing the graphics lifetime
+path. NVIDIA crash causality remains unresolved.
+
 ## Validation
 
-- `test_native.py`: 549 instruction-level cases across three ASLR bases. Uses
+- `test_native.py`: 567 instruction-level cases across three ASLR bases. Uses
   stock loop instructions with controlled objects and mocked type/update callees;
   compares valid behavior, one bad controller among 27, and client counts 0–7.
-  The network-read assertion sites, patched and stock: Ignore and count versus
-  the handler entered, the site flag stored, stack and saved registers kept.
-- `TransactionTests.cs`: 1261 checks including the real Windows API resolver,
+  Reproduces the exact `0x62` crash, tests all 36 controller types and continues
+  past a recycled material, null and dead entries without changing ownership.
+- `TransactionTests.cs`: 1081 checks including the real Windows API resolver,
   relocation, identity rejection, partial writes, rollback and uncertain rollback.
-- `ProbeWindowsTests.cs`: 52 checks in a disposable x86 Windows process. Executes
+- `ProbeWindowsTests.cs`: 95 checks in a disposable x86 Windows process. Executes
   the generated probe and real exception dispatcher with inaccessible target and
   vtable pages, page-boundary reads, unaffected valid probes, unrelated-exception
   rejection and simulated registration failure. Does not start the game.
+- `graphics-diagnostics/test.ps1`: 9 disposable process scenarios, including
+  a handled invalid call at `0x62`, preserved original crash handling, safe
+  recorder exit and process-identity rejection.
 - The full helper build also runs the existing feature regression suites.
 
-The eight local helper variants require matching `0.4.0-beta.1` data. Their actual
-EXE hash participates in lobby compatibility: all peers must use the same test
-helper variant and settings. Live game validation remains a separate manual step.
+The October 16 local candidates target Arcane Wars `0.4.2-beta.1` data and
+Vanilla/Immortals `0.4.1-beta.3` data. Their actual EXE hash participates in lobby
+compatibility: all peers must use the same test helper variant and compatible
+settings. Live game validation remains a separate manual step.

@@ -107,7 +107,7 @@ public static class DiagnosticsCollector
         builder.AppendLine();
         builder.AppendLine("Privacy note: crash dumps can contain fragments of process memory. Review the archive before sharing it publicly.");
         builder.AppendLine("User actions: last three logs (2 MiB each). Static control/action names, configuration changes and outcomes only; no typed text, passwords, codes or message contents. History begins with installation of this launcher build.");
-        builder.AppendLine("Crash history: five newest readable log sets and five game dumps, plus up to five Windows dumps and five Kohan WER reports. Companion logs and patch status are included. See collection-report.json for collected files, searched locations and failures. No dumps are created by this operation.");
+        builder.AppendLine("Crash history: three newest readable log sets and ordinary game dumps, plus up to three Windows dumps and three Kohan WER reports. One newest full graphics/crash memory dump is included. AI action logs are excluded. Large text files retain their first 64 KiB and last 4 MiB. Companion logs and patch status are included. See collection-report.json for collected files, searched locations and failures. No dumps are created by this operation.");
         return builder.ToString();
     }
 

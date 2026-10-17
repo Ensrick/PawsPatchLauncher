@@ -29,6 +29,7 @@ internal static class ProbeWindowsTests {
    Check(VirtualProtect(cave,new UIntPtr(4096),0x20,out old),"code RX");
    W(cave,4096+44,U(GetProcAddress(GetModuleHandle("kernel32.dll"),"AddVectoredExceptionHandler")));
    var probe=(Probe)Marshal.GetDelegateForFunctionPointer(P(U(cave)+(uint)EngineCrashPayload.ProbeOffset),typeof(Probe));
+   var stopProbe=(Probe)Marshal.GetDelegateForFunctionPointer(P(U(cave)+(uint)EngineCrashPayload.StopProbeOffset),typeof(Probe));
    var handler=(Handler)Marshal.GetDelegateForFunctionPointer(P(U(cave)+0x400),typeof(Handler));
    uint vt=U(image)+0x500000;W(P(vt),4,U(image)+0x2000);W(target,0,vt);W(target,4,1);
    Check(probe(target)==0,"live target");Check(probe(IntPtr.Zero)==0,"native null semantics");
@@ -56,6 +57,35 @@ internal static class ProbeWindowsTests {
    W(ex,20,8);Check(handler(pointers)==0,"execution fault propagated");
    W(ex,20,0);W(ex,4,2);Check(handler(pointers)==0,"unwind propagated");
    W(ex,4,0);W(ex,0,0xc0000094);Check(handler(pointers)==0,"other exception propagated");
+   // Real Windows page faults in the new controller probe, not a mocked read.
+   uint controllerTable=unchecked((uint)Marshal.ReadInt32(cave,0xc00));
+   W(target,0,controllerTable);W(P(controllerTable),0x40,U(image)+0x2000);
+   Check(stopProbe(target)==0,"native controller admitted");
+   Check(stopProbe(IntPtr.Zero)==0,"stop null semantics");
+   W(target,4,0);Check(stopProbe(target)==1,"dead controller");W(target,4,1);
+   W(target,0,U(image)+0x53c3c0);W(P(U(image)+0x53c3c0),0x40,0x62);
+   Check(stopProbe(target)==2,"log-70 recycled material rejected");
+   W(P(U(image)+0x53c3c0),0x40,U(image)+0x2000);
+   Check(stopProbe(target)==2,"wrong type rejected even with executable slot");
+   W(target,0,controllerTable);W(P(controllerTable),0x40,0x62);
+   Check(stopProbe(target)==3,"bad stop slot");W(P(controllerTable),0x40,U(image)+0x2000);
+   Check(VirtualProtect(target,new UIntPtr(4096),1,out old),"controller noaccess");
+   for(int i=0;i<20;i++)Check(stopProbe(target)==4,"unreadable controller recovers only probe");
+   Check(VirtualProtect(target,new UIntPtr(4096),4,out old),"controller restore");
+   Check(stopProbe(P(U(target)+4092))==4,"controller refcount crosses inaccessible page");
+   Check(VirtualProtect(P(controllerTable&0xfffff000),new UIntPtr(4096),1,out old),"controller table noaccess");
+   Check(stopProbe(target)==4,"unreadable controller stop slot");
+   Check(VirtualProtect(P(controllerTable&0xfffff000),new UIntPtr(4096),4,out old),"controller table restore");
+   Check(stopProbe(target)==0,"valid stop after faults");
+   W(ex,0,0xc0000005);W(ctx,0xb8,U(cave)+0xa60);
+   Check(handler(pointers)==-1,"stop local read disposition");
+   Check(unchecked((uint)Marshal.ReadInt32(ctx,0xb8))==U(cave)+0x380,"stop local recovery address");
+   foreach(uint ip in new uint[]{U(cave)+0x900,U(cave)+0x9ff,U(cave)+0xb00,U(image)+0x31ceae,0x62}){
+    W(ctx,0xb8,ip);Check(handler(pointers)==0,"stop unrelated exception propagated");
+   }
+   W(ctx,0xb8,U(cave)+0xa60);W(ex,20,8);Check(handler(pointers)==0,"stop execute fault propagated");
+   W(ex,20,1);Check(handler(pointers)==0,"stop write fault propagated");W(ex,20,0);
+   W(target,0,vt);
    var timer=Stopwatch.StartNew();uint sum=0;for(int i=0;i<1000000;i++)sum+=probe(target);timer.Stop();
    Check(sum==0,"benchmark valid targets preserved");
    Check(RemoveVectoredExceptionHandler(P(unchecked((uint)Marshal.ReadInt32(cave,4096+40))))!=0,"unregister fixture");
@@ -63,6 +93,7 @@ internal static class ProbeWindowsTests {
    W(target,4,0);Check(probe(target)==0,"registration failure preserves stock behavior");
    Check(Marshal.ReadInt32(cave,4096+48)==1,"registration failure counted");
    Check(probe(target)==0&&Marshal.ReadInt32(cave,4096+48)==1,"failed registration not retried per controller");
+   Check(stopProbe(target)==0,"stop registration failure preserves native behavior");
    Console.WriteLine("ENGINE_PROBE_WINDOWS_PASS "+checks+" checks; one million valid probes incl managed calls="+timer.ElapsedMilliseconds+"ms");
    return 0;
   }finally{var cookie=P(unchecked((uint)Marshal.ReadInt32(cave,4096+40)));if(cookie!=IntPtr.Zero)RemoveVectoredExceptionHandler(cookie);VirtualFree(cave,UIntPtr.Zero,0x8000);VirtualFree(image,UIntPtr.Zero,0x8000);VirtualFree(target,UIntPtr.Zero,0x8000);}

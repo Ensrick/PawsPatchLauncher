@@ -1,0 +1,25 @@
+{
+  "category": "patch",
+  "version": "0.4.2-beta.2",
+  "publishedAt": "2026-10-17",
+  "title": {
+    "ru": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+    "en": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+    "de": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+    "fr": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+    "cs": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+    "uk": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars"
+  },
+  "body": {
+    "ru": "- Исправлен один из вылетов при остановке анимации.\n- Отключена подробная фоновая запись действий ботов.\n- Улучшен сбор сведений о вылетах.",
+    "en": "- Fixed a crash when stopping an animation.\n- Disabled detailed background recording of AI actions.\n- Improved crash diagnostics.",
+    "de": "- Ein Absturz beim Stoppen einer Animation wurde behoben.\n- Die detaillierte Hintergrundaufzeichnung von KI-Aktionen wurde deaktiviert.\n- Die Absturzdiagnose wurde verbessert.",
+    "fr": "- Correction d’un plantage lors de l’arrêt d’une animation.\n- Désactivation de l’enregistrement détaillé des actions de l’IA en arrière-plan.\n- Amélioration du diagnostic des plantages.",
+    "cs": "- Opraven jeden z pádů při zastavení animace.\n- Vypnut podrobný záznam akcí umělé inteligence na pozadí.\n- Vylepšena diagnostika pádů.",
+    "uk": "- Виправлено один із вильотів під час зупинки анімації.\n- Вимкнено докладний фоновий запис дій ботів.\n- Поліпшено збирання відомостей про вильоти."
+  },
+  "mods": [
+    "arcane-wars"
+  ],
+  "channel": "beta"
+}

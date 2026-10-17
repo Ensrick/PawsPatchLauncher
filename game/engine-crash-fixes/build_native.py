@@ -1,5 +1,4 @@
-"""Shared animation-target validation, missing network-client handling and the network enum-read assertion,
-1.3.72.
+"""Shared animation-target validation and missing network-client handling, 1.3.72.
 
 The vectored probe handler catches only reads in its own validation block. It
 never catches an exception from a game function or resumes a failed instruction.
@@ -9,12 +8,10 @@ from pathlib import Path
 
 IMAGE=0x460000
 CAVE=0x10000000
-SITES=[0x31EAA6,0x14C047,0xB764B,0xB766C,0xB7688,0xB77D2,0x6AD8C,0x6ADC5]
+SITES=[0x31EAA6,0x14C047,0xB764B,0xB766C,0xB7688,0xB77D2,0x31CEAA]
 ORIGINALS=['8b4e34894df8','8b400c83782800','56ff7424088bf1',
-           'c781dc01000002000000','535556578bf9','b874fd8700',
-           # call AssertionHandler for Serialize.h `_data>=0` / `_data<_n_possibilities`
-           'e8bd672900','e884672900']
-OFFSETS=[0,0x100,0x500,0x600,0x700,0x800,0x900,0x980]
+           'c781dc01000002000000','535556578bf9','b874fd8700','8b016a00ff5040']
+OFFSETS=[0,0x100,0x500,0x600,0x700,0x800,0x900]
 # TeamCommand starts with an absolute SEH descriptor address.
 ORIGINAL_FIXUPS=[(5,1)]
 PROBE=0x200
@@ -22,8 +19,39 @@ HANDLER=0x400
 FAULT=0x380
 DATA=0x1000
 SIZE=0x2000
+STOP_PROBE=0xA00
+CONTROLLER_TABLE=0xC00
 
-def build(ks,image,cave):
+def controller_tables(raw):
+    """Derive the native controller family from the pinned MSVC RTTI, offline.
+
+    A readable recycled NiMaterialProperty also has a positive refcount, so
+    executable-slot/range checks alone do not establish the object's type.
+    Never invoke an untrusted object's virtual GetRTTI during this probe.
+    """
+    def u(o): return struct.unpack_from('<I',raw,o)[0]
+    def name(td):
+        o=td-IMAGE+8
+        return raw[o:raw.index(b'\0',o)].decode('ascii')
+    found=[]
+    for table in range(0x44D004,0x5CFFDC,4):
+        try:
+            col=u(table-4)-IMAGE
+            if not 0x44D000<=col<0x5CFFDC or u(col)!=0: continue
+            hierarchy=u(col+16)-IMAGE
+            if not 0x44D000<=hierarchy<0x5CFFDC: continue
+            count=u(hierarchy+8); array=u(hierarchy+12)-IMAGE
+            if not 0<count<100: continue
+            bases=[name(u(u(array+i*4)-IMAGE)) for i in range(count)]
+            if '.?AVNiTimeController@@' in bases:
+                found.append(dict(rva=table,name=name(u(col+12)),stop=u(table+0x40)-IMAGE))
+        except (ValueError,struct.error,UnicodeError,IndexError): pass
+    assert len(found)==36
+    assert all(0x1000<=t['stop']<0x44CBB6 for t in found)
+    assert 0x53C3C0 not in [t['rva'] for t in found] # log-70 recycled material
+    return found
+
+def build(ks,image,cave,controllers):
     data=cave+DATA
     parts={
         0:f'''
@@ -82,10 +110,47 @@ def build(ks,image,cave):
             cmp dword ptr [eax+0x14],0; jne search;
             mov edx,[edx+4]; mov ecx,[edx+0xb8];
             cmp ecx,{cave+PROBE}; jb search;
-            cmp ecx,{cave+0x300}; jae search;
+            cmp ecx,{cave+0x300}; jb recover;
+            cmp ecx,{cave+STOP_PROBE}; jb search;
+            cmp ecx,{cave+STOP_PROBE+0x100}; jae search;
+            mov dword ptr [{data+84}],0;
+        recover:
             mov dword ptr [edx+0xb8],{cave+FAULT};
             mov eax,-1; ret 4;
         search: xor eax,eax; ret 4;
+        ''',
+        0x900:f'''
+            pushfd; pushad; push ecx;
+            call {cave+STOP_PROBE}; add esp,4;
+            test eax,eax; jz stop_valid;
+            inc dword ptr [{data+56}]; inc dword ptr [{data+56}+eax*4];
+            mov [{data+88}],eax; mov [{data+80}],edi;
+            mov eax,[esp+24]; mov [{data+76}],eax;
+            popad; popfd; jmp {image+0x31CEB1};
+        stop_valid:
+            popad; popfd; mov eax,[ecx]; push 0;
+            call dword ptr [eax+0x40]; jmp {image+0x31CEB1};
+        ''',
+        STOP_PROBE:f'''
+            push ebp; mov ebp,esp;
+            push 0; call {cave+PROBE}; add esp,4;
+            cmp dword ptr [{data+40}],0; je stop_valid;
+            mov ecx,[ebp+8]; test ecx,ecx; jz stop_valid;
+            cmp dword ptr [ecx+4],0; jle stop_dead;
+            mov eax,[ecx];
+            mov edx,{len(controllers)};
+        table_loop:
+            dec edx; cmp eax,[{cave+CONTROLLER_TABLE}+edx*4]; je table_valid;
+            test edx,edx; jnz table_loop;
+            mov [{data+84}],eax; mov eax,2; jmp stop_done;
+        table_valid:
+            mov edx,eax; mov eax,[eax+0x40];
+            cmp eax,{image+0x1000}; jb stop_function;
+            cmp eax,{image+0x44CBB6}; jae stop_function;
+        stop_valid: xor eax,eax; jmp stop_done;
+        stop_dead: mov dword ptr [{data+84}],0; mov eax,1; jmp stop_done;
+        stop_function: mov [{data+84}],edx; mov eax,3;
+        stop_done: pop ebp; ret;
         '''}
     # Guard every step of the F macro before changing menus, selecting allies
     # or entering the team-command handler. The native local-kingdom getter
@@ -103,15 +168,6 @@ def build(ks,image,cave):
             popad; popfd; {replay}
             jmp {image+SITES[index]+len(bytes.fromhex(ORIGINALS[index]))};
         '''
-    # The network enum read (Serialize.h) asserts on a value outside its range, on the simulation thread and while
-    # it holds the session lock; the main thread then gives up waiting for that lock while the dialog waits. Both
-    # call sites get Ignore, as if a player had clicked it (AL=1: the site stops checking for this run), and a count.
-    # Every other assertion keeps its dialog.
-    for offset,site in [(0x900,0x6AD8C),(0x980,0x6ADC5)]:
-        parts[offset]=f'''
-            inc dword ptr [{data+56}]; mov al,1;
-            jmp {image+site+5};
-        '''
     code=bytearray(DATA)
     lengths={}
     for offset,asm in parts.items():
@@ -119,6 +175,7 @@ def build(ks,image,cave):
         assert len(blob)<(0x180 if offset==PROBE else 0x100)
         code[offset:offset+len(blob)]=blob
     assert lengths[str(PROBE)]<0x100
+    for i,t in enumerate(controllers):struct.pack_into('<I',code,CONTROLLER_TABLE+4*i,image+t['rva'])
     return bytes(code),lengths
 
 def main():
@@ -128,12 +185,13 @@ def main():
     raw=(a.legacy/'k2_runtime_1372_20260904.bin').read_bytes()
     assert hashlib.sha256(raw).hexdigest()=='b865d8206990c4f055c51de857f0b09b88ab5ee3b6ae74ee5232134001aa591c'
     for site,s in zip(SITES,ORIGINALS):assert raw[site:site+len(bytes.fromhex(s))]==bytes.fromhex(s)
-    ks=Ks(KS_ARCH_X86,KS_MODE_32);code,lengths=build(ks,IMAGE,CAVE)
+    controllers=controller_tables(raw)
+    ks=Ks(KS_ARCH_X86,KS_MODE_32);code,lengths=build(ks,IMAGE,CAVE,controllers)
     # Derive all absolute and relative fixups by independent rebuilds; validate
     # at widely separated ASLR bases. Instruction lengths must remain constant.
     fixes=[]
     for image,cave,kind in [(IMAGE+0x123000,CAVE,'image'),(IMAGE,CAVE+0x234000,'cave')]:
-        altered,_=build(ks,image,cave);assert len(altered)==len(code)
+        altered,_=build(ks,image,cave,controllers);assert len(altered)==len(code)
         delta=(image-IMAGE)+(cave-CAVE);i=0
         while i<len(code):
             if code[i]==altered[i]:i+=1;continue
@@ -151,12 +209,12 @@ def main():
             d=(ib-IMAGE if kind=='image' else cb-CAVE)*sign
             struct.pack_into('<I',b,off,(struct.unpack_from('<I',b,off)[0]+d)&0xffffffff)
         return bytes(b)
-    for ib,cb in [(0xe40000,0x21000000),(0x12000000,0x61000000),(0x730000,0x33000000)]:assert relocate(ib,cb)==build(ks,ib,cb)[0]
+    for ib,cb in [(0xe40000,0x21000000),(0x12000000,0x61000000),(0x730000,0x33000000)]:assert relocate(ib,cb)==build(ks,ib,cb,controllers)[0]
     a.out.mkdir(parents=True,exist_ok=True);(a.out/'payload.bin').write_bytes(code)
-    meta=dict(sites=SITES,originals=ORIGINALS,originalFixups=ORIGINAL_FIXUPS,offsets=OFFSETS,probe=PROBE,handler=HANDLER,fault=FAULT,dataOffset=DATA,allocation=SIZE,lengths=lengths,fixups=fixes)
+    meta=dict(sites=SITES,originals=ORIGINALS,originalFixups=ORIGINAL_FIXUPS,offsets=OFFSETS,probe=PROBE,stopProbe=STOP_PROBE,controllers=controllers,handler=HANDLER,fault=FAULT,dataOffset=DATA,allocation=SIZE,lengths=lengths,fixups=fixes)
     (a.out/'payload.json').write_text(json.dumps(meta,indent=2))
     src='// Generated by engine-crash-fixes/build_native.py\nusing System;\ninternal static class EngineCrashPayload {\n'
-    src+=f'internal const int Allocation={SIZE},DataOffset={DATA},ProbeOffset={PROBE};\n'
+    src+=f'internal const int Allocation={SIZE},DataOffset={DATA},ProbeOffset={PROBE},StopProbeOffset={STOP_PROBE};\n'
     src+='internal static readonly uint[] Sites={'+','.join(hex(s) for s in SITES)+'};\n'
     src+='internal static readonly uint[] Offsets={'+','.join(map(str,OFFSETS))+'};\n'
     src+='internal static readonly string[] Originals={'+','.join('"'+s+'"' for s in ORIGINALS)+'};\n'

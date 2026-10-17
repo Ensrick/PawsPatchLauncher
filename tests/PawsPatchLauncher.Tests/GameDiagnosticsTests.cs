@@ -66,20 +66,20 @@ internal static class GameDiagnosticsTests
             report = await GameDiagnosticFiles.CollectAsync(staging, locations);
             Check(report.Files.Any(f => f.Source == lockedPath && f.Status == "failed"), "Locked latest dump was silently skipped");
             var copied = report.Files.Where(f => f.Status == "copied").ToArray();
-            Check(copied.Count(f => f.Category == "game-dumps") == 5, "Need five readable game dumps despite locked newest file");
-            Check(copied.Count(f => f.Category == "windows-dumps") == 5, "Windows quota must be independent from game dumps");
-            Check(copied.Count(f => f.Category == "windows-reports" && f.ArchivePath.EndsWith("Report.wer")) == 5, "Need five game WER reports");
-            Check(copied.Count(f => f.Category == "windows-reports" && f.ArchivePath.EndsWith(".mdmp")) == 5, "WER dump companion missing");
+            Check(copied.Count(f => f.Category == "game-dumps") == 3, "Need three readable game dumps despite locked newest file");
+            Check(copied.Count(f => f.Category == "windows-dumps") == 3, "Windows quota must be independent from game dumps");
+            Check(copied.Count(f => f.Category == "windows-reports" && f.ArchivePath.EndsWith("Report.wer")) == 3, "Need three game WER reports");
+            Check(copied.Count(f => f.Category == "windows-reports" && f.ArchivePath.EndsWith(".mdmp")) == 3, "WER dump companion missing");
             Check(copied.Any(f => f.ArchivePath.Contains("virtualstore-game") && f.Source.EndsWith("log-7.dmp")), "VirtualStore dump missing");
             Check(copied.Any(f => f.ArchivePath.Contains("documents-kohan2") && f.Source.EndsWith("log-7.dmp")), "Documents dump missing");
-            Check(copied.Any(f => f.Source == Path.Combine(locations.GameRoot, "log-5.dmp")), "Older accessible dump not used as fallback");
-            Check(copied.Any(f => f.Source == Path.Combine(locations.GameRoot, "ART_log-5.log")), "Companion log lost below newest log cutoff");
-            Check(copied.Any(f => f.Source == Path.Combine(locations.GameRoot, "SAI_log-5.log")), "SAI companion missing");
+            Check(copied.Any(f => f.Source == Path.Combine(locations.GameRoot, "log-7.dmp")), "Older accessible dump not used as fallback");
+            Check(copied.Any(f => f.Source == Path.Combine(locations.GameRoot, "ART_log-7.log")), "Companion log lost below newest log cutoff");
+            Check(copied.All(f => !Path.GetFileName(f.Source).StartsWith("SAI_", StringComparison.OrdinalIgnoreCase)), "AI action log collected");
             Check(copied.All(f => !f.Source.EndsWith("log-1.dmp")), "Old dump should be outside retention");
             Check(copied.Any(f => f.Source.EndsWith("paws_graphics_guard.log")), "Graphics guard status missing");
             Check(copied.Any(f => f.Source.EndsWith("paws_recovery.log")), "Match recovery log missing");
             Check(copied.Any(f => f.Source == firstDesync), "First network desync capture missing from diagnostics");
-            Check(copied.Count(f => f.Category == "sync-logs") == 5, "Native sync log retention changed");
+            Check(copied.Count(f => f.Category == "sync-logs") == 3, "Native sync log retention changed");
             Check(copied.Any(f => f.Source.Contains("windows-custom-")) || copied.Any(f => f.ArchivePath.Contains("windows-custom-")), "Custom Windows folder ignored");
             Check(copied.All(f => !f.Source.Contains("chrome.exe") && !f.Source.Contains("notk2.exe") && !f.Source.Contains("other.exe") && !f.Source.Contains("spoof")), "Unrelated application dump collected");
             Check(copied.All(f => !f.Source.Contains("PawsPatchBackups") && !f.Source.Contains("data orig") && !f.Source.EndsWith("passwords.txt") && !f.Source.EndsWith(".rsg")), "Private/unrelated or backup file collected");
@@ -135,10 +135,35 @@ internal static class GameDiagnosticsTests
             Path.Combine(fixture, "none-docs"), Path.Combine(fixture, "none-local"), Path.Combine(fixture, "none-system"), []));
         Check(embedded.Files.Any(f => f.Source.Equals(faultDump, StringComparison.OrdinalIgnoreCase) && f.Status == "copied"), "Embedded recorder dump missing");
         Check(embedded.Files.Any(f => f.Source.Equals(faultLog, StringComparison.OrdinalIgnoreCase) && f.Status == "copied"), "Embedded crash log lost after later normal sessions");
-        Check(embedded.Files.Count(f => f.Category == "game-logs" && f.Status == "copied") == 6, "Expected five recent logs plus crash companion");
+        Check(embedded.Files.Count(f => f.Category == "game-logs" && f.Status == "copied") == 4, "Expected three recent logs plus crash companion");
         foreach (var f in embedded.Files.Where(f => f.Status == "copied"))
             Check(File.ReadAllBytes(Path.Combine(embeddedStage, f.ArchivePath)).SequenceEqual(expected[f.Source]), "Embedded recorder file bytes differ");
-        Console.WriteLine($"GAME DIAGNOSTICS PASS {count}: five recent readable groups, companion logs, embedded graphics recorder, VirtualStore, Windows/custom/WER filters, locked fallback, missing sources, original preservation, archive={completeArchive}");
+        // Only the newest readable full-memory capture is needed; ordinary minidumps
+        // retain their independent quota. Old bot folders must not be traversed.
+        var newestDump = Add(embeddedLogs, "log-graphics-latest.dmp", 20);
+        Add(embeddedLogs, "log-graphics-older.dmp", 19);
+        var lockedFull = Add(embeddedLogs, "log-graphics-locked.dmp", 21);
+        Add(Path.Combine(embeddedRoot, "Logs/paws_ai_diagnostics/session"), "log-ai.log", 100);
+        var boundedStage = Path.Combine(fixture, "bounded-staging"); Directory.CreateDirectory(boundedStage);
+        using (var locked = new FileStream(lockedFull, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            var bounded = await GameDiagnosticFiles.CollectAsync(boundedStage, new(embeddedRoot,
+                Path.Combine(fixture, "none-docs"), Path.Combine(fixture, "none-local"), Path.Combine(fixture, "none-system"), []));
+            Check(bounded.Files.Count(f => f.Category == "full-memory-dumps" && f.Status == "copied") == 1, "Full-memory history not bounded to one");
+            Check(bounded.Files.Any(f => f.Source.Equals(newestDump, StringComparison.OrdinalIgnoreCase) && f.Status == "copied"), "Full-memory fallback lost latest readable capture");
+            Check(bounded.Searches.All(s => !s.Path.Contains("paws_ai_diagnostics")), "AI diagnostics folder traversed");
+        }
+        var oversized = Add(embeddedRoot, "paws_test_status.txt", 30,
+            "START\n" + new string('x', GameDiagnosticFiles.TextHeadBytes + GameDiagnosticFiles.TextTailBytes + 100) + "\nCRASH END");
+        var boundedReport = new DiagnosticCollectionReport();
+        Check(await GameDiagnosticFiles.CopyFileAsync(oversized, boundedStage, "bounded.txt", "status:test", boundedReport, default), "Large log copy failed");
+        var result = boundedReport.Files.Single();
+        var text = await File.ReadAllTextAsync(Path.Combine(boundedStage, "bounded.txt"));
+        Check(result.Truncated && result.SourceBytes == expected[oversized].LongLength, "Truncation not reported");
+        Check(text.StartsWith("START\n") && text.EndsWith("\nCRASH END") && text.Contains("middle of oversized text omitted"), "Log header or crash tail lost");
+        Check(result.Bytes <= GameDiagnosticFiles.TextHeadBytes + GameDiagnosticFiles.TextTailBytes + 256, "Text copy exceeded budget");
+        Check(File.ReadAllBytes(oversized).SequenceEqual(expected[oversized]), "Original large log was altered");
+        Console.WriteLine($"GAME DIAGNOSTICS PASS {count}: three recent groups, one full-memory dump, bounded text, excluded AI logs, companion logs, locked fallback, original preservation, archive={completeArchive}");
         return count;
     }
 }

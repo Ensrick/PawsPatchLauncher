@@ -2,6 +2,27 @@
   "stable": [
     {
       "category": "launcher",
+      "version": "0.9.7",
+      "publishedAt": "2026-10-17",
+      "title": {
+        "ru": "Paw’s Launcher 0.9.7",
+        "en": "Paw’s Launcher 0.9.7",
+        "de": "Paw’s Launcher 0.9.7",
+        "fr": "Paw’s Launcher 0.9.7",
+        "cs": "Paw’s Launcher 0.9.7",
+        "uk": "Paw’s Launcher 0.9.7"
+      },
+      "body": {
+        "ru": "- Архив диагностики стал компактнее: сохраняются три последних комплекта журналов и обычных дампов, а полный снимок памяти — только последний.\n- Логи действий ботов исключены из архива. У больших текстовых журналов сохраняются начало и конец, включая последние сообщения об ошибке.",
+        "en": "- Smaller diagnostic archives: retain the three latest log sets and regular dumps, and only the latest full memory capture.\n- AI action logs are excluded. Large text logs retain their beginning and end, including the latest error messages.",
+        "de": "- Kleinere Diagnosearchive: die drei neuesten Protokollsätze und regulären Speicherabbilder sowie nur das neueste vollständige Speicherabbild werden behalten.\n- KI-Aktionsprotokolle werden ausgeschlossen. Große Textprotokolle behalten ihren Anfang und ihr Ende einschließlich der letzten Fehlermeldungen.",
+        "fr": "- Archives de diagnostic plus légères : trois derniers ensembles de journaux et vidages ordinaires, et uniquement la dernière capture mémoire complète.\n- Les journaux des actions de l’IA sont exclus. Le début et la fin des gros journaux texte sont conservés, y compris les derniers messages d’erreur.",
+        "cs": "- Menší diagnostické archivy: uchovávají se tři nejnovější sady protokolů a běžných výpisů paměti a pouze poslední úplný výpis paměti.\n- Záznamy akcí umělé inteligence jsou vynechány. U velkých textových protokolů zůstává začátek a konec včetně posledních chybových zpráv.",
+        "uk": "- Архів діагностики став компактнішим: зберігаються три останні комплекти журналів і звичайних дампів, а повний знімок пам’яті — лише останній.\n- Журнали дій ботів виключено з архіву. У великих текстових журналах зберігаються початок і кінець, включно з останніми повідомленнями про помилки."
+      }
+    },
+    {
+      "category": "launcher",
       "version": "0.9.6",
       "publishedAt": "2026-10-13",
       "title": {
@@ -1150,6 +1171,78 @@
     }
   ],
   "beta": [
+    {
+      "category": "launcher",
+      "version": "0.9.7",
+      "publishedAt": "2026-10-17",
+      "title": {
+        "ru": "Paw’s Launcher 0.9.7",
+        "en": "Paw’s Launcher 0.9.7",
+        "de": "Paw’s Launcher 0.9.7",
+        "fr": "Paw’s Launcher 0.9.7",
+        "cs": "Paw’s Launcher 0.9.7",
+        "uk": "Paw’s Launcher 0.9.7"
+      },
+      "body": {
+        "ru": "- Архив диагностики стал компактнее: сохраняются три последних комплекта журналов и обычных дампов, а полный снимок памяти — только последний.\n- Логи действий ботов исключены из архива. У больших текстовых журналов сохраняются начало и конец, включая последние сообщения об ошибке.",
+        "en": "- Smaller diagnostic archives: retain the three latest log sets and regular dumps, and only the latest full memory capture.\n- AI action logs are excluded. Large text logs retain their beginning and end, including the latest error messages.",
+        "de": "- Kleinere Diagnosearchive: die drei neuesten Protokollsätze und regulären Speicherabbilder sowie nur das neueste vollständige Speicherabbild werden behalten.\n- KI-Aktionsprotokolle werden ausgeschlossen. Große Textprotokolle behalten ihren Anfang und ihr Ende einschließlich der letzten Fehlermeldungen.",
+        "fr": "- Archives de diagnostic plus légères : trois derniers ensembles de journaux et vidages ordinaires, et uniquement la dernière capture mémoire complète.\n- Les journaux des actions de l’IA sont exclus. Le début et la fin des gros journaux texte sont conservés, y compris les derniers messages d’erreur.",
+        "cs": "- Menší diagnostické archivy: uchovávají se tři nejnovější sady protokolů a běžných výpisů paměti a pouze poslední úplný výpis paměti.\n- Záznamy akcí umělé inteligence jsou vynechány. U velkých textových protokolů zůstává začátek a konec včetně posledních chybových zpráv.",
+        "uk": "- Архів діагностики став компактнішим: зберігаються три останні комплекти журналів і звичайних дампів, а повний знімок пам’яті — лише останній.\n- Журнали дій ботів виключено з архіву. У великих текстових журналах зберігаються початок і кінець, включно з останніми повідомленнями про помилки."
+      }
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.2",
+      "publishedAt": "2026-10-17",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+        "de": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+        "fr": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+        "cs": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars",
+        "uk": "Paw’s Patch 0.4.2-beta.2 — Arcane Wars"
+      },
+      "body": {
+        "ru": "- Исправлен один из вылетов при остановке анимации.\n- Отключена подробная фоновая запись действий ботов.\n- Улучшен сбор сведений о вылетах.",
+        "en": "- Fixed a crash when stopping an animation.\n- Disabled detailed background recording of AI actions.\n- Improved crash diagnostics.",
+        "de": "- Ein Absturz beim Stoppen einer Animation wurde behoben.\n- Die detaillierte Hintergrundaufzeichnung von KI-Aktionen wurde deaktiviert.\n- Die Absturzdiagnose wurde verbessert.",
+        "fr": "- Correction d’un plantage lors de l’arrêt d’une animation.\n- Désactivation de l’enregistrement détaillé des actions de l’IA en arrière-plan.\n- Amélioration du diagnostic des plantages.",
+        "cs": "- Opraven jeden z pádů při zastavení animace.\n- Vypnut podrobný záznam akcí umělé inteligence na pozadí.\n- Vylepšena diagnostika pádů.",
+        "uk": "- Виправлено один із вильотів під час зупинки анімації.\n- Вимкнено докладний фоновий запис дій ботів.\n- Поліпшено збирання відомостей про вильоти."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.4",
+      "publishedAt": "2026-10-17",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.4 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.4 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.1-beta.4 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.1-beta.4 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.1-beta.4 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.1-beta.4 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "- Исправлен один из вылетов при остановке анимации.\n- Отключена подробная фоновая запись действий ботов.\n- Улучшен сбор сведений о вылетах.",
+        "en": "- Fixed a crash when stopping an animation.\n- Disabled detailed background recording of AI actions.\n- Improved crash diagnostics.",
+        "de": "- Ein Absturz beim Stoppen einer Animation wurde behoben.\n- Die detaillierte Hintergrundaufzeichnung von KI-Aktionen wurde deaktiviert.\n- Die Absturzdiagnose wurde verbessert.",
+        "fr": "- Correction d’un plantage lors de l’arrêt d’une animation.\n- Désactivation de l’enregistrement détaillé des actions de l’IA en arrière-plan.\n- Amélioration du diagnostic des plantages.",
+        "cs": "- Opraven jeden z pádů při zastavení animace.\n- Vypnut podrobný záznam akcí umělé inteligence na pozadí.\n- Vylepšena diagnostika pádů.",
+        "uk": "- Виправлено один із вильотів під час зупинки анімації.\n- Вимкнено докладний фоновий запис дій ботів.\n- Поліпшено збирання відомостей про вильоти."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
     {
       "category": "launcher",
       "version": "0.9.6",

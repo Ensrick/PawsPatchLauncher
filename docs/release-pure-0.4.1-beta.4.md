@@ -1,0 +1,11 @@
+# Paw’s Patch 0.4.1-beta.4 — Vanilla / Immortals
+
+- Fixed a crash when stopping an animation.
+- Disabled detailed background recording of AI actions.
+- Improved crash diagnostics.
+
+## Русский
+
+- Исправлен один из вылетов при остановке анимации.
+- Отключена подробная фоновая запись действий ботов.
+- Улучшен сбор сведений о вылетах.
