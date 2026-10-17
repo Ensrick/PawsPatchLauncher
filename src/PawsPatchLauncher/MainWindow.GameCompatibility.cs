@@ -18,13 +18,13 @@ public partial class MainWindow
     private bool DataOnlyMode => _compatibilityState == GameCompatibilityState.Unsupported || _compatibilityState == GameCompatibilityState.Checking && _lastProbeDataOnly;
     private bool CompatibilityProblem => DataOnlyMode || _installedRuntimeMismatch;
     // Kohan II 1.3.68, the Steam public build 24805354. Paw's engine fixes do not run on it, but players choose it on
-    // purpose, so it is a known file-changes-only version: no startup popup and no "unsupported" wording.
+    // purpose, so it is a known file-changes-only version: no popup, banner, red icons or "unsupported" wording.
     private const string FileOnlyGameSha256 = "CB64676391EDF1E4677B79038A2C219B11B5E1F4D4C75D96AD9E74A7AFB9DF7A";
     private bool KnownFileOnlyGame => DataOnlyMode && !_installedRuntimeMismatch && _compatiblePatchUpdate is null
         && string.Equals(_gameHash, FileOnlyGameSha256, StringComparison.OrdinalIgnoreCase);
     private bool CompatibilityRelevant => GameMod.UsesExecutableFeatures(_settings, _channel);
     private GameRequirement SelectedGameRequirement => _channel is null ? new() : GameMod.Requirement(_channel, _settings.Mod);
-    private bool CompatibilityUnread => CompatibilityProblem && _settings.CompatibilityNoticeRead != _compatibilityNoticeKey;
+    private bool CompatibilityUnread => CompatibilityProblem && !KnownFileOnlyGame && _settings.CompatibilityNoticeRead != _compatibilityNoticeKey;
     private bool CompatibilityBlocksLaunch => _compatibilityState is GameCompatibilityState.Checking or GameCompatibilityState.Unavailable
         || _installedRuntimeMismatch || DataOnlyMode && (_settingsPending || _installationFailure is not null || !_patchInstalled);
 
@@ -173,7 +173,7 @@ public partial class MainWindow
         var previous = _initializing; _initializing = true;
         try
         {
-            PawCompatibilityButton.Visibility = DataOnlyMode && (GameMod.IsArcaneWars(_settings) || GameMod.HasPureFixes(_channel)) ? Visibility.Visible : Visibility.Collapsed;
+            PawCompatibilityButton.Visibility = DataOnlyMode && !KnownFileOnlyGame && (GameMod.IsArcaneWars(_settings) || GameMod.HasPureFixes(_channel)) ? Visibility.Visible : Visibility.Collapsed;
             CoreHelpButton.Visibility = PawCompatibilityButton.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
             var coreTooltip = CoreHelpTooltipText();
             if (!Equals(CoreHelpButton.ToolTip, coreTooltip)) CoreHelpButton.ToolTip = coreTooltip;
@@ -181,7 +181,8 @@ public partial class MainWindow
             if (!Equals(SpawnHelpButton.ToolTip, frequencyTooltip)) SpawnHelpButton.ToolTip = frequencyTooltip;
             PawCompatibilityButton.ToolTip = T("Какие функции Paw's Patch работают", "Available Paw's Patch features");
             AutomationProperties.SetName(PawCompatibilityButton, (string)PawCompatibilityButton.ToolTip);
-            CoreDescriptionText.Text = DataOnlyMode ? T("Работают только файловые изменения. Подробнее — в красном значке.", "Only file changes are active. See the red icon for details.")
+            CoreDescriptionText.Text = KnownFileOnlyGame ? T("Файловые изменения Paw's Patch для этой версии игры.", "Paw's Patch file changes for this game version.")
+                : DataOnlyMode ? T("Работают только файловые изменения. Подробнее — в красном значке.", "Only file changes are active. See the red icon for details.")
                 : GameMod.IsArcaneWars(_settings) ? _text["modules.core.desc"]
                 : GameMod.HasPureBeta(GuideChannel()) ? T("Экономика союзника, камера, интерфейс, карты и исправления игры", "Allied economy, camera, interface, maps and game fixes")
                 : T("Исправления цветов значков, отображения лимита рот и генерации рельефа", "Fixes for badge colors, company limit display and terrain generation");
@@ -200,21 +201,18 @@ public partial class MainWindow
         InstalledGameText.Text = _game is null ? "—" : _installedGameVersion.Length > 0 ? _installedGameVersion : T("Не определена", "Unknown");
         var fileOnly = KnownFileOnlyGame;
         InstalledGameText.Foreground = ColorBrush((problem && !fileOnly) || unreadable ? "#FF9D9D" : "#A9B7CB");
-        GameCompatibilityButton.Visibility = problem ? Visibility.Visible : Visibility.Collapsed;
+        GameCompatibilityButton.Visibility = problem && !fileOnly ? Visibility.Visible : Visibility.Collapsed;
         GameCompatibilityButton.ToolTip = T("Совместимость игры и патча", "Game and patch compatibility");
         AutomationProperties.SetName(GameCompatibilityButton, (string)GameCompatibilityButton.ToolTip);
-        GameCompatibilityHint.Text = problem ? fileOnly ? T("Только файловые изменения на этой версии игры.", "File changes only on this game version.")
-            : _compatiblePatchUpdate is null
+        GameCompatibilityHint.Text = problem ? _compatiblePatchUpdate is null
             ? T("Некоторые функции недоступны для этой версии игры.", "Some features are unavailable for this game version.")
             : T("Доступен совместимый патч. Обновите его перед игрой.", "A compatible patch is available. Update before playing.")
             : unreadable ? T("Не удалось проверить файлы игры. Запуск недоступен.", "Could not verify game files. Launch unavailable.") : "";
         GameCompatibilityHint.ToolTip = SupportedGameDescription();
-        GameCompatibilityHint.Visibility = problem || unreadable ? Visibility.Visible : Visibility.Collapsed;
-        CompatibilityBanner.Visibility = problem && _activePage == "modules" ? Visibility.Visible : Visibility.Collapsed;
+        GameCompatibilityHint.Visibility = (problem && !fileOnly) || unreadable ? Visibility.Visible : Visibility.Collapsed;
+        CompatibilityBanner.Visibility = problem && !fileOnly && _activePage == "modules" ? Visibility.Visible : Visibility.Collapsed;
         CompatibilityBannerText.Text = _compatiblePatchUpdate is not null
             ? T("Вышел совместимый патч. Обновите его, чтобы использовать все функции.", "A compatible patch is available. Update it to use all features.")
-            : fileOnly ? TF($"На этой версии игры применяются только файловые изменения. Исправлениям движка нужна версия {SelectedGameRequirement.Version}.",
-                $"This game version runs file changes only. Paw's engine fixes need {SelectedGameRequirement.Version}.")
             : T("Некоторые функции патча недоступны из-за несовместимой версии игры. Файловые изменения можно применить.",
                 "Some patch features are unavailable because the game version is incompatible. File changes can be applied.");
         RefreshCompatibilityControls(); RefreshModNoticeBadge();

@@ -430,6 +430,70 @@ internal static class ModLibraryChecks
                 .Concat(await new ModuleInstaller(game).VerifyAsync(allowCustomHotkeys: true)).ToList();
             Check(problems.Count == 0, why + ": Play's file check fails: " + string.Join("; ", problems));
         }
+        // The player's setup on the public 1.3.68 build: Vanilla, Paw's Patch off, a custom RWD on, the sandbox on. The fixture
+        // executable is text, so the real 1.3.68 hash is set the way the headless checks do. Captures both pages.
+        async Task PlayerStateScenario(MainWindow window)
+        {
+            Call(window, "SetActivePage", "modules"); window.UpdateLayout();
+            if (GameMod.PawPatchSelected(Settings(window)))
+            {
+                // What `--headless set paw=off` + `apply` did on the player's install.
+                GameMod.SetPawPatch(Settings(window), false);
+                await (Task<bool>)Call(window, "CheckGameCompatibilityAsync", true)!;
+                Call(window, "RefreshStatus");
+                await (Task)Call(window, "ApplySettingsAsync")!;
+            }
+            Check(!GameMod.PawPatchSelected(Settings(window)) && State().AppliedSettings is { Mod: GameMod.Vanilla } applied && !GameMod.PawPatchSelected(applied),
+                "Vanilla without Paw's Patch was not applied.");
+            const string publicExe = "CB64676391EDF1E4677B79038A2C219B11B5E1F4D4C75D96AD9E74A7AFB9DF7A";
+            Set(window, "_gameHash", publicExe); Set(window, "_sandboxExeSha256", publicExe);
+            Settings(window).SandboxEnabled = true;
+            // Off-screen (-32000) and not activated, like the other layout checks: visibility and capture need a laid-out window.
+            window.Show();
+            Call(window, "RenderCompatibility"); Call(window, "RefreshStatus"); Call(window, "RefreshModControls");
+            // A popup left open by the fixture's earlier unknown executable and the earlier toasts are not part of this state.
+            Call(window, "CloseCompatibilityPopup"); Call(window, "ClearToastStack");
+            window.UpdateLayout();
+            bool Visible(string name) => window.FindName(name) is FrameworkElement { IsVisible: true };
+            string Shown(string name) => window.FindName(name) is FrameworkElement { IsVisible: true } element
+                ? element switch { TextBlock t => t.Text, _ => "(visible)" } : "";
+            var shown = new[] { "CompatibilityBanner", "GameCompatibilityHint", "GameCompatibilityButton", "PawCompatibilityButton", "CoreDescriptionText", "ReadyStatusText" }
+                .Select(name => name + "=" + Shown(name)).ToArray();
+            Console.WriteLine($"PLAYER STATE {language} components: " + string.Join(" | ", shown));
+            Check(Field(window, "_compatibilityPopup") is null, "The 1.3.68 public build opened the compatibility popup.");
+            Check(!Visible("CompatibilityBanner") && !Visible("GameCompatibilityHint") && !Visible("GameCompatibilityButton") && !Visible("PawCompatibilityButton")
+                && !Visible("ModulesNavBadge"), "Components shows the file-only warning for the 1.3.68 public build.");
+            Check(!Control<TextBlock>(window, "CoreDescriptionText").Text.Contains((string)Call(window, "T", "в красном значке", "red icon")!),
+                "The core card still points at the red icon.");
+            Check(Control<TextBlock>(window, "ReadyStatusText").Text == GameMod.Name(GameMod.Vanilla, language == "ru") + (string)Call(window, "T", " · Готово к запуску", " · Ready to play")!,
+                "The player's setup is not ready to play.");
+            Check(!Visible("SandboxCard"), "The sandbox switch is still on the Components page.");
+            await Task.Delay(600); // page and navigation transitions
+            CapturePage(window, "player-components");
+            Call(window, "SetActivePage", "modmanager"); window.UpdateLayout();
+            var sandboxToggle = Control<CheckBox>(window, "SandboxToggle");
+            Console.WriteLine($"PLAYER STATE {language} mod manager: sandbox row visible={Visible("SandboxCard")} checked={sandboxToggle.IsChecked} enabled={sandboxToggle.IsEnabled}");
+            Check(Visible("SandboxCard") && sandboxToggle.IsChecked == true && sandboxToggle.IsEnabled, "The sandbox entry is missing from the Mod manager list or not switchable.");
+            Check(Equals(Control<Button>(window, "LaunchButton").Content, Call(window, "T", "Играть в песочнице", "Play sandbox")), "Launch does not read Play sandbox.");
+            sandboxToggle.IsChecked = false; sandboxToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Check(!Settings(window).SandboxEnabled && !new SettingsStore().Load().SandboxEnabled, "Turning the sandbox entry off was not saved.");
+            sandboxToggle.IsChecked = true; sandboxToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Check(Settings(window).SandboxEnabled, "Turning the sandbox entry on was not saved.");
+            await Task.Delay(600); // page and navigation transitions
+            Control<Border>(window, "SandboxCard").BringIntoView(); window.UpdateLayout(); await Task.Delay(100);
+            CapturePage(window, "player-modmanager");
+        }
+        void CapturePage(MainWindow window, string name)
+        {
+            var view = (FrameworkElement)window.Content; view.UpdateLayout();
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)view.ActualWidth, (int)view.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(view);
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+            var path = Path.Combine(Path.GetTempPath(), "k2-player-state", name + "-" + language + ".png");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            using (var stream = File.Create(path)) encoder.Save(stream);
+            Console.WriteLine("PLAYER STATE capture: " + path);
+        }
         // The public Steam build 1.3.68: Paw's engine runtime targets 1.3.72, so each game installs and plays with file changes only.
         async Task ModManagerLegacyGameScenario()
         {
@@ -477,6 +541,7 @@ internal static class ModLibraryChecks
             RemoveDownloadSources(); // Back to the stored Vanilla, offline.
             await FileOnly(GameMod.Vanilla, "data/pure.txt", "Back to Vanilla");
             Check(Startup().Contains(mountHeader), "Vanilla's custom mod was not mounted again after switching back.");
+            await PlayerStateScenario(window);
             Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == originalExe, "UI test altered the base executable.");
             Check(blockedNetwork.Attempts == 0, "Fixture attempted an external network request.");
             Console.WriteLine($"MOD MANAGER 1.3.68 PASS {count} {language}: file-only install of Vanilla with Paw's Patch and Immortals from the Mod manager, engine part stored but not installed, custom RWD mount, Play checks with k2.exe, offline switch back; no native window/game/network.");
