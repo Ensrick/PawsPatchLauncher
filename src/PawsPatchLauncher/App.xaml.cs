@@ -35,7 +35,7 @@ public partial class App : Application
                 Environment.Exit(1);
                 return;
             }
-            MessageBox.Show(args.Exception.Message, "Paw's Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(args.Exception.Message, "Kohan II Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         };
         ShellIcon.RefreshExecutable();

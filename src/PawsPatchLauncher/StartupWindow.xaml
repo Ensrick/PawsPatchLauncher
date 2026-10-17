@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PawsPatchLauncher"
-        Title="Paw's Launcher — Launcher update" Width="570" Height="320" WindowStartupLocation="CenterScreen"
+        Title="Kohan II Launcher update" Width="570" Height="320" WindowStartupLocation="CenterScreen"
         WindowStyle="None" ResizeMode="NoResize" Background="{StaticResource NightBrush}" FontFamily="Arial" Icon="Assets/K2Launcher.ico">
     <Border Background="{StaticResource NightBrush}" BorderBrush="#60738D" BorderThickness="1" Padding="26,20">
         <Grid>
@@ -11,7 +11,7 @@
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                 <Image Source="{StaticResource AppMark}" Width="52" Height="52" Margin="0,0,16,0"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="Paw's Launcher" FontSize="22" FontWeight="Bold" Foreground="{StaticResource GoldBrightBrush}"/>
+                    <TextBlock Text="Kohan II Launcher" FontSize="22" FontWeight="Bold" Foreground="{StaticResource GoldBrightBrush}"/>
                     <TextBlock x:Name="VersionText" Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,7,0,0"/>
                 </StackPanel>
             </Grid>

@@ -25,7 +25,7 @@ public sealed class Localization
 
     private static readonly Dictionary<string, (string Ru, string En)> Strings = new()
     {
-        ["app.title"] = ("Paw's Launcher для Kohan II", "Paw's Launcher for Kohan II"),
+        ["app.title"] = ("Kohan II Launcher", "Kohan II Launcher"),
         ["app.subtitle"] = ("Моды и обновления игры", "Game mods and updates"),
         ["nav.home"] = ("Главная", "Home"),
         ["nav.modules"] = ("Компоненты", "Components"),

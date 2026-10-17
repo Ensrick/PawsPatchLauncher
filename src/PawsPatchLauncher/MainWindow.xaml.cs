@@ -144,7 +144,7 @@ public partial class MainWindow : Window
         if (ActivityStore.LocalTestProfile is not null)
         {
             SubtitleText.Text = T("Тестовая сборка · локальные обновления", "Test build · local updates");
-            Title = "Paw's Launcher — Local test";
+            Title = "Kohan II Launcher (local test)";
             if (ActivityStore.IsCustomModsTest) SubtitleText.Text = T("Тестовая сборка · пользовательские моды", "Test build · custom mods");
         }
         HomeNav.Content = _text["nav.home"];
