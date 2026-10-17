@@ -1167,6 +1167,18 @@
                                         <CheckBox x:Name="PowersShardsToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center" Click="PowersShardsChanged" AutomationProperties.Name="Disable Powers and Shards"/>
                                     </Grid>
                                 </Border>
+
+                                <Border x:Name="SandboxCard" Style="{StaticResource Card}" Margin="0,0,0,9" Visibility="Collapsed">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="10" Background="#24394B" BorderBrush="#566477" BorderThickness="1"><local:LauncherIcon Kind="Bot" Width="21" Height="21" Foreground="{StaticResource GoldBrightBrush}"/></Border>
+                                        <StackPanel Grid.Column="1" Margin="10,0,12,0">
+                                            <TextBlock x:Name="SandboxTitleText" Style="{StaticResource FieldTitle}" VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="SandboxDescriptionText" Style="{StaticResource CardDescription}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <CheckBox x:Name="SandboxToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center" Click="SandboxToggle_Click" AutomationProperties.Name="Sandbox"/>
+                                    </Grid>
+                                </Border>
                                 <StackPanel x:Name="RecoveryHost" Visibility="Collapsed"/>
                                 <Border x:Name="RemovalCard" Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="Collapsed">
                                     <StackPanel>

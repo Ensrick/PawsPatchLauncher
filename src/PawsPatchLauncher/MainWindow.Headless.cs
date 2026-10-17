@@ -147,7 +147,8 @@ public partial class MainWindow
             ("roaming", OnOff(arcane ? _settings.AdditionalRoamingCompanies : pure.AdditionalRoamingCompanies), AdditionalRoamingCard),
             ("spawn", arcane ? _settings.RoamingSpawnMode : pure.RoamingSpawnMode, RoamingSpawnCard),
             ("ai", OnOff(GameMod.ImprovedAiSelected(_settings)), ImprovedAiCard),
-            ("lair", OnOff(pure.WoundedLairDefenders), PureLairCard)];
+            ("lair", OnOff(pure.WoundedLairDefenders), PureLairCard),
+            ("sandbox", OnOff(SandboxSelected), SandboxCard)];
     }
 
     // The Components page decides which cards it shows; reuse that layout pass instead of restating its rules.
@@ -159,7 +160,7 @@ public partial class MainWindow
         {
             RefreshModControls();
             FrameworkElement[] cards = [CoreModuleCard, ColorsModuleCard, OosModuleCard, IndependentHostilityCard, AdditionalRoamingCard,
-                RoamingSpawnCard, ImprovedAiCard, PureLairCard, PatchChannelCard, RussianModuleCard];
+                RoamingSpawnCard, ImprovedAiCard, PureLairCard, SandboxCard, PatchChannelCard, RussianModuleCard];
             return cards.Where(card => card.Visibility == Visibility.Visible).ToHashSet();
         }
         finally { _activePage = page; RefreshModControls(); }
@@ -212,7 +213,7 @@ public partial class MainWindow
 
     // ---- set ----
 
-    private static readonly string[] HeadlessSwitchKeys = ["paw", "colors", "ignore-desync", "hostility", "roaming", "ai", "lair"];
+    private static readonly string[] HeadlessSwitchKeys = ["paw", "colors", "ignore-desync", "hostility", "roaming", "ai", "lair", "sandbox"];
 
     private async Task<int> HeadlessSetAsync(TextWriter o, List<string> args)
     {
@@ -273,6 +274,7 @@ public partial class MainWindow
             "roaming" => new(key, AdditionalRoamingToggle, AdditionalRoamingCard,
                 () => arcane ? _settings.AdditionalRoamingCompanies : GameMod.PureComponents(_settings).AdditionalRoamingCompanies),
             "ai" => new(key, ImprovedAiToggle, ImprovedAiCard, () => GameMod.ImprovedAiSelected(_settings)),
+            "sandbox" => new(key, SandboxToggle, SandboxCard, () => SandboxSelected),
             _ => new(key, PureLairToggle, PureLairCard, () => GameMod.PureComponents(_settings).WoundedLairDefenders)
         };
     }
@@ -572,7 +574,7 @@ public partial class MainWindow
         o.WriteLine("  select-game vanilla|immortals   " + T("выбрать игру для установки и запуска", "choose the game to install and start"));
         o.WriteLine("  set key=value [key=value ...]   " + T("изменить выбор, как на странице «Компоненты»", "change the selection, like the Components page"));
         o.WriteLine("      channel=release|beta  paw=on|off  colors=on|off  ignore-desync=on|off  hostility=on|off");
-        o.WriteLine("      roaming=on|off  spawn=standard|x2|x4  ai=on|off  lair=on|off");
+        o.WriteLine("      roaming=on|off  spawn=standard|x2|x4  ai=on|off  lair=on|off  sandbox=on|off");
         o.WriteLine("      text=" + string.Join("|", GameLanguages.Choices) + "  voice=" + string.Join("|", GameLanguages.VoiceChoices));
         o.WriteLine("      " + T("Меняются только компоненты, которые страница предлагает для этой игры, канала и версии игры.",
             "Only components the page offers for this game, channel and game version can change."));

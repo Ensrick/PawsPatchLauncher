@@ -220,7 +220,7 @@ public partial class MainWindow : Window
         HelpCloseButton.Content = _text["help.close"];
         RefreshNews();
         UpdateButton.Content = _text["button.install"];
-        LaunchButton.Content = _text["button.launch"];
+        LaunchButton.Content = LaunchButtonText;
         BrowseButton.Content = _text["button.browse"];
         LanguageButton.Content = UiLanguages.Text(_text.Language, "EN", "RU");
         // Friend profiles reuse the component labels; refresh only after those labels are localized.
@@ -625,10 +625,10 @@ public partial class MainWindow : Window
                 EnsureGameClosed();
                 await GameLobbyPreferences.PrepareForLaunchAsync(_game.Directory, vanillaInstaller.LoadState().AppliedSettings ?? GetEffectiveSettings());
                 EnsureGameClosed();
-                var original = _startProcess(new ProcessStartInfo(vanilla) { WorkingDirectory = _game.Directory, UseShellExecute = true })
-                    ?? throw new IOException("Cannot start Kohan II.");
+                var sandboxStart = SandboxSelected;
+                var original = await StartGameProcessAsync(vanilla) ?? throw new IOException("Cannot start Kohan II.");
                 BeginGameObservation(original, new ModuleInstaller(_game.Directory).LoadState());
-                ShowResult(() => T("Игра запущена.", "Game launched."));
+                ShowLaunchResult(sandboxStart);
                 return;
             }
             if (_channel is null && !await CheckFeedAsync()) return;
@@ -664,10 +664,10 @@ public partial class MainWindow : Window
             EnsureModAccess(_settings.Mod);
             await GameLobbyPreferences.PrepareForLaunchAsync(_game.Directory, state.AppliedSettings ?? GetEffectiveSettings());
             EnsureGameClosed();
-            var process = _startProcess(new ProcessStartInfo(executable) { WorkingDirectory = _game.Directory, UseShellExecute = true })
-                ?? throw new IOException("Cannot start Kohan II.");
+            var sandbox = SandboxSelected && Path.GetFileName(executable).Equals("k2.exe", StringComparison.OrdinalIgnoreCase);
+            var process = await StartGameProcessAsync(executable) ?? throw new IOException("Cannot start Kohan II.");
             BeginGameObservation(process, installer.LoadState());
-            ShowResult(() => T("Игра запущена.", "Game launched."));
+            ShowLaunchResult(sandbox);
         }
         catch (Exception ex) { ShowError(ex); }
         finally { _launchStarting=false; SetBusy(false); RefreshStatus(); }

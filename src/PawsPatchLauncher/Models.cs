@@ -24,6 +24,8 @@ public sealed class UserSettings
     public PureComponentSelection ImmortalsComponents { get; set; } = new();
     public bool ModNoticeSeen { get; set; }
     public bool DataOnly { get; set; }
+    /// <summary>Launch the single-player sandbox copy (GameSandbox). Local only: configuration codes and the apply check ignore it.</summary>
+    public bool SandboxEnabled { get; set; }
     public string CompatibilityNoticeRead { get; set; } = "";
     public bool NotificationSoundEnabled { get; set; } = true;
     public bool ShareGameActivity { get; set; } = true;

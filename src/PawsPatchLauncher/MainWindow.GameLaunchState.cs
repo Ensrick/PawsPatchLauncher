@@ -20,7 +20,7 @@ public partial class MainWindow
     {
         RefreshGameSettingsState(running);
         RefreshCompatibility();
-        LaunchButton.Content = running ? T("Игра запущена", "Game running") : _text["button.launch"];
+        LaunchButton.Content = running ? T("Игра запущена", "Game running") : LaunchButtonText;
         LaunchButton.IsEnabled = !running && !_busy && !_launchStarting && !FeedBlocksActions && !ArcaneAccessBlocked && !_settingsPending && _patchInstalled && _installationFailure is null && !_fileCheckFailed
             && (!CompatibilityRelevant || !CompatibilityBlocksLaunch) && _game is not null;
         AccountLogoutButton.IsEnabled = !_busy && !FeedBlocksActions && !_accountBusy;
