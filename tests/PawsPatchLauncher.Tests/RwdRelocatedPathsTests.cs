@@ -9,6 +9,18 @@ internal static class RwdRelocatedPathsTests
         if (!OperatingSystem.IsWindows()) return 0;
         var passed = 0;
         void Check(bool value, string message) { if (!value) throw new Exception("RWD relocated paths: " + message); passed++; }
+
+        // FAT/exFAT volumes reject the attribute-tag query (error 87); validation falls back to the basic attributes.
+        var basicCalls = 0;
+        uint? Basic(uint? value) { basicCalls++; return value; }
+        Check(RwdFileSystem.ResolveAttributes(true, 0x20, 0, () => Basic(0x400), "f") == 0x20 && basicCalls == 0, "tag attributes win when the query works");
+        Check(RwdFileSystem.ResolveAttributes(false, 0, 87, () => Basic(0x20), "f") == 0x20 && basicCalls == 1, "exFAT file validates from basic attributes");
+        Check(RwdFileSystem.ResolveAttributes(false, 0, 87, () => Basic(0x10), "d") == 0x10, "exFAT directory validates from basic attributes");
+        Check(RejectIo(() => RwdFileSystem.ResolveAttributes(false, 0, 5, () => Basic(0x20), "f")) && basicCalls == 2, "other query errors still fail validation, without the fallback");
+        Check(RejectIo(() => RwdFileSystem.ResolveAttributes(false, 0, 87, () => Basic(null), "f")), "failed fallback still fails validation");
+        Check(Reject(() => RwdFileSystem.CheckAttributes(RwdFileSystem.ResolveAttributes(false, 0, 87, () => 0x420, "l"), false, "l")), "a reparse flag from the fallback is still rejected");
+        Check(Reject(() => RwdFileSystem.CheckAttributes(0x10, false, "d")), "a directory where a file is expected is rejected");
+        RwdFileSystem.CheckAttributes(0x20, false, "f"); RwdFileSystem.CheckAttributes(0x10, true, "d"); passed++;
         var fixture = Path.Combine(root, "rwd-relocated"); Directory.CreateDirectory(fixture);
         var real = Path.Combine(fixture, "physical library"); Directory.CreateDirectory(real);
         var alias = Path.Combine(fixture, "Steam library");
@@ -127,5 +139,6 @@ internal static class RwdRelocatedPathsTests
         }
     }
     static bool Reject(Action action) { try { action(); return false; } catch (InvalidDataException) { return true; } }
+    static bool RejectIo(Action action) { try { action(); return false; } catch (IOException) { return true; } }
     static string Sha(string path) { using var file = File.OpenRead(path); return Convert.ToHexString(SHA256.HashData(file)); }
 }

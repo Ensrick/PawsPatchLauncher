@@ -167,9 +167,26 @@ internal sealed class RwdFileSystem : IDisposable
     static void ValidateHandle(SafeFileHandle handle, string path, bool directory)
     {
         if (handle.IsInvalid) throw new IOException("Cannot open " + path, new Win32Exception(Marshal.GetLastWin32Error()));
-        if (!GetFileInformationByHandleEx(handle, 9, out var info, 8))
-            throw new IOException("Cannot validate " + path, new Win32Exception(Marshal.GetLastWin32Error()));
-        if ((info.Attributes & 0x400) != 0 || ((info.Attributes & 0x10) != 0) != directory)
+        var tagRead = GetFileInformationByHandleEx(handle, 9, out var info, 8);
+        var tagError = tagRead ? 0 : Marshal.GetLastWin32Error();
+        var attributes = ResolveAttributes(tagRead, info.Attributes, tagError,
+            () => GetFileInformationByHandle(handle, out var basic) ? basic.Attributes : null, path);
+        CheckAttributes(attributes, directory, path);
+    }
+
+    // FAT and exFAT volumes reject the attribute-tag class with ERROR_INVALID_PARAMETER (87); a game library on such a
+    // drive must still validate. The basic handle information carries the same attribute bits, including the reparse
+    // point flag, so links stay rejected on every volume.
+    internal static uint ResolveAttributes(bool tagRead, uint tagAttributes, int tagError, Func<uint?> basicAttributes, string path)
+    {
+        if (tagRead) return tagAttributes;
+        if (tagError == 87 && basicAttributes() is uint attributes) return attributes;
+        throw new IOException("Cannot validate " + path, new Win32Exception(tagError));
+    }
+
+    internal static void CheckAttributes(uint attributes, bool directory, string path)
+    {
+        if ((attributes & 0x400) != 0 || ((attributes & 0x10) != 0) != directory)
             throw new InvalidDataException("Unexpected file type or link: " + path);
     }
 
