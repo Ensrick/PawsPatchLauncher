@@ -18,7 +18,24 @@ internal static class GameLobbyPreferences
         "paws_war_human", "paws_war_haroun", "paws_war_drauga", "paws_war_gauri",
         "kingdom09", "kingdom10", "kingdom11", "kingdom12", "kingdom13", "kingdom14", "kingdom15", "kingdom16"];
 
-    internal static byte[]? Repair(byte[] bytes, UserSettings settings)
+    // Empty new-game launch settings serialized by one exact game executable. The chunks carry that build's version
+    // stamp, so a game only ever receives the defaults its own executable wrote (Assets/Vanilla1372, Assets/Vanilla1368).
+    internal sealed record LobbyDefaults(string Folder, string SingleSha256, string MultiSha256);
+    internal static readonly LobbyDefaults Vanilla1372 = new("Vanilla1372",
+        "4EB57219BB3938009BF3E17C3816BE70FFA28AF5F95DB9A6ACB264DF8DD60799", "BDCF0F6E11A0A1ECECEA60F5A2C95B9C573FDB75EF67379FB102D52E733E2CA4");
+    internal static readonly LobbyDefaults Vanilla1368 = new("Vanilla1368",
+        "53AD4CD6CE73A453F2881835B064112021D9097B2BB96B8B6C2C1E8F42A0DB04", "B8D4D3635060266C64C1C13904870FD71D4F32BD643549C9EB9F338CDACE3F95");
+    // Kohan II 1.3.68, the Steam public build 24805354.
+    internal const string Steam1368ExecutableSha256 = "CB64676391EDF1E4677B79038A2C219B11B5E1F4D4C75D96AD9E74A7AFB9DF7A";
+
+    // Defaults for the game executable with this SHA-256; null for any other build (its preferences stay untouched).
+    internal static LobbyDefaults? DefaultsFor(string executableSha256)
+        => executableSha256.Equals(SteamVanillaBaseline.ExecutableSha256, StringComparison.OrdinalIgnoreCase) ? Vanilla1372
+            : executableSha256.Equals(Steam1368ExecutableSha256, StringComparison.OrdinalIgnoreCase) ? Vanilla1368 : null;
+
+    internal static byte[]? Repair(byte[] bytes, UserSettings settings) => Repair(bytes, settings, Vanilla1372);
+
+    internal static byte[]? Repair(byte[] bytes, UserSettings settings, LobbyDefaults defaults)
     {
         if (GameMod.IsArcaneWars(settings) && settings.PawPatchEnabled && !settings.DataOnly) return null;
         var chunks = Read(bytes);
@@ -30,7 +47,7 @@ internal static class GameLobbyPreferences
             var chunk = chunks[i];
             if (chunk.Name is not ("SingleLaunchSettings" or "MultiLaunchSettings")) continue;
             if (!ExtendedKingdoms.Any(id => ContainsString(chunk.Data, id))) continue;
-            chunks[i] = chunk with { Data = Default(chunk.Name) };
+            chunks[i] = chunk with { Data = Default(chunk.Name, defaults) };
             changed = true;
         }
         if (!changed) return null;
@@ -89,20 +106,20 @@ internal static class GameLobbyPreferences
         return chunks;
     }
 
-    private static byte[] Default(string name)
+    internal static byte[] Default(string name, LobbyDefaults defaults)
     {
-        using var stream = typeof(GameLobbyPreferences).Assembly.GetManifestResourceStream("PawsPatchLauncher.Assets.Vanilla1372." + name + ".bin")
+        using var stream = typeof(GameLobbyPreferences).Assembly.GetManifestResourceStream("PawsPatchLauncher.Assets." + defaults.Folder + "." + name + ".bin")
             ?? throw new InvalidDataException("Missing default lobby settings.");
         using var buffer = new MemoryStream(); stream.CopyTo(buffer);
         var bytes = buffer.ToArray();
-        var expected = name == "SingleLaunchSettings"
-            ? "4EB57219BB3938009BF3E17C3816BE70FFA28AF5F95DB9A6ACB264DF8DD60799"
-            : "BDCF0F6E11A0A1ECECEA60F5A2C95B9C573FDB75EF67379FB102D52E733E2CA4";
+        var expected = name == "SingleLaunchSettings" ? defaults.SingleSha256 : defaults.MultiSha256;
         if (Convert.ToHexString(SHA256.HashData(bytes)) != expected) throw new InvalidDataException("Default lobby settings failed verification.");
         return bytes;
     }
 
-    internal static async Task<bool> PrepareAsync(string path, UserSettings settings)
+    internal static Task<bool> PrepareAsync(string path, UserSettings settings) => PrepareAsync(path, settings, Vanilla1372);
+
+    internal static async Task<bool> PrepareAsync(string path, UserSettings settings, LobbyDefaults defaults)
     {
         if (!File.Exists(path)) return false;
         RemovalSafety.CheckNoLinks(path);
@@ -110,7 +127,7 @@ internal static class GameLobbyPreferences
         // The caller ensures no game is running; the second comparison also
         // refuses to overwrite a file changed while the backup was prepared.
         var before = await File.ReadAllBytesAsync(path);
-        var after = Repair(before, settings);
+        var after = Repair(before, settings, defaults);
         if (after is null) return false;
         var backupDirectory = Path.Combine(Path.GetDirectoryName(path)!, "PawsLauncherBackups");
         RemovalSafety.CheckNoLinks(backupDirectory);
@@ -128,8 +145,18 @@ internal static class GameLobbyPreferences
 
     internal static async Task PrepareForLaunchAsync(string game, UserSettings settings)
     {
-        if (ActivityStore.IsSmokeTest || !await SteamVanillaBaseline.MatchesGameAsync(game, default)) return;
-        await PrepareAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Kohan2", "data", "User", "Preferences.rup"), settings);
-        await PrepareAsync(Path.Combine(game, "Userdata", "User", "Preferences.rup"), settings);
+        if (ActivityStore.IsSmokeTest) return;
+        var defaults = await DefaultsForGameAsync(game, default);
+        if (defaults is null) return;
+        await PrepareAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Kohan2", "data", "User", "Preferences.rup"), settings, defaults);
+        await PrepareAsync(Path.Combine(game, "Userdata", "User", "Preferences.rup"), settings, defaults);
+    }
+
+    // The same executable check as SteamVanillaBaseline.MatchesGameAsync for 1.3.72, plus the 1.3.68 public build with
+    // its own defaults; any other executable is left alone.
+    internal static async Task<LobbyDefaults?> DefaultsForGameAsync(string game, CancellationToken cancellationToken)
+    {
+        var executable = PatchRecovery.GamePath(game, "k2.exe");
+        return File.Exists(executable) ? DefaultsFor(await CryptoAndIO.Sha256Async(executable, cancellationToken)) : null;
     }
 }
