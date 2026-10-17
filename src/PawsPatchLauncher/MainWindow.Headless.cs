@@ -180,6 +180,11 @@ public partial class MainWindow
         o.WriteLine($"mods ({game}): " + (mods.Count == 0 ? T("нет", "none") : mods.Count.ToString(CultureInfo.InvariantCulture)));
         for (var i = 0; i < mods.Count; i++)
             o.WriteLine($"  {i + 1}. [{OnOff(mods[i].Enabled)}] {mods[i].Name} ({mods[i].Files:N0} " + T("файлов", "files") + ", " + FormatBytes(mods[i].Size) + ")");
+        // The sandbox entry of the Mod manager list: one switch for both games, not an RWD (no position).
+        if (game == GameMod.Vanilla || game == GameMod.Immortals)
+            o.WriteLine($"  -. [{OnOff(_settings.SandboxEnabled)}] " + T("Песочница (одиночная игра)", "Sandbox (single player)")
+                + (SandboxAvailable ? "" : ", " + T("недоступна: нужна Kohan II 1.3.68 и запуск обычного k2.exe", "unavailable: needs Kohan II 1.3.68 started as the plain k2.exe"))
+                + ", set sandbox=on|off");
     }
 
     // ---- select-game ----

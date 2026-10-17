@@ -179,6 +179,7 @@ public partial class MainWindow
     private void RefreshCustomModsState(bool running)
     {
         if (CustomModsBody is null) return; // XAML initialization can refresh launch state before the page exists.
+        RefreshSandboxCard(); // the sandbox entry follows game version, game and busy changes like the list
         // Never read IsEnabled back: it also reflects a disabled ancestor, such as the window body under a dialog.
         var editable = CanEditCustomMods && !running && !_customModsBusy;
         CustomModsBody.IsEnabled = editable;

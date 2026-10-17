@@ -3,8 +3,8 @@ using System.Windows;
 
 namespace PawsPatchLauncher;
 
-// The single-player sandbox (GameSandbox): a Components switch that makes Launch start the launcher's own copy of the
-// game with the sandbox module. Nothing is installed, so the switch needs no Apply and changes no configuration code.
+// The single-player sandbox (GameSandbox): a switch in the Mod manager's list that makes Launch start the launcher's own
+// copy of the game with the sandbox module. It is not an RWD: it has no load order and cannot be removed. Nothing is installed, so the switch needs no Apply and changes no configuration code.
 public partial class MainWindow
 {
     private string _sandboxExeSha256 = GameSandbox.SupportedK2ExeSha256;
@@ -23,7 +23,8 @@ public partial class MainWindow
 
     private void RefreshSandboxCard()
     {
-        SandboxCard.Visibility = _activePage == "modules" && SandboxOffered ? Visibility.Visible : Visibility.Collapsed;
+        // The entry sits in the Mod manager panel, which only shows on its own page.
+        SandboxCard.Visibility = SandboxOffered ? Visibility.Visible : Visibility.Collapsed;
         SandboxTitleText.Text = T("Песочница (одиночная игра)", "Sandbox (single player)");
         SandboxDescriptionText.Text = T(
             "Компьютерные игроки бездействуют. Щёлкните любой отряд или здание, чтобы управлять его королевством, или нажмите Alt+1-8. Экономика всех королевств показана слева вверху. Ctrl+Shift+A включает компьютерных игроков, Ctrl+Shift+H скрывает список. Запуск идёт из отдельной копии игры: папка игры и сетевая игра не меняются.",
