@@ -17,6 +17,11 @@ public partial class MainWindow
     private bool _selectedHasInstalledPatch;
     private bool DataOnlyMode => _compatibilityState == GameCompatibilityState.Unsupported || _compatibilityState == GameCompatibilityState.Checking && _lastProbeDataOnly;
     private bool CompatibilityProblem => DataOnlyMode || _installedRuntimeMismatch;
+    // Kohan II 1.3.68, the Steam public build 24805354. Paw's engine fixes do not run on it, but players choose it on
+    // purpose, so it is a known file-changes-only version: no startup popup and no "unsupported" wording.
+    private const string FileOnlyGameSha256 = "CB64676391EDF1E4677B79038A2C219B11B5E1F4D4C75D96AD9E74A7AFB9DF7A";
+    private bool KnownFileOnlyGame => DataOnlyMode && !_installedRuntimeMismatch && _compatiblePatchUpdate is null
+        && string.Equals(_gameHash, FileOnlyGameSha256, StringComparison.OrdinalIgnoreCase);
     private bool CompatibilityRelevant => GameMod.UsesExecutableFeatures(_settings, _channel);
     private GameRequirement SelectedGameRequirement => _channel is null ? new() : GameMod.Requirement(_channel, _settings.Mod);
     private bool CompatibilityUnread => CompatibilityProblem && _settings.CompatibilityNoticeRead != _compatibilityNoticeKey;
@@ -135,6 +140,11 @@ public partial class MainWindow
         if (_compatiblePatchUpdate is not null)
             return T("Для установленной игры уже доступен совместимый патч. Обновите патч, чтобы восстановить все выбранные функции и запустить игру.",
                 "A compatible patch is available for the installed game. Update the patch to restore your selected features and play.");
+        if (KnownFileOnlyGame)
+            return TF($"Это публичная версия Kohan II в Steam. Исправления движка Paw's Patch работают только на {SelectedGameRequirement.Version}, поэтому здесь применяются только файловые изменения. Для сетевой игры всем игрокам нужны одна и та же версия игры и один и тот же выбор.",
+                $"This is the public Steam version of Kohan II. Paw's engine fixes run only on {SelectedGameRequirement.Version}, so here the launcher applies file changes only. For multiplayer, every player needs the same game version and the same selection.")
+                + T("\n\nПеред игрой нажмите «Применить настройки». Прежний выбор функций сохранён.",
+                    "\n\nBefore playing, use Apply settings. Your feature choices are remembered.");
         var direction = InstalledGameVersion.Compare(_installedGameVersion, _game?.SteamBuild, SelectedGameRequirement, _compatibilityState);
         var action = direction switch
         {
@@ -188,11 +198,13 @@ public partial class MainWindow
         var unreadable = _compatibilityState == GameCompatibilityState.Unavailable;
         InstalledGameLabel.Text = T("ВЕРСИЯ ИГРЫ", "GAME VERSION");
         InstalledGameText.Text = _game is null ? "—" : _installedGameVersion.Length > 0 ? _installedGameVersion : T("Не определена", "Unknown");
-        InstalledGameText.Foreground = SocialBrush(problem || unreadable ? "#FF9D9D" : "#A9B7CB");
+        var fileOnly = KnownFileOnlyGame;
+        InstalledGameText.Foreground = SocialBrush((problem && !fileOnly) || unreadable ? "#FF9D9D" : "#A9B7CB");
         GameCompatibilityButton.Visibility = problem ? Visibility.Visible : Visibility.Collapsed;
         GameCompatibilityButton.ToolTip = T("Совместимость игры и патча", "Game and patch compatibility");
         AutomationProperties.SetName(GameCompatibilityButton, (string)GameCompatibilityButton.ToolTip);
-        GameCompatibilityHint.Text = problem ? _compatiblePatchUpdate is null
+        GameCompatibilityHint.Text = problem ? fileOnly ? T("Только файловые изменения на этой версии игры.", "File changes only on this game version.")
+            : _compatiblePatchUpdate is null
             ? T("Некоторые функции недоступны для этой версии игры.", "Some features are unavailable for this game version.")
             : T("Доступен совместимый патч. Обновите его перед игрой.", "A compatible patch is available. Update before playing.")
             : unreadable ? T("Не удалось проверить файлы игры. Запуск недоступен.", "Could not verify game files. Launch unavailable.") : "";
@@ -201,10 +213,12 @@ public partial class MainWindow
         CompatibilityBanner.Visibility = problem && _activePage == "modules" ? Visibility.Visible : Visibility.Collapsed;
         CompatibilityBannerText.Text = _compatiblePatchUpdate is not null
             ? T("Вышел совместимый патч. Обновите его, чтобы использовать все функции.", "A compatible patch is available. Update it to use all features.")
+            : fileOnly ? TF($"На этой версии игры применяются только файловые изменения. Исправлениям движка нужна версия {SelectedGameRequirement.Version}.",
+                $"This game version runs file changes only. Paw's engine fixes need {SelectedGameRequirement.Version}.")
             : T("Некоторые функции патча недоступны из-за несовместимой версии игры. Файловые изменения можно применить.",
                 "Some patch features are unavailable because the game version is incompatible. File changes can be applied.");
         RefreshCompatibilityControls(); RefreshModNoticeBadge();
-        if (problem || unreadable)
+        if ((problem && !fileOnly) || unreadable)
         {
             ReadyStatusText.Text = problem ? _compatiblePatchUpdate is null ? T("Доступны файловые изменения", "File changes available")
                 : T("Обновите патч", "Update the patch") : T("Нужна проверка файлов", "File check required");
@@ -217,7 +231,7 @@ public partial class MainWindow
         }
         var identity = _compatibilityNoticeKey.Length > 0 ? _compatibilityNoticeKey : _compatibilityKey;
         if (_compatibilityPopup is not null) { _compatibilityPopupKey = identity; return; }
-        if (_selectedHasInstalledPatch && _compatibilityState != GameCompatibilityState.Checking
+        if (_selectedHasInstalledPatch && _compatibilityState != GameCompatibilityState.Checking && !fileOnly
             && _compatibilityPopup is null && _compatibilityPopupKey != identity && !_busy && !ConfirmationActive && ModNoticeOverlay.Visibility != Visibility.Visible && GameSettingsOverlay.Visibility != Visibility.Visible)
             ShowCompatibilityPopup();
     }
@@ -245,7 +259,8 @@ public partial class MainWindow
         var close = new Button { Style = (Style)FindResource("GhostButton"), Content = new LauncherIcon { Kind = IconKind.Close }, Width = 30, Height = 30, Padding = new(0), Margin = new(14, 0, 0, 0), ToolTip = T("Закрыть", "Close") };
         DockPanel.SetDock(close, Dock.Right); heading.Children.Add(close);
         heading.Children.Add(new TextBlock { Text = pawDetails ? T("Paw's Patch: доступные функции", "Paw's Patch: available features")
-            : _compatiblePatchUpdate is null ? T("Версия игры не поддерживается", "Unsupported game version") : T("Нужно обновить патч", "Patch update required"),
+            : _compatiblePatchUpdate is not null ? T("Нужно обновить патч", "Patch update required")
+            : KnownFileOnlyGame ? T("Только файловые изменения", "File changes only") : T("Версия игры не поддерживается", "Unsupported game version"),
             FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = SocialBrush("#FFD0D0"), TextWrapping = TextWrapping.Wrap });
         body.Children.Add(heading);
         body.Children.Add(new TextBlock { Text = T("Установлена игра: ", "Installed game: ") + (_installedGameVersion.Length > 0 ? _installedGameVersion : T("версия не определена", "unknown version"))
