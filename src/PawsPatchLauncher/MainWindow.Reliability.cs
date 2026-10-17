@@ -504,6 +504,8 @@ public partial class MainWindow
     private void BeginGameObservation(Process process, InstallState state)
     {
         ActionJournal.Record("game.started", ConfigurationCode.Create(GetEffectiveSettings()));
+        // A headless command exits right after the start; an unobserved run must not become a recovery incident later.
+        if (_headless) { _headlessLaunched = process.Id; return; }
         _observedRun = new RunRecord { ProcessId = process.Id, GameRoot = _game!.Directory, Settings = GetEffectiveSettings(), ReleaseId = state.ReleaseId };
         try { _observedRun.StartTicks = process.StartTime.ToUniversalTime().Ticks; } catch { }
         _observedProcess?.Dispose(); _observedProcess = process; _workingSaved = false;

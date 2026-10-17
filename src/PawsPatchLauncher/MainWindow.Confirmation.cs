@@ -52,6 +52,12 @@ public partial class MainWindow
     {
         // Confirmation reserves the UI, but is not an installation/removal operation.
         if (ConfirmationActive || _busy || FeedBlocksActions || ModNoticeOverlay.Visibility == Visibility.Visible) return Task.FromResult(false);
+        // Headless commands never confirm on the user's behalf.
+        if (_headless)
+        {
+            HeadlessReport(T("Нужно подтверждение в окне лаунчера: ", "This needs confirmation in the launcher window: ") + title, true);
+            return Task.FromResult(false);
+        }
         CancelBackgroundFeed();
         _confirmation = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         _confirmationPreviousFocus = Keyboard.FocusedElement;

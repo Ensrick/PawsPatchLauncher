@@ -45,6 +45,8 @@ public partial class MainWindow
 
     private void ShowToast(Func<string> message, bool failure = false)
     {
+        // Headless commands print every result and error instead of showing it.
+        if (_headless) { HeadlessReport(message(), failure); return; }
         if (_notificationClosed) return;
         // Repeated reports of one error renew its notice instead of stacking copies.
         // Keep different messages and severities as independent notifications.

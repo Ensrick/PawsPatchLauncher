@@ -41,6 +41,7 @@ public static class Program
         var teamChecks = args.Contains("--team-checks");
         var patchVersionChecks = args.Contains("--patch-version-checks");
         var modLibraryChecks = args.Contains("--mod-library-checks");
+        var headlessChecks = args.Contains("--headless-checks");
         var legacyModMigrationChecks = args.Contains("--legacy-mod-migration-checks");
         var retainedSelectionChecks = args.Contains("--retained-selection-checks");
         var gameExitChecks = args.Contains("--game-exit-checks");
@@ -179,6 +180,7 @@ public static class Program
             UiRoundTwoChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!);
             app.Shutdown(); return;
         }
+        if (headlessChecks) { HeadlessChecks.Run(language); app.Shutdown(); return; }
         if (gameExitChecks || modLibraryChecks)
         {
             if (gameExitChecks) GameExitRecoveryChecks.Run(language);

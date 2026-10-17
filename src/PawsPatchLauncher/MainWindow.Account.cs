@@ -34,8 +34,8 @@ public partial class MainWindow
         };
         Loaded += async (_, _) =>
         {
-            // Smoke/preview fixtures never read a real session or send Auth requests.
-            if (ActivityStore.IsSmokeTest) return;
+            // Smoke/preview fixtures and headless commands never read a real session or send Auth requests.
+            if (ActivityStore.IsSmokeTest || HeadlessMode.Active) return;
             await RestoreStartupAccountAsync();
             if (!_accountLifetime.IsCancellationRequested) _accountTimer.Start();
         };

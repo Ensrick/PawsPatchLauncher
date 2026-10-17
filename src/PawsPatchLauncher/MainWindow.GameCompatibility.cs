@@ -237,7 +237,7 @@ public partial class MainWindow
 
     private void ShowCompatibilityPopup(bool pawDetails = false)
     {
-        if (_busy || ConfirmationActive || ModNoticeOverlay.Visibility == Visibility.Visible) return;
+        if (_busy || ConfirmationActive || ModNoticeOverlay.Visibility == Visibility.Visible || _headless) return;
         ActionJournal.Record("dialog.compatibility", pawDetails ? "component" : "game");
         CloseCompatibilityPopup();
         _compatibilityPopupKey = _compatibilityNoticeKey.Length > 0 ? _compatibilityNoticeKey : _compatibilityKey;
