@@ -21,6 +21,16 @@ if(args.Length==3&&args[0]=="--verify-installed-rwd") {await CustomRwdModTests.V
 if(args.Length==5&&args[0]=="--stage-custom-rwd") {await CustomRwdModTests.StageAsync(args[1],args[2],args[3],args[4]=="on");return;}
 if(args.Length==4&&args[0]=="--verify-pure-030") {await Pure030Tests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==1&&args[0]=="--game-user-settings") {GameUserSettingsTests.Run();return;}
+// Brings a sandbox copy of a real 1.3.68 game folder up to date (reads the game folder only), for test runs of the copy.
+if(args.Length==3&&args[0]=="--sandbox-sync") {var copied=await new GameSandbox(args[1],args[2]).SyncAsync();Console.WriteLine($"SANDBOX COPY {copied} files copied to {args[2]}");return;}
+if(args.Length==1&&args[0]=="--sandbox")
+{
+    var sandboxRoot = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "PawsSandboxTests", Guid.NewGuid().ToString("N")));
+    Directory.CreateDirectory(sandboxRoot);
+    try { await GameSandboxTests.RunAsync(sandboxRoot); }
+    finally { Directory.Delete(sandboxRoot, true); }
+    return;
+}
 if(args.Length==4&&args[0]=="--verify-september20") {await September20Tests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==4&&args[0]=="--verify-september-betas") {await SeptemberBetaTests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==4&&args[0]=="--verify-palette39") {await Palette39Tests.RunAsync(args[1],args[2],args[3]);return;}
@@ -227,6 +237,7 @@ try
     passed += RwdArchiveTests.Run(root);
     passed += RwdRelocatedPathsTests.Run(root);
     passed += await CustomRwdModTests.RunAsync(root);
+    passed += await GameSandboxTests.RunAsync(root);
     passed += await GameDiagnosticsTests.RunAsync(root);
     passed += await LauncherEvolutionTests.RunAsync(root);
     passed += ChannelPresentationTests.Run();

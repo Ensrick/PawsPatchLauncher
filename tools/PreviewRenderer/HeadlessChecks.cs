@@ -220,9 +220,39 @@ internal static class HeadlessChecks
                 && string.Equals(Path.GetDirectoryName(started[0].FileName), game, StringComparison.OrdinalIgnoreCase), "launch starts the game executable: " + launch.Text);
             Check(ActivityStore.Read("game-run") is null, "a headless start leaves no unobserved game run behind");
 
+            // Sandbox: offered for Immortals, switchable only on the supported executable, then Launch starts the
+            // launcher's copy (in the smoke profile) instead of the game folder, which never gets the module.
+            var sandboxRefused = await Command("set", "sandbox=on");
+            Check(sandboxRefused.Code == HeadlessMode.Failure && !Settings().SandboxEnabled && sandboxRefused.Text.Contains("1.3.68"),
+                "the sandbox switch is refused for another executable: " + sandboxRefused.Text);
+            Set("_sandboxExeSha256", exe); Set("_gameHash", exe);
+            var steam = false;
+            Set("_steamRunningProbe", new Func<bool>(() => steam));
+            var sandboxOn = await Command("set", "sandbox=on");
+            Check(sandboxOn.Code == 0 && Settings().SandboxEnabled && sandboxOn.Text.Contains("pending: " + Say("нет", "no")),
+                "the sandbox switch needs no apply: " + sandboxOn.Text);
+            var sandboxStatus = await Command("status");
+            Check(sandboxStatus.Text.Contains("sandbox=on") && sandboxStatus.Text.Contains("launch: ready"), "status reports the sandbox: " + sandboxStatus.Text);
+            Check(((System.Windows.Controls.Button)Field("LaunchButton")!).Content as string == Say("Играть в песочнице", "Play sandbox"), "the Launch button names the sandbox");
+            var noSteam = await Command("launch");
+            Check(noSteam.Code == HeadlessMode.Failure && started.Count == 1 && noSteam.Text.Contains("Steam"), "the sandbox needs a running Steam: " + noSteam.Text);
+            steam = true;
+            var sandboxLaunch = await Command("launch");
+            var copyRoot = Path.Combine(ActivityStore.Root, "Sandbox game");
+            Check(sandboxLaunch.Code == 0 && started.Count == 2 && started[1].FileName == Path.Combine(copyRoot, "k2.exe")
+                && started[1].WorkingDirectory == copyRoot && started[1].Environment["SteamAppId"] == GameSandbox.SteamAppId,
+                "launch starts the sandbox copy: " + sandboxLaunch.Text);
+            Check(File.Exists(Path.Combine(copyRoot, GameSandbox.DllName)) && File.Exists(Path.Combine(copyRoot, "data", "imm.txt"))
+                && !Directory.Exists(Path.Combine(copyRoot, ".pawpatch")) && !File.Exists(Path.Combine(game, GameSandbox.DllName)),
+                "the copy holds the applied game and the module; the game folder holds no module");
+            Check((await Command("set", "sandbox=off")).Code == 0 && !Settings().SandboxEnabled, "the sandbox switch turns off");
+            var plainLaunch = await Command("launch");
+            Check(plainLaunch.Code == 0 && started.Count == 3 && string.Equals(Path.GetDirectoryName(started[2].FileName), game, StringComparison.OrdinalIgnoreCase),
+                "with the sandbox off, launch starts the game folder again");
+
             Check(Field("_compatibilityPopup") is null, "no compatibility popup was opened");
             Check(network.Attempts == 0, "no network request was made");
-            Console.WriteLine($"HEADLESS COMMANDS PASS {count} {language}: help/usage/refusals, status, select-game, set (offered only), mods add/replace/enable/disable/move/remove per game, apply install+settings, running-game refusal, stub launch; signed local ZIPs; no network/window/game.");
+            Console.WriteLine($"HEADLESS COMMANDS PASS {count} {language}: help/usage/refusals, status, select-game, set (offered only), mods add/replace/enable/disable/move/remove per game, apply install+settings, running-game refusal, stub launch, sandbox switch + copy launch; signed local ZIPs; no network/window/game.");
         }
 
         window.Show();

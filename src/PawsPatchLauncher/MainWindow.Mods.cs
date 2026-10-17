@@ -204,6 +204,7 @@ public partial class MainWindow
             PureLairTitleText.Text = T("Защитники логов", "Lair defenders");
             PureLairDescriptionText.Text = T("Выжившие защитники выходят в бой, не дожидаясь полного здоровья.", "Surviving defenders deploy without waiting for full health.");
             if (pureBeta) IndependentHostilityCard.Visibility = RoamingSpawnCard.Visibility = AdditionalRoamingCard.Visibility = Visibility.Visible;
+            RefreshSandboxCard();
             SyncPatchChannelControls();
         }
         finally { _initializing = previous; }
