@@ -30,6 +30,10 @@ internal static class AiRuntimeTests {
  static int checks;
  static void Check(bool ok){checks++;if(!ok)throw new Exception("Check "+checks);}
  internal static int Main(){foreach(uint image in new uint[]{0x460000,0x3a0000,0x860000,0x18000000}){
+  var quiet=new Memory(image);var absent=Path.Combine(Path.GetTempPath(),"PawsAiNoLogs-"+Guid.NewGuid().ToString("N"));
+  AiPolicyRuntime.Install(quiet,image,-1,absent,delegate{});int quietOperations=quiet.Operations;
+  AiPolicyRuntime.Tick();AiPolicyRuntime.Tick();
+  Check(!Directory.Exists(absent));Check(quiet.Operations==quietOperations);Check(quiet.Allocated);
   var success=new Memory(image);uint cave=AiPolicyRuntime.InstallNative(success,image,delegate{});int operations=success.Operations;
   Check(success.Allocated);Check(BitConverter.ToUInt32(success.Read(cave+(uint)AiPolicyPayload.DataOffset+4,4),0)==15);
   Check(BitConverter.ToUInt32(success.Read(cave+(uint)AiPolicyPayload.DataOffset+(uint)AiPolicyPayload.QueryPointerOffset,4),0)==cave+(uint)AiPolicyPayload.QueryOffset);

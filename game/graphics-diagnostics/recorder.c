@@ -85,7 +85,7 @@ static int run(DWORD pid,const char *watch) {
     if(!mutex || GetLastError()==ERROR_ALREADY_EXISTS) return error("Diagnostics already attached to this game");
     swprintf(path,L"%ls.log",session); record=_wfopen(path,L"wb");
     if(!record) {CloseHandle(mutex); CloseHandle(process); return error("Cannot open diagnostic log");}
-    logline("START r1 pid=%lu watch=%s recorder=%lu",pid,watch,GetCurrentProcessId());
+    logline("START r2 pid=%lu watch=%s recorder=%lu",pid,watch,GetCurrentProcessId());
     if(module_range(pid,watch,&low,&high,image))
         logline("MODULE %s base=%08lX end=%08lX",watch,low,high);
     GetSystemDirectoryW(path,1024); lstrcatW(path,L"\\dbghelp.dll");
@@ -106,6 +106,13 @@ static int run(DWORD pid,const char *watch) {
             DWORD address=(DWORD)event.u.Exception.ExceptionRecord.ExceptionAddress;
             DWORD kind=event.u.Exception.ExceptionRecord.ExceptionCode;
             int graphicsFault=0;
+            /* A bad virtual call can land outside every module (log-70: 0x62).
+             * Capture before the game's fatal dialog/unwind loses the heap and
+             * caller context. Do not capture read faults in our safe probes.
+             * This records the fault; DBG_EXCEPTION_NOT_HANDLED is unchanged. */
+            int invalidCall=kind==EXCEPTION_ACCESS_VIOLATION &&
+                event.u.Exception.ExceptionRecord.NumberParameters>=2 &&
+                event.u.Exception.ExceptionRecord.ExceptionInformation[0]==8;
             if(kind==EXCEPTION_ACCESS_VIOLATION) {
                 const char *vendors[]={watch,"atidxx32.dll","atiumdag.dll","igdumdim32.dll","igd10iumd32.dll"};
                 unsigned int i;
@@ -118,7 +125,8 @@ static int run(DWORD pid,const char *watch) {
             code=DBG_EXCEPTION_NOT_HANDLED;
             if(initialBreak && kind==EXCEPTION_BREAKPOINT) {
                 initialBreak=0; code=DBG_CONTINUE; logline("ARMED");
-            } else if(!captured && (graphicsFault || !event.u.Exception.dwFirstChance)) {
+            } else if(!captured && (graphicsFault || invalidCall || !event.u.Exception.dwFirstChance)) {
+                if(invalidCall) logline("INVALID_CALL address=%08lX",address);
                 result=capture(writeDump,process,&event); captured=1;
             }
         } else if(event.dwDebugEventCode==LOAD_DLL_DEBUG_EVENT) {

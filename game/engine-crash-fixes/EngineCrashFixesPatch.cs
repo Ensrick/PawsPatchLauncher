@@ -16,6 +16,8 @@ internal static class EngineCrashFixesPatch
         TerrainPatch.Expect(m,image+0x31EB1A,TerrainPatch.Hex("8B7508468975083B7738"));
         TerrainPatch.Expect(m,image+0x14C03F,TerrainPatch.Hex("8B068D4A018B7604"));
         TerrainPatch.Expect(m,image+0x14C04E,TerrainPatch.Hex("0F44CA8BD185F675E8"));
+        TerrainPatch.Expect(m,image+0x31CEA0,TerrainPatch.Hex("8B47308B0CB085C97407"));
+        TerrainPatch.Expect(m,image+0x31CEB1,TerrainPatch.Hex("463B773872E9"));
     }
     internal static uint ResolveHandlerRegistration(Process game)
     {
@@ -50,7 +52,7 @@ internal static class EngineCrashFixesPatch
                 Buffer.BlockCopy(jump,0,hook,0,jump.Length);
                 attempted=i;safe=false;m.WriteCode(site,hook);TerrainPatch.Expect(m,site,hook);m.Flush(site,hook.Length);
             }
-            log("ENGINE_CRASH_FIXES r2; shared animation target guard; missing network client guard; observer team-command guards; cave=0x"+cave.ToString("X8"));
+            log("ENGINE_CRASH_FIXES r3; animation target and stop-controller guards; missing network client guard; observer team-command guards; cave=0x"+cave.ToString("X8"));
             return cave;
         }
         catch
@@ -66,15 +68,16 @@ internal static class EngineCrashFixesPatch
         }
     }
     internal static void Monitor(int processId,uint cave,Action<string> log)
-    {pid=processId;data=cave+EngineCrashPayload.DataOffset;logger=log;last=new byte[56];next=DateTime.MinValue;}
+    {pid=processId;data=cave+EngineCrashPayload.DataOffset;logger=log;last=new byte[92];next=DateTime.MinValue;}
     internal static void Tick()
     {
         if(data==0||DateTime.UtcNow<next)return;next=DateTime.UtcNow.AddSeconds(1);
         try
         {
-            byte[] b;using(var m=new NativeMemory(pid))b=m.Read(data,56);
+            byte[] b;using(var m=new NativeMemory(pid))b=m.Read(data,92);
             if(last.SequenceEqual(b))return;last=b;
             logger("ENGINE_CRASH_COUNTERS animationSkipped="+U(b,0)+" deadTarget="+U(b,4)+" invalidVtable="+U(b,8)+" invalidTypeFunction="+U(b,12)+" unreadableTarget="+U(b,16)+" missingNetworkClient="+U(b,20)+" lastController=0x"+U(b,24).ToString("X8")+" lastTarget=0x"+U(b,28).ToString("X8")+" reason="+U(b,32)+" probeRegistered="+(U(b,40)!=0)+" registrationFailed="+U(b,48)+" observerTeamCommandsIgnored="+U(b,52));
+            if(U(b,56)!=0)logger("ENGINE_ANIMATION_STOP skipped="+U(b,56)+" deadController="+U(b,60)+" wrongControllerType="+U(b,64)+" invalidStopFunction="+U(b,68)+" unreadableController="+U(b,72)+" controller=0x"+U(b,76).ToString("X8")+" sequence=0x"+U(b,80).ToString("X8")+" vtable=0x"+U(b,84).ToString("X8")+" reason="+U(b,88));
         }
         catch { next=DateTime.UtcNow.AddSeconds(10); }
     }

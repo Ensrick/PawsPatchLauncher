@@ -89,6 +89,51 @@ for image,cave in [(0x460000,0x10000000),(0xe40000,0x21000000),(0x12000000,0x610
   assert counts[1]==kinds.count('dead') and counts[2]==kinds.count('bad-vtable') and counts[3]==kinds.count('data-as-code')
   checks+=1
 
+ # Real sequence-stop iteration, including log-70's material vtable -> 0x62.
+ def deactivate(kinds,patched):
+  u,w,r=setup(image,cave,patched);u.mem_unmap(0,4096)
+  seq=OBJ;array=OBJ+0x1000;stub=image+0x1080
+  w(seq+0x30,array);w(seq+0x38,len(kinds));stopped=[]
+  u.mem_write(stub,bytes.fromhex('c20400'))
+  for t in meta['controllers']:w(image+t['rva']+0x40,stub)
+  for i,kind in enumerate(kinds):
+   ctrl=OBJ+0x4000+i*0x100;w(array+i*4,ctrl)
+   w(ctrl,image+meta['controllers'][i%36]['rva']);w(ctrl+4,1)
+   if kind=='null':w(array+i*4,0)
+   elif kind=='dead':w(ctrl+4,0)
+   elif kind=='material':w(ctrl,image+0x53c3c0)
+   elif kind=='fake-code-slot':w(ctrl,image+0x500000);w(image+0x500040,stub)
+  def stop_call(uc,address,size,user):
+   if address==stub:
+    assert r(uc.reg_read(UC_X86_REG_ESP)+4)==0
+    stopped.append(uc.reg_read(UC_X86_REG_ECX))
+  u.hook_add(UC_HOOK_CODE,stop_call)
+  sp=STACK+0xf000
+  for reg,v in {UC_X86_REG_ESP:sp,UC_X86_REG_EBP:sp+16,UC_X86_REG_EDI:seq,UC_X86_REG_ESI:0,UC_X86_REG_EBX:0x1234}.items():u.reg_write(reg,v)
+  if not patched and kinds==['material']:
+   try:u.emu_start(image+0x31cea0,image+0x31ceb7,count=10000)
+   except UcError:
+    assert u.reg_read(UC_X86_REG_EIP)==0x62
+    assert r(u.reg_read(UC_X86_REG_ESP))==image+0x31ceb1
+    return
+   raise AssertionError('log-70 signature not reproduced')
+  u.emu_start(image+0x31cea0,image+0x31ceb7,count=10000)
+  assert u.reg_read(UC_X86_REG_ESP)==sp and u.reg_read(UC_X86_REG_EBP)==sp+16
+  assert u.reg_read(UC_X86_REG_EDI)==seq and u.reg_read(UC_X86_REG_EBX)==0x1234
+  assert u.reg_read(UC_X86_REG_ESI)==len(kinds)
+  assert [r(array+i*4) for i in range(len(kinds))]==[0 if k=='null' else OBJ+0x4000+i*0x100 for i,k in enumerate(kinds)]
+  if all(k in ('live','null') for k in kinds):
+   assert bytes(u.mem_read(cave+0x1000+56,36))==bytes(36) # No per-animation log churn.
+  return stopped,[r(cave+0x1000+i) for i in (56,60,64,68,72)]
+ deactivate(['material'],False);checks+=1
+ for kinds in [['live'],['null'],['live']*36,['live','null','live']]:
+  assert deactivate(kinds,False)==deactivate(kinds,True);checks+=1
+ for kinds in [['material'],['dead'],['fake-code-slot'],['live']*9+['material']+['live']*26,['material','null','dead','live','fake-code-slot','live']]:
+  stopped,counts=deactivate(kinds,True)
+  assert stopped==[OBJ+0x4000+i*0x100 for i,k in enumerate(kinds) if k=='live']
+  assert counts==[sum(k in ('material','dead','fake-code-slot') for k in kinds),kinds.count('dead'),kinds.count('material')+kinds.count('fake-code-slot'),0,0]
+  checks+=1
+
  # Exercise the real native local-kingdom getter and its observer mode check.
  # Relocate the absolute operands used by these stock functions in the fixture.
  def team_setup(patched,mode=3,kingdom=OBJ+0x9000,session=True):
@@ -152,4 +197,4 @@ for image,cave in [(0x460000,0x10000000),(0xe40000,0x21000000),(0x12000000,0x610
   assert u.reg_read(UC_X86_REG_ESI)==0
  checks+=1
 
-print('ENGINE_CRASH_NATIVE_PASS',checks,'cases; observer F crash reproduced; all macro stages; unchanged player behavior; stock-loop differential; ABI; three ASLR bases')
+print('ENGINE_CRASH_NATIVE_PASS',checks,'cases; log-70 0x62 crash reproduced; all 36 controller types; observer F; stock-loop differential; ABI; three ASLR bases')

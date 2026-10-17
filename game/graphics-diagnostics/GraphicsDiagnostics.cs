@@ -34,7 +34,7 @@ internal static class GraphicsDiagnostics
             string stem=Path.Combine(reports,"log-graphics-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff")+"-"+game.Id);
             string args=game.Id+" "+game.StartTime.ToUniversalTime().ToFileTimeUtc().ToString("X")+" \""+expected+"\" \""+stem+"\"";
             var start=new ProcessStartInfo(exe,args){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=root};
-            using(var worker=Process.Start(start))log("GRAPHICS_DIAGNOSTICS r1; worker="+worker.Id+" report="+stem+"; local only");
+            using(var worker=Process.Start(start))log("GRAPHICS_DIAGNOSTICS r2; graphics and invalid-call first chance; worker="+worker.Id+" report="+stem+"; local only");
         }
         catch(Exception e){log("GRAPHICS_DIAGNOSTICS_UNAVAILABLE "+e.GetType().Name+": "+e.Message);}
     }

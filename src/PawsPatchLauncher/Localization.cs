@@ -108,7 +108,7 @@ public sealed class Localization
         ["button.copyconfig"] = ("Скопировать код", "Copy code"),
         ["configuration.copied"] = ("Код конфигурации скопирован", "Configuration code copied"),
         ["diagnostics.title"] = ("Архив диагностики", "Diagnostic archive"),
-        ["diagnostics.desc"] = ("Последние 5 журналов и дампов игры, история действий и сведения о системе", "Latest 5 game logs and dumps, action history and system information"),
+        ["diagnostics.desc"] = ("Последние 3 журналов и дампов игры, история действий и сведения о системе", "Latest 3 game logs and dumps, action history and system information"),
         ["diagnostics.help"] = ("Собирает ZIP с историей действий в лаунчере, сведениями о Windows, процессоре, памяти, видеокарте и её драйвере, свободном месте, выбранных и применённых настройках, версиях модов, логах, синхлогах, дампах и хешах. В журнал действий не записываются пароли, коды входа, введённый текст и переписка. Архив сохраняется на компьютере; автоматической отправки нет. Дампы могут содержать фрагменты памяти; проверьте архив перед публичной отправкой.", "Creates a ZIP with launcher action history, Windows, CPU, memory, GPU and driver information, free disk space, selected and applied settings, mod versions, logs, sync logs, dumps and hashes. The action journal excludes passwords, login codes, typed text and conversations. The archive is saved locally and is not sent automatically. Dumps can contain memory fragments; review before sharing publicly."),
         ["button.diagnostics"] = ("Создать архив", "Create archive"),
         ["diagnostics.progress"] = ("Собираю архив диагностики…", "Creating diagnostic archive…"),

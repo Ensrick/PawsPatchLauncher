@@ -34,7 +34,8 @@ remains until process exit, like the patch code. Failed registration preserves
 stock behavior and records a failure once; there is no per-controller retry.
 
 This addresses the observed invalid animation-target class, not every possible
-animation crash, nor the underlying lifetime bug or a readable recycled object.
+animation crash or the underlying lifetime bug. The separate stop guard below
+also rejects readable objects recycled into a different native class.
 The guard does not call `VirtualQuery` or allocate per frame. The one-time
 handler registration uses the verified corresponding Windows DLL entry point.
 
@@ -67,19 +68,54 @@ instructions with registers and flags preserved. The `TeamCommand` SEH descripto
 is relocated in both validation and rollback. No simulation state is changed.
 The diagnostic counter is `observerTeamCommandsIgnored`.
 
+## Sequence deactivation (October 16 local candidate)
+
+The friend's October 15 `log-70.dmp` calls RVA `31CEAE` with the
+`NiMaterialProperty` vtable at RVA `53C3C0`. Its purported Stop slot (`+40`)
+is actually the end of the adjacent `m_amb` string, value `0x62`. This is an
+invalid controller identity, not a valid controller with a broken animation.
+
+Replace the complete virtual-call sequence at `31CEAA` with a bounded probe.
+The pinned executable's MSVC RTTI supplies all 36 `NiTimeController` family
+vtables at build time. A positive reference count, exact family vtable and an
+executable Stop slot are required. No virtual type getter is called on the
+suspect object. Read faults are handled only inside this new probe, using the
+existing scoped Windows VEH. All registers/flags are restored before either
+the original Stop(0) call or the stock next-controller branch (`31CEB1`).
+
+An invalid entry skips only that Stop call. The array, reference counts and
+ownership remain untouched. `ENGINE_ANIMATION_STOP` reports the reason,
+controller, sequence and last readable vtable. This guards the demonstrated
+call, but does not establish which code freed/recycled the controller or
+guarantee that every subsequent use of that object is safe. It does not catch
+errors thrown by a valid Stop function or graphics driver.
+
+The recorder now also captures first-chance execute access violations, such
+as a call to `0x62`, outside driver modules. It still propagates the exception
+unchanged, takes at most one full dump per run and detaches. Safe read probes
+do not trigger this new capture condition. Resource creation/release hooks
+are not added: these dumps do not yet justify changing the graphics lifetime
+path. NVIDIA crash causality remains unresolved.
+
 ## Validation
 
-- `test_native.py`: 537 instruction-level cases across three ASLR bases. Uses
+- `test_native.py`: 567 instruction-level cases across three ASLR bases. Uses
   stock loop instructions with controlled objects and mocked type/update callees;
   compares valid behavior, one bad controller among 27, and client counts 0–7.
-- `TransactionTests.cs`: 817 checks including the real Windows API resolver,
+  Reproduces the exact `0x62` crash, tests all 36 controller types and continues
+  past a recycled material, null and dead entries without changing ownership.
+- `TransactionTests.cs`: 1081 checks including the real Windows API resolver,
   relocation, identity rejection, partial writes, rollback and uncertain rollback.
-- `ProbeWindowsTests.cs`: 52 checks in a disposable x86 Windows process. Executes
+- `ProbeWindowsTests.cs`: 95 checks in a disposable x86 Windows process. Executes
   the generated probe and real exception dispatcher with inaccessible target and
   vtable pages, page-boundary reads, unaffected valid probes, unrelated-exception
   rejection and simulated registration failure. Does not start the game.
+- `graphics-diagnostics/test.ps1`: 9 disposable process scenarios, including
+  a handled invalid call at `0x62`, preserved original crash handling, safe
+  recorder exit and process-identity rejection.
 - The full helper build also runs the existing feature regression suites.
 
-The eight local helper variants require matching `0.4.0-beta.1` data. Their actual
-EXE hash participates in lobby compatibility: all peers must use the same test
-helper variant and settings. Live game validation remains a separate manual step.
+The October 16 local candidates target Arcane Wars `0.4.2-beta.1` data and
+Vanilla/Immortals `0.4.1-beta.3` data. Their actual EXE hash participates in lobby
+compatibility: all peers must use the same test helper variant and compatible
+settings. Live game validation remains a separate manual step.

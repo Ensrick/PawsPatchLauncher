@@ -1,8 +1,17 @@
-# Optional AI improvements and integrated diagnostics
+# Optional AI improvements
 
 Build: `beta7/build.ps1 -AiPolicy -ExhaustionRecovery` with the other current Arcane features. Paw's Patch 0.4.0 Beta exposes one launcher option, enabled by default, for both the data changes and native AI/exhaustion fixes. The installed module and applied setting must agree before launch. Turning off Paw's Patch disables the option; bulk host bot setup remains a separate built-in Paw's Patch feature.
 
-The current game helper installs 58 guarded native call-site wrappers. Observation/eligibility wrappers preserve their original callees and the existing guarded precondition exceptions. Decision callbacks run on the native AI thread; routing callbacks run inside the native path-query critical section, without OS calls, additional RNG, health or ownership writes. Revision 30 additionally submits the original Disband command for a persistently surplus civilian builder. Recruit eligibility uses native short-lived ResourceVectors on the same simulation thread; final admission remains native. An unchanged floating-point score retains its original 80-bit return. The helper's existing monitor drains a bounded ring.
+The current game helper installs 58 guarded native call-site wrappers. Observation/eligibility wrappers preserve their original callees and the existing guarded precondition exceptions. Decision callbacks run on the native AI thread; routing callbacks run inside the native path-query critical section, without OS calls, additional RNG, health or ownership writes. Revision 30 additionally submits the original Disband command for a persistently surplus civilian builder. Recruit eligibility uses native short-lived ResourceVectors on the same simulation thread; final admission remains native. An unchanged floating-point score retains its original 80-bit return. The native payload retains its bounded observation ring; the normal helper no longer drains it to disk or captures periodic AI snapshots.
+
+## Diagnostic recording (local update, 2026-10-16)
+
+Normal helpers no longer create `paws_ai_diagnostics` sessions, decision journals,
+economy timelines or periodic actor/city snapshots. `Tick()` is intentionally empty.
+Native AI policy installation, callbacks and gameplay are unchanged. Existing
+recordings are not deleted. The launcher excludes native `SAI_*.log` files and
+old `paws_ai_diagnostics` folders from diagnostic archives; the game's own SAI
+logging is separate from this removed helper recorder.
 
 ## Current revision 31 (0.4.0-beta.2)
 
