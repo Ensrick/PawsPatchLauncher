@@ -94,12 +94,12 @@ public partial class MainWindow : Window
             else if (_busy) { e.Cancel = true; ShowToast(() => T("Дождитесь окончания операции или приостановите загрузку.", "Wait for the operation or pause the download.")); }
         };
         _initializing = false;
-        Loaded += async (_, _) => await InitializeAsync();
+        Loaded += async (_, _) => { try { await InitializeAsync(); } finally { _initialized.TrySetResult(); } };
         ContentRendered += (_, _) => MarkVisibleChangelogRead();
         Activated += (_, _) => MarkVisibleChangelogRead();
         StateChanged += (_, _) => MarkVisibleChangelogRead();
-        // Off-screen preview/smoke fixtures never read or overwrite the user's desktop placement.
-        if (!ActivityStore.IsSmokeTest || windowPlacementStore is not null)
+        // Off-screen preview/smoke fixtures and headless commands never read or overwrite the user's desktop placement.
+        if (!HeadlessMode.Active && (!ActivityStore.IsSmokeTest || windowPlacementStore is not null))
             _windowPlacement = new WindowPlacementPersistence(this, windowPlacementStore ?? new WindowPlacementStore(ActivityStore.Root));
     }
 
@@ -625,7 +625,7 @@ public partial class MainWindow : Window
                 EnsureGameClosed();
                 await GameLobbyPreferences.PrepareForLaunchAsync(_game.Directory, vanillaInstaller.LoadState().AppliedSettings ?? GetEffectiveSettings());
                 EnsureGameClosed();
-                var original = Process.Start(new ProcessStartInfo(vanilla) { WorkingDirectory = _game.Directory, UseShellExecute = true })
+                var original = _startProcess(new ProcessStartInfo(vanilla) { WorkingDirectory = _game.Directory, UseShellExecute = true })
                     ?? throw new IOException("Cannot start Kohan II.");
                 BeginGameObservation(original, new ModuleInstaller(_game.Directory).LoadState());
                 ShowResult(() => T("Игра запущена.", "Game launched."));
@@ -664,7 +664,7 @@ public partial class MainWindow : Window
             EnsureModAccess(_settings.Mod);
             await GameLobbyPreferences.PrepareForLaunchAsync(_game.Directory, state.AppliedSettings ?? GetEffectiveSettings());
             EnsureGameClosed();
-            var process = Process.Start(new ProcessStartInfo(executable) { WorkingDirectory = _game.Directory, UseShellExecute = true })
+            var process = _startProcess(new ProcessStartInfo(executable) { WorkingDirectory = _game.Directory, UseShellExecute = true })
                 ?? throw new IOException("Cannot start Kohan II.");
             BeginGameObservation(process, installer.LoadState());
             ShowResult(() => T("Игра запущена.", "Game launched."));
@@ -742,7 +742,7 @@ public partial class MainWindow : Window
 
     private async Task<bool> InstallPendingLauncherUpdateAsync(bool showErrors)
     {
-        if (ActivityStore.IsCommunityTest || ActivityStore.IsCustomModsTest) return false;
+        if (ActivityStore.IsCommunityTest || ActivityStore.IsCustomModsTest || _headless) return false;
         var release = _pendingLauncherUpdate;
         if (release is null || _busy || ConfirmationActive) return false;
         try
@@ -1121,6 +1121,7 @@ public partial class MainWindow : Window
     private void ShowError(Exception exception)
     {
         ActionJournal.Record("operation.error", exception.GetType().Name);
+        if (_headless) { _headlessFailed = true; _headlessOutput?.WriteLine("detail: " + exception.Message); }
         if (exception is GameAlreadyRunningException)
         {
             ShowResult(() => T("Kohan II уже запущен. Закройте игру перед применением настроек, обновлением или новым запуском.",

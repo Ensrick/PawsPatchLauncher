@@ -51,7 +51,7 @@ public partial class MainWindow
 
     private void ShowModNotice()
     {
-        if (ConfirmationActive || _modNoticeClosing || ModNoticeOverlay.Visibility == Visibility.Visible) return;
+        if (ConfirmationActive || _modNoticeClosing || ModNoticeOverlay.Visibility == Visibility.Visible || _headless) return;
         _modNoticePreviousFocus = Keyboard.FocusedElement;
         ModNoticeLinkErrorText.Visibility = Visibility.Collapsed;
         Motion.Collapse(HelpOverlay);

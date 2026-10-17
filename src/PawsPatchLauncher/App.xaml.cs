@@ -22,14 +22,9 @@ public partial class App : Application
             if (!await SelfUpdater.WaitForRestartHandoffAsync(e.Args)) { Shutdown(); return; }
         }
         catch (Exception error) { ActivityStore.Log(error); Shutdown(); return; }
-        _instance = new System.Threading.Mutex(true, "Local\\PawsPatchLauncher-Reliability" + (ActivityStore.IsSmokeTest || ActivityStore.LocalTestProfile is not null ? "-test-" + Environment.ProcessId : ""), out var first);
-        if (!first) { Shutdown(); return; }
-        var previous = ActivityStore.Read("launcher-run");
-        PreviousUncleanExit = previous is { CleanExit: false } && !ActivityStore.IsAlive(previous);
-        if (previous is not null) ActivityStore.Save("previous-launcher-run", previous);
-        ActionJournal.Record("launcher.start");
-        _run = ActivityStore.ForProcess(System.Diagnostics.Process.GetCurrentProcess());
-        ActivityStore.Save("launcher-run", _run);
+        if (HeadlessMode.Active) { await RunHeadlessAsync(e); return; }
+        if (!AcquireInstance()) { Shutdown(); return; }
+        RecordStart();
         DispatcherUnhandledException += (_, args) =>
         {
             ActivityStore.Log(args.Exception);
@@ -69,10 +64,73 @@ public partial class App : Application
         startup?.Close();
     }
 
+    private bool AcquireInstance()
+    {
+        _instance = new System.Threading.Mutex(true, "Local\\PawsPatchLauncher-Reliability" + (ActivityStore.IsSmokeTest || ActivityStore.LocalTestProfile is not null ? "-test-" + Environment.ProcessId : ""), out var first);
+        return first;
+    }
+
+    private void RecordStart(string detail = "")
+    {
+        var previous = ActivityStore.Read("launcher-run");
+        PreviousUncleanExit = previous is { CleanExit: false } && !ActivityStore.IsAlive(previous);
+        if (previous is not null) ActivityStore.Save("previous-launcher-run", previous);
+        ActionJournal.Record("launcher.start", detail);
+        _run = ActivityStore.ForProcess(System.Diagnostics.Process.GetCurrentProcess());
+        ActivityStore.Save("launcher-run", _run);
+    }
+
+    // The launcher window, off-screen and hidden, driven by one command. No startup update check, so the
+    // launcher never replaces itself in this mode; package downloads still use the signed feed.
+    private async Task RunHeadlessAsync(StartupEventArgs e)
+    {
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        var output = HeadlessMode.OpenOutput();
+        var args = HeadlessMode.Arguments(e.Args);
+        if (args.Length == 0 || HeadlessMode.IsHelp(args[0]))
+        {
+            PawsPatchLauncher.MainWindow.WriteHeadlessHelp(output, new SettingsStore().Load().Language);
+            output.Flush(); Shutdown(args.Length == 0 ? HeadlessMode.Usage : HeadlessMode.Success); return;
+        }
+        if (!AcquireInstance())
+        {
+            output.WriteLine("error: " + UiLanguages.Text(new SettingsStore().Load().Language,
+                "Открыто окно лаунчера. Закройте его и повторите команду.", "A launcher window is open. Close it and run the command again."));
+            output.Flush(); Shutdown(HeadlessMode.Busy); return;
+        }
+        RecordStart("headless");
+        DispatcherUnhandledException += (_, args) =>
+        {
+            ActivityStore.Log(args.Exception);
+            output.WriteLine("error: " + args.Exception.Message);
+            output.Flush();
+            args.Handled = true;
+            Shutdown(HeadlessMode.Failure);
+        };
+        base.OnStartup(e);
+        StartupUpdateCompleted = true;
+        var configuration = SettingsStore.LoadConfiguration();
+        // A test profile keeps its downloads too, so trying commands never touches the player's own launcher data.
+        if (ActivityStore.LocalTestProfile is not null && string.IsNullOrWhiteSpace(configuration.CacheRoot))
+            configuration.CacheRoot = Path.Combine(ActivityStore.Root, "cache");
+        var window = new MainWindow(configuration, new FeedClient(configuration))
+        {
+            Left = -32000, Top = -32000, Width = 1050, Height = 680,
+            ShowActivated = false, ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.Manual
+        };
+        MainWindow = window;
+        window.Show();
+        var code = await window.RunHeadlessCommandAsync(args, output);
+        window.Close();
+        Shutdown(code);
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         if (_run is not null) { _run.CleanExit = true; ActivityStore.Save("launcher-run", _run); }
         _instance?.Dispose();
+        // Headless help and refused commands never started a launcher session; they leave the journal alone.
+        if (HeadlessMode.Active && _run is null) { base.OnExit(e); return; }
         ActionJournal.Record("launcher.exit");
         ActionJournal.FlushAsync().Wait(TimeSpan.FromSeconds(2));
         base.OnExit(e);
