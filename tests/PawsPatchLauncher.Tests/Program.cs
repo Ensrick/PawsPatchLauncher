@@ -35,7 +35,6 @@ if(args.Length==4&&args[0]=="--verify-september20") {await September20Tests.RunA
 if(args.Length==4&&args[0]=="--verify-september-betas") {await SeptemberBetaTests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==4&&args[0]=="--verify-palette39") {await Palette39Tests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==4&&args[0]=="--verify-arcane-031") {await Arcane031Tests.RunAsync(args[1],args[2],args[3]);return;}
-if(args.Length==1&&args[0]=="--chat-order") {ChatActivityTests.Run();ChatFriendActivityTests.Run();return;}
 if(args.Length==4&&args[0]=="--verify-arcane-031-beta1") {await Arcane031Beta1Tests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==4&&args[0]=="--verify-apparition-hotfix") {await ApparitionTextTests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==4&&args[0]=="--verify-arcane-030") {await Arcane030Tests.RunAsync(args[1],args[2],args[3]);return;}
@@ -50,8 +49,6 @@ if(args.Length==3 && args[0]=="--repair-lobby-fixture") {await GameLobbyPreferen
 if(args.Length==4 && args[0]=="--stage-language-game") {await EuropeanLanguageTests.StageGameAsync(args[1],args[2],args[3]);return;}
 if(args.Length==5 && args[0]=="--stage-language-game") {await EuropeanLanguageTests.StageGameAsync(args[1],args[2],args[3],args[4]);return;}
 if(args.Length==3 && args[0]=="--verify-european-languages") {await EuropeanLanguageTests.RunAsync(args[1],args[2]);return;}
-if(args.Length==2 && args[0]=="--sound-import-checks") {NotificationImportTests.Run(args[1]);return;}
-if(args.Length==2 && args[0]=="--import-sound-files") {NotificationImportTests.Files(args[1]);return;}
 if(args.Length==4&&args[0]=="--verify-lobby-beta7") {await LobbyBeta7Tests.RunAsync(args[1],args[2],args[3]);return;}
 if(args.Length==3&&args[0]=="--stage-lobby-beta7-review") {await LobbyBeta7Tests.StageReviewAsync(args[1],args[2]);return;}
 AiOptionsTests.Run();
@@ -203,29 +200,14 @@ if (args.Length == 3 && args[0] == "--verify-gameplay-profiles")
 var root = Path.Combine(Path.GetTempPath(), "PawsPatchLauncherTests", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 var passed = 0;
-passed += ChatMemoryCacheTests.Run();
-passed += await ConnectionTests.RunAsync(root);
 
 try
 {
         passed += await AtomicStateWriteTests.RunAsync(root);
         passed += await LauncherDownloadRecoveryTests.RunAsync(root);
         passed += await StartupCompatibilityTests.RunAsync(root);
-        passed += await AccountTests.RunAsync(root);
-        passed += await AccountModerationTests.RunAsync(root);
-        passed += await AccountTeamTests.RunAsync(root);
-        passed += await HistoryNetworkTests.RunAsync(root);
-        passed += ChatActivityTests.Run();
-        passed += ChatDividerTests.Run();
         passed += LanguageCatalogTests.Run();
         passed += await CompatibilityModerationTests.RunAsync(root);
-        passed += await LauncherSessionTests.RunAsync(root);
-        passed += await AccountProfileTests.RunAsync(root);
-        passed += await AccountActionsTests.RunAsync(root);
-        passed += await SocialTests.RunAsync(root);
-        passed += await CommunityTests.RunAsync(root);
-        passed += await OfferTests.RunAsync(root);
-        passed += await SocialIdentityMediaTests.RunAsync(root);
     passed += await EnhancementTests.RunAsync(root);
     passed += await SocialHubTests.RunAsync(root);
     passed += PromotedReleaseTests.Run();
@@ -245,14 +227,7 @@ try
     passed += PowersShardsTests.Run();
     passed += EffectiveSettingsTests.Run();
     passed += PawDependencyTests.Run();
-    passed += GameActivityTests.Run();
-    passed += GameActivityTimingTests.Run();
-    passed += GameActivityNativeRaceTests.Run();
-    passed += await GameActivityTransportTests.RunAsync(root);
-    passed += FriendConfigurationTests.Run();
-    passed += FriendCopyPlanTests.Run();
     passed += Launcher080Tests.Run();
-    passed += await SocialVersionTests.RunAsync(root);
     passed += await PatchGuideTests.RunAsync(root);
     passed += await LauncherUpdateTests.RunAsync(root);
     passed += ComponentSettingsTests.Run();
@@ -261,7 +236,6 @@ try
     passed += PawPatchVersionTests.Run();
     passed += InstalledModVersionTests.Run();
     passed += PawsPatchLauncher.Tests.ChangelogTimelineTests.Run();
-    passed += ChatFriendActivityTests.Run();
     ExpectThrows<InvalidDataException>(() => CryptoAndIO.SafeChildPath(root, "..\\escape.txt"));
     passed++;
 

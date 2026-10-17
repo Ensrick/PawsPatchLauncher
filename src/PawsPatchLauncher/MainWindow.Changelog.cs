@@ -97,7 +97,7 @@ public partial class MainWindow
         var row = rows[0]; var entry = row.Entry; var item = new StackPanel();
         var owner = row.Source == "patch" ? "Paw's Patch" : row.Source == "launcher" ? T("Лаунчер", "Launcher") : T("Авторский мод", "Original mod");
         var branch = row.Source == "patch" ? " · " + string.Join(" / ", rows.Select(r => ChannelPresentation.Name(r.Branch, _text.Language)).Distinct()) : "";
-        item.Children.Add(new TextBlock { Text = owner + branch + (row.Overview ? T(" · обзор версии", " · version overview") : ""), Style = (Style)FindResource("MetadataText"), Foreground = SocialBrush(row.Source == "mod" ? "#92CBBE" : "#D9BD78") });
+        item.Children.Add(new TextBlock { Text = owner + branch + (row.Overview ? T(" · обзор версии", " · version overview") : ""), Style = (Style)FindResource("MetadataText"), Foreground = ColorBrush(row.Source == "mod" ? "#92CBBE" : "#D9BD78") });
         item.Children.Add(new TextBlock { Text = row.Source == "patch" ? ChannelPresentation.ChangelogText(entry.Title.Get(_text.Language), _text.Language) : entry.Title.Get(_text.Language), Style = (Style)FindResource("CardSubtitle"), Margin = new Thickness(0, 7, 0, 0) });
         var metadata = row.Source == "patch" ? PawPatchVersions.Display(row.Subject, entry.Version)! : entry.Version;
         if (DateTimeOffset.TryParse(entry.PublishedAt, out var date)) metadata += " · " + date.ToString(UiLanguages.DatePattern(_text.Language) + "");
@@ -111,7 +111,7 @@ public partial class MainWindow
             foreach (var line in ChangelogTextLayout.Parse(text))
             {
                 var block = new TextBlock { Text = line.Kind == ChangelogTextKind.Bullet ? "• " + line.Text : line.Text,
-                    TextWrapping = TextWrapping.Wrap, Foreground = SocialBrush(line.Kind == ChangelogTextKind.Heading ? "#E7D099" : "#CDD5E1") };
+                    TextWrapping = TextWrapping.Wrap, Foreground = ColorBrush(line.Kind == ChangelogTextKind.Heading ? "#E7D099" : "#CDD5E1") };
                 if (line.Kind == ChangelogTextKind.Heading)
                 { block.FontSize = 15; block.FontWeight = FontWeights.SemiBold; block.Margin = new Thickness(0, content.Children.Count == 0 ? 0 : 10, 0, 3); }
                 else { block.Style = (Style)FindResource("CardDescription"); block.Margin = new Thickness(line.Kind == ChangelogTextKind.Bullet ? 9 : 0, 0, 0, 5); }
@@ -126,6 +126,6 @@ public partial class MainWindow
             var button = new Button { Content = T("Показать полностью ▾", "Show all ▾"), Style = (Style)FindResource("GhostButton"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 10, 0, 0), Padding = new Thickness(9, 5, 9, 5) };
             button.Click += (_, _) => { expanded = !expanded; RenderBody(expanded ? body : preview); button.Content = expanded ? T("Свернуть ▴", "Collapse ▴") : T("Показать полностью ▾", "Show all ▾"); Motion.Reveal(content); }; item.Children.Add(button);
         }
-        return new Border { Child = item, Background = SocialBrush("#132840"), BorderBrush = SocialBrush("#40536E"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(7), Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 10) };
+        return new Border { Child = item, Background = ColorBrush("#132840"), BorderBrush = ColorBrush("#40536E"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(7), Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 10) };
     }
 }

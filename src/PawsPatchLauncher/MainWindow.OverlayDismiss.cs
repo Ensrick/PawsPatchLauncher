@@ -30,21 +30,11 @@ public partial class MainWindow
     private async void Overlay_MouseDown(object sender,MouseButtonEventArgs e)
     {
         if(sender is not FrameworkElement overlay||overlay.Visibility!=Visibility.Visible)return;
-        var card=ReferenceEquals(overlay,ConfirmationOverlay)?ConfirmationCard
-            :ReferenceEquals(overlay,AvatarPreviewOverlay)?AvatarPreviewCard
-            :ReferenceEquals(overlay,GameActivityOverlay)?GameActivityCard
-            :ReferenceEquals(overlay,SocialDetailsOverlay)?SocialDetailsCard:HelpCard;
+        var card=ReferenceEquals(overlay,ConfirmationOverlay)?ConfirmationCard:HelpCard;
         if(InsideCard(e.OriginalSource as DependencyObject,card))return;
-        // Consume the initial press: never activate an underlying row/button, and
-        // close only the top layer (confirmation cancellation keeps the profile).
+        // Consume the initial press: never activate an underlying row/button, and close only the top layer.
         e.Handled=true;
         if(ReferenceEquals(overlay,ConfirmationOverlay))await CompleteConfirmationAsync(false);
-        else if(!ConfirmationActive)
-        {
-            if(ReferenceEquals(overlay,AvatarPreviewOverlay))await DismissAvatarPreviewAsync();
-            else if(ReferenceEquals(overlay,GameActivityOverlay))await DismissGameActivityAsync();
-            else if(ReferenceEquals(overlay,SocialDetailsOverlay))await DismissSocialDetailsAsync();
-            else await CloseHelpAsync();
-        }
+        else if(!ConfirmationActive)await CloseHelpAsync();
     }
 }

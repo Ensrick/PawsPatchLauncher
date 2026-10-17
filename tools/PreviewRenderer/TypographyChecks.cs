@@ -164,36 +164,10 @@ internal static class TypographyChecks
         {
             Field<PawsPatchLauncher.Localization>(window, "_text").SetLanguage(language);
             typeof(MainWindow).GetMethod("ApplyLanguage", Fields)!.Invoke(window, null);
-            typeof(MainWindow).GetMethod("ShowAccountForm", Fields)!.Invoke(window, [true]);
-            typeof(MainWindow).GetMethod("SetActivePage", Fields)!.Invoke(window, ["account"]);
+            typeof(MainWindow).GetMethod("SetActivePage", Fields)!.Invoke(window, ["settings"]);
             window.Show(); Pump(); window.UpdateLayout();
-            foreach (var field in new[] { "AccountNicknameInput" })
-            {
-                var input = Named<TextBox>(window, field);
-                Check(input.Template.FindName("PART_ContentHost", input) is ScrollViewer, "Text editor host missing.");
-                Check(input.MaxLength > 0 && input.TextWrapping == TextWrapping.NoWrap && input.IsUndoEnabled && !input.AcceptsReturn, "Single-line account input behavior changed.");
-                Check(System.Windows.Automation.AutomationProperties.GetName(input).Length > 0, "Accessible input name is missing.");
-                input.Text = "PAW-TEST"; input.Select(4, 4);
-                Check(input.SelectedText == "TEST", "Selection is broken.");
-                input.SelectedText = "BETA";
-                Check(input.Text == "PAW-BETA" && input.CanUndo, "Replacing selected text/undo is broken.");
-                input.Undo(); Check(input.Text == "PAW-TEST", "Native undo did not restore the input.");
-                input.Text = new string('W', 200); window.UpdateLayout();
-                Check(input.GetLineIndexFromCharacterIndex(199) == 0, "A username expanded into multiple lines.");
-                input.Clear(); window.UpdateLayout();
-                Check(input.ActualHeight is >= 30 and <= 40, "Empty text field retained excess height.");
-                var focus = input.Template.Triggers.OfType<Trigger>().Single(t => t.Property == UIElement.IsKeyboardFocusWithinProperty);
-                var hover = input.Template.Triggers.OfType<Trigger>().Single(t => t.Property == UIElement.IsMouseOverProperty);
-                Check(focus.Setters.OfType<Setter>().Any(s => s.Property == Motion.BorderBrushProperty)
-                    && hover.Setters.OfType<Setter>().Any(s => s.Property == Motion.BorderBrushProperty), "Focus/hover don't use smooth border transitions.");
-                var border = (Border)input.Template.FindName("InputBorder", input);
-                input.IsEnabled = false; Pump(); Check(Math.Abs(border.Opacity - 0.45) < 0.01, "Disabled input isn't visually disabled.");
-                input.IsEnabled = true; Pump(); Check(Math.Abs(border.Opacity - 1) < 0.01, "Re-enabled input remains faded.");
-            }
             Check(!Field<TextBox>(window, "_importInput").IsVisible, "Removed settings import is visible.");
-            window.Width = 1440; window.UpdateLayout();
-            Check(Named<TextBox>(window, "AccountNicknameInput").ActualHeight is >= 30 and <= 40, "Wide layout changed the compact input height.");
-            Console.WriteLine($"TYPOGRAPHY UI PASS {checks} {language}: native selection/edit/undo, accessibility, compact height, focus/hover transitions and disabled states; no keyboard focus or real clipboard used");
+            Console.WriteLine($"TYPOGRAPHY UI PASS {checks} {language}: removed settings import stays hidden; no keyboard focus or real clipboard used");
         }
         finally { window.Close(); }
     }

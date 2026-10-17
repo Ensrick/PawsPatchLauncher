@@ -16,11 +16,10 @@ internal static class AboutChecks
         void Require(bool valid, string message) { if (!valid) throw new InvalidOperationException(message); }
         var nav = Named<Button>("AboutNav");
         var settings = Named<Button>("SettingsNav");
-        var mods = Named<Button>("AboutModsNav");
         var footer = Named<TextBlock>("LauncherVersionLabel");
-        Require(nav.Parent == settings.Parent && mods.Visibility == Visibility.Collapsed
+        Require(nav.Parent == settings.Parent
             && ((Panel)nav.Parent).Children.OfType<FrameworkElement>().Last(c => c.Visibility == Visibility.Visible) == nav,
-            "The unified guide must follow Settings without a separate About mods link.");
+            "The guide must be the last navigation entry, after Settings.");
         Require(nav.TranslatePoint(new Point(), content).Y >= settings.TranslatePoint(new Point(0, settings.ActualHeight), content).Y + 7
             && nav.TranslatePoint(new Point(0, nav.ActualHeight), content).Y < footer.TranslatePoint(new Point(), content).Y - 10,
             "About navigation overlaps Settings or the launcher footer.");
@@ -66,126 +65,23 @@ internal static class AboutChecks
         async Task Scenario()
         {
             // Never borrow a persisted smoke fixture's older guide.
-            var fixture = new ChannelManifest { Channel = "beta", ColorDesyncContinue = true, PatchGuide = PatchGuide.Current() };
+            var fixture = new ChannelManifest { Channel = "beta" };
             typeof(MainWindow).GetField("_channel", flags)!.SetValue(window, fixture);
             typeof(MainWindow).GetField("_latestChannel", flags)!.SetValue(window, fixture);
             Field<UserSettings>("_settings").Channel = "beta";
             Field<UserSettings>("_settings").PinnedRelease = null;
             var localization = Field<PawsPatchLauncher.Localization>("_text");
             localization.SetLanguage(language); Invoke("ApplyLanguage");
-            Invoke("ShowWorking", (Func<string>)(() => "isolated operation"));
             var settingsBefore = JsonSerializer.Serialize(Field<UserSettings>("_settings"));
-            var channelBefore = Field<ChannelManifest?>("_channel");
-            var operationBefore = Named<TextBlock>("OperationText").Text;
-            Check(PatchGuide.Entries.Count == 17 && PatchGuide.Entries.Select(e => e.Id).Distinct().Count() == 17,
-                "Guide entries are missing or have duplicate IDs.");
-            Check(PatchGuide.Entries.All(e => e.Category is "always" or "optional" or "beta"), "Unknown guide category.");
-            foreach (var entry in PatchGuide.Entries)
-            {
-                Check(new[] { entry.TitleRu, entry.TitleEn, entry.BodyRu, entry.BodyEn }.All(t => !string.IsNullOrWhiteSpace(t)
-                    && !t.Contains('\u2014') && !t.Contains('\u2013') && !t.Contains("F9", StringComparison.OrdinalIgnoreCase)
-                    && !t.Contains("PawQuickSave", StringComparison.OrdinalIgnoreCase)), "Guide contains missing, long-dash or deferred quick-save text: " + entry.Id);
-            }
-            var controls = PatchGuide.Entries.Single(e => e.Id == "dvorak");
-            Check(controls.Body(language).Contains("WASD") && controls.Body(language).Contains("Dvorak")
-                && controls.Body(language).Contains("F "), "WASD/F description or its profile qualification is missing.");
-            var colorText = localization["modules.colors.desc"] + localization["modules.colors.help"]
-                + PatchGuide.Entries.Single(e => e.Id == "colors").Body(language);
-            Check(PatchGuide.PlayerColorCount == 49 && colorText.Split("49").Length == 4 && !colorText.Contains("51"), "Color count differs across UI/help/guide.");
-            var desyncText = localization["modules.oos.continue"] + localization["modules.oos.help"]
-                + PatchGuide.Entries.Single(e => e.Id == "desync").Body(language);
-            Check(!desyncText.Contains("experiment", StringComparison.OrdinalIgnoreCase)
-                && !desyncText.Contains("эксперимент", StringComparison.OrdinalIgnoreCase), "Desync bypass still marked experimental.");
-            Check(desyncText.Contains(language == "ru" ? "все обнаруженные" : "all detected")
-                && (language == "ru" ? desyncText.Contains("не исправляет") || desyncText.Contains("не устраняет") : desyncText.Contains("does not repair"))
-                && desyncText.Contains(language == "ru" ? "серьёзные" : "serious"), "Desync warning lost scope, severity or divergent-state warning.");
             Named<Button>("AboutNav").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Named<Button>("GuideArcaneTab").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Named<Button>("GuidePatchTab").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await Task.Delay(230); window.UpdateLayout();
-            Check(Field<string>("_activePage") == "about" && entries.Children.Count == 8 && FirstId() == "kingdoms", "About navigation does not open Always included.");
-            Check(Named<TextBlock>("AboutIntroText").Text.Contains(PatchGuide.Entries.Single(e => e.Id == "base").Body(language))
-                && Named<TextBlock>("AboutTitleText").Text == PatchGuide.Entries.Single(e => e.Id == "base").Title(language),
-                "The base introduction was not merged into the patch header in full.");
+            Check(Field<string>("_activePage") == "about" && Named<StackPanel>("AboutPatchPanel").Visibility == Visibility.Visible, "Guide navigation does not open the guide.");
             foreach (var name in new[] { "SettingsPanel", "GameInfoCard", "ConfigurationCodeCard", "DiagnosticsCard", "ColorsModuleCard", "RemovalCard" })
                 Check(Named<FrameworkElement>(name).Visibility == Visibility.Collapsed, "Unrelated block remains visible in About: " + name);
             Layout(window, (FrameworkElement)window.Content);
-            var moving = SystemParameters.ClientAreaAnimation;
-            var switching = Switch("optional");
-            if (moving)
-            {
-                Check(FirstId() == "kingdoms", "About text changed before fading out.");
-                await Task.Delay(35);
-                Check(entries.Opacity is > 0 and < 1, "About has no intermediate fade-out frame.");
-            }
-            await switching;
-            Check(entries.Children.Count == 8 && FirstId() == "powers-shards", "Configurable entries are wrong.");
-            if (moving)
-            {
-                // Hidden WPF windows can delay the first animation tick during layout.
-                // Require an actual intermediate frame, not an assumed wall-clock tick.
-                var wait = System.Diagnostics.Stopwatch.StartNew();
-                while (entries.Opacity == 0 && wait.ElapsedMilliseconds < 500) await Task.Delay(16);
-                Check(entries.Opacity is > 0 and < 1,
-                    $"About has no intermediate fade-in frame: opacity={entries.Opacity}, animated={entries.HasAnimatedProperties}, waited={wait.ElapsedMilliseconds}ms.");
-            }
-            await Task.Delay(220); window.UpdateLayout();
-            Check(entries.Opacity == 1, "About did not settle after fading.");
-            scroll.ScrollToVerticalOffset(120); window.UpdateLayout(); var offset = scroll.VerticalOffset;
-            Check(offset > 0, "Long guide cannot be scrolled.");
-            await Switch("optional");
-            Check(scroll.VerticalOffset == offset && entries.Opacity == 1, "Selected-tab click resets scroll or flashes.");
-            var first = Switch("beta"); await Task.Delay(20);
-            var second = Switch("always"); await Task.Delay(20);
-            var third = Switch("beta"); await Task.WhenAll(first, second, third); await Task.Delay(230); window.UpdateLayout();
-            Check(FirstId() == "empty-beta" && entries.Children.Count == 1 && entries.Opacity == 1 && scroll.VerticalOffset == 0,
-                $"Rapid category changes show stale contents or scroll: {FirstId()}, count={entries.Children.Count}, opacity={entries.Opacity}, offset={scroll.VerticalOffset}.");
-            var betaTab = Named<Button>("AboutBetaTab");
-            Check(betaTab.Style == (Style)window.FindResource("GhostButton"), "Guide tab differs from the shared button style.");
-            var selectedSurface = (Border)betaTab.Template.FindName("Border", betaTab);
-            Check(((SolidColorBrush)selectedSurface.Background).Color == (Color)ColorConverter.ConvertFromString("#5B451D"),
-                "Selected guide tab has no settled gold highlight.");
-            Check(Named<RadioButton>("ModReleaseRadio").IsChecked == (Field<UserSettings>("_settings").Channel == "stable")
-                && Named<RadioButton>("ModBetaRadio").IsChecked == (Field<UserSettings>("_settings").Channel == "beta"),
-                "Guide tab selection changed the patch-channel selector.");
-            Named<Button>("AboutAlwaysTab").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(340);
-            Check(FirstId() == "kingdoms" && Field<string>("_aboutCategory") == "always", "Real category Click handler is not wired.");
-            switching = Switch("optional");
-            localization.SetLanguage(language == "ru" ? "en" : "ru"); Invoke("ApplyLanguage");
-            await switching; await Task.Delay(220);
-            var title = ((StackPanel)((Border)entries.Children[0]).Child).Children.OfType<TextBlock>().ElementAt(1).Text;
-            Check(title == PatchGuide.Entries.Single(e => e.Id == "powers-shards").Title(localization.Language)
-                && entries.Opacity == 1, "Language refresh was overwritten by a stale animation.");
-            switching = Switch("beta"); Invoke("SetActivePage", "home"); await switching; await Task.Delay(220);
-            Check(entries.Opacity == 1 && Named<StackPanel>("AboutPatchPanel").Visibility == Visibility.Collapsed,
-                "Leaving About keeps a stale transition active.");
-            Invoke("SetActivePage", "about"); await Task.Delay(220);
-            Check(FirstId() == "empty-beta", "Returning to About lost the selected category.");
-            Check(JsonSerializer.Serialize(Field<UserSettings>("_settings")) == settingsBefore, "Reading About changed patch configuration.");
-            Check(ReferenceEquals(Field<ChannelManifest?>("_channel"), channelBefore), "Reading About changed the patch channel.");
-            Check(Named<TextBlock>("OperationText").Text == operationBefore, "Reading About changed independent operation status.");
-            var selectedGuide = Field<ChannelManifest>("_channel").PatchGuide!;
-            selectedGuide.Entries[0] = selectedGuide.Entries[0] with { TitleRu = "Автообновлённая справка", TitleEn = "Refreshed guide" };
-            Invoke("RefreshAboutFeed");
-            await Switch("always"); await Task.Delay(230);
-            var refreshedTitle = Named<TextBlock>("AboutTitleText").Text;
-            Check(refreshedTitle == selectedGuide.Entries[0].Title(localization.Language), "Downloaded guide not displayed.");
-            Check(JsonSerializer.Serialize(Field<UserSettings>("_settings")) == settingsBefore, "Guide refresh changed settings.");
             checks += CheckGuideIntroductions(window, localization.Language);
-            foreach (var available in new[] { true, false, true })
-            {
-                var channel = new ChannelManifest { Channel = available ? "beta" : "stable" };
-                if (available) channel.Packages.Add(new PackageRelease { Id = "player-colors" });
-                typeof(MainWindow).GetField("_channel", flags)!.SetValue(window, channel);
-                Invoke("RefreshModuleAvailability");
-                var description = Named<TextBlock>("ColorsDescriptionText").Text;
-                Check(available ? description == localization["modules.colors.desc"] : !description.Contains("49"),
-                    "Color description retained stale availability or palette size when returning to Beta.");
-            }
-            switching = Switch("always"); window.Close(); await switching;
-            Check(entries.Opacity == 1, "Closing About left a pending animation.");
-            Console.WriteLine($"ABOUT PASS {checks} {language}: catalog, merged bilingual introductions, latest/pinned documentation, read-only navigation, 49 colors, typography, smooth/rapid tabs and cancellation");
+            Check(JsonSerializer.Serialize(Field<UserSettings>("_settings")) == settingsBefore, "Reading the guide changed settings.");
+            Console.WriteLine($"ABOUT PASS {checks} {language}: guide navigation, merged bilingual introductions for Vanilla and Immortals, latest/pinned documentation, read-only navigation");
         }
         try
         {
@@ -222,10 +118,10 @@ internal static class AboutChecks
         try
         {
             Named<Button>("GuideGeneralTab").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Check(entries.Children.Count == 3 && ((Border)entries.Children[0]).Tag is "language"
+            Check(entries.Children.Count == 2 && ((Border)entries.Children[0]).Tag is "language"
                 && introText.Text.Contains(language == "ru" ? "Применить настройки" : "Apply settings"),
                 "The general introduction still has a separate repeated mode-selection card.");
-            foreach (var (mod, tab) in new[] { (GameMod.Vanilla, "GuideVanillaTab"), (GameMod.ArcaneWars, "GuideArcaneTab"), (GameMod.Immortals, "GuideImmortalsTab") })
+            foreach (var (mod, tab) in new[] { (GameMod.Vanilla, "GuideVanillaTab"), (GameMod.Immortals, "GuideImmortalsTab") })
             {
                 var document = GuideCatalog.Resolve(null, mod)!;
                 Check(GuideCatalog.IsValid(document), "Invalid embedded bilingual guide: " + mod);

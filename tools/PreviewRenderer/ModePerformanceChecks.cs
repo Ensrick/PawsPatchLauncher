@@ -24,13 +24,10 @@ internal static class ModePerformanceChecks
         async Task Scenario()
         {
             Set("_game",new GameInstallation(game,Path.Combine(game,"k2.exe"),"test","stable"));Set("_gameRunningProbe",new Func<bool>(()=>false));
-            SocialChecks.Populate(w,"chat");
-            var account=(AccountService)typeof(MainWindow).GetField("_account",flags)!.GetValue(w)!;
-            ((AccountSession)typeof(AccountService).GetField("_session",flags)!.GetValue(account)!).PawsTeam=true;
             Set("_channel",feed);Set("_offeredModChannel",feed);Set("_latestChannel",feed);
             Call("SetActivePage","modules");Call("RefreshStatus");await Task.Delay(400);
             var timings=new List<double>();
-            foreach(var name in Enumerable.Range(0,4).SelectMany(_=>new[]{"ImmortalsModRadio","ArcaneWarsModRadio","VanillaModRadio"}))
+            foreach(var name in Enumerable.Range(0,4).SelectMany(_=>new[]{"ImmortalsModRadio","VanillaModRadio"}))
             {
                 var watch=Stopwatch.StartNew();((RadioButton)w.FindName(name)).IsChecked=true;w.UpdateLayout();watch.Stop();timings.Add(watch.Elapsed.TotalMilliseconds);
                 var selected=(UserSettings)typeof(MainWindow).GetField("_settings",flags)!.GetValue(w)!;
@@ -43,7 +40,7 @@ internal static class ModePerformanceChecks
             }
             if(!File.ReadAllBytes(Path.Combine(game,".pawpatch/state.json")).SequenceEqual(original))throw new Exception("Mode selection changed applied files");
             Console.WriteLine($"MODE PERFORMANCE PASS {timings.Count}: median={timings.Order().ElementAt(timings.Count/2):F1} ms; max={timings.Max():F1} ms; applied state unchanged");
-            var names=new[]{"ImmortalsModRadio","ArcaneWarsModRadio","VanillaModRadio"};
+            var names=new[]{"ImmortalsModRadio","VanillaModRadio"};
             for(var burst=0;burst<3;burst++)
             {
                 var probes=new List<Task<bool>>();var unfinished=new List<Task<bool>>();

@@ -50,6 +50,7 @@ public partial class MainWindow : Window
         _configuration = configuration ?? SettingsStore.LoadConfiguration();
         _feedClient = feedClient ?? new FeedClient(_configuration);
         _settings = _settingsStore.Load();
+        if (LeaveArcaneWars(_settings)) _settingsStore.Save(_settings);
         if (!_settings.LargeMapSizes && _settings.PawPatchEnabled && !GameMod.IsVanilla(_settings))
         {
             _settings.LargeMapSizes = true;
@@ -57,9 +58,7 @@ public partial class MainWindow : Window
             _settingsStore.Save(_settings);
         }
         _text = new Localization(_settings.Language);
-        InitializeAccountUi();
         InitializeGameLaunchState();
-        InitializeNotificationSound();
         InitializeFeedback();
         InitializeNotifications();
         InitializeReliabilityUi();
@@ -67,7 +66,6 @@ public partial class MainWindow : Window
         InitializeDiagnosticsUi();
         InitializeConfirmation();
         InitializeAppearance();
-        InitializeCommunity();
         InitializeLanguageChoices();
         InitializeActionJournal();
         SyncPatchChannelControls();
@@ -87,7 +85,7 @@ public partial class MainWindow : Window
         Closed += (_, _) => { _updateTimer.Stop(); CancelBackgroundFeed(); };
         Closed += (_, _) => CancelChangelogTransition();
         Closed += (_, _) => CancelAboutTransition();
-        Closed += (_, _) => ResetChatMedia(dispose:true);
+        Closed += (_, _) => _historyWindow?.Close();
         Closing += (_, e) =>
         {
             if (ConfirmationActive) { e.Cancel = true; _ = CompleteConfirmationAsync(false); }
@@ -148,14 +146,13 @@ public partial class MainWindow : Window
         {
             SubtitleText.Text = T("Тестовая сборка · локальные обновления", "Test build · local updates");
             Title = "Paw's Launcher — Local test";
-            if (ActivityStore.IsCommunityTest) SubtitleText.Text = T("Тестовая сборка · общий чат RU / EN", "Test build · RU / EN community chat");
             if (ActivityStore.IsCustomModsTest) SubtitleText.Text = T("Тестовая сборка · пользовательские моды", "Test build · custom mods");
         }
         HomeNav.Content = _text["nav.home"];
         ModulesNav.Content = _text["nav.modules"];
         SettingsNav.Content = _text["nav.settings"];
         AboutNav.Content = T("Справка", "Guide");
-        RefreshModNoticeLanguage();
+        RefreshModNoticeBadge();
         RefreshAboutPage();
         MinimizeWindowButton.ToolTip = T("Свернуть", "Minimize");
         CloseWindowButton.ToolTip = T("Закрыть", "Close");
@@ -223,9 +220,6 @@ public partial class MainWindow : Window
         LaunchButton.Content = LaunchButtonText;
         BrowseButton.Content = _text["button.browse"];
         LanguageButton.Content = UiLanguages.Text(_text.Language, "EN", "RU");
-        // Friend profiles reuse the component labels; refresh only after those labels are localized.
-        ApplyAccountLanguage();
-        ApplyCommunityLanguage();
         ApplyHelpTooltips(this);
         RefreshConfigurationCode();
         RefreshModuleAvailability();
@@ -368,7 +362,6 @@ public partial class MainWindow : Window
             try { _settingsPending = _selectionRequiresUpdate || UpdateDetector.HasSettingsChanges(state, _channel is null ? [] : ResolveSelectedPackages(_channel), GetEffectiveSettings()); }
             catch (FrequencyUnavailableException) { _settingsPending = true; }
             catch (Exception ex) { _settingsPending = true; _installationFailure = ex.Message; }
-        RefreshFriendAppliedState(state);
         RefreshAvailableUpdates(state);
         GamePathText.Text = _game?.Directory ?? "-";
         GameVersionText.Text = _game is null ? "-" : $"{(_game.Branch == "beta" ? "Beta" : "Steam")} · build {_game.SteamBuild ?? "?"}";
@@ -440,7 +433,7 @@ public partial class MainWindow : Window
     private void RefreshAvailableUpdates(InstallState? state)
     {
         var launcher = _launcherUpdates.Latest;
-        _pendingLauncherUpdate = !ActivityStore.IsCommunityTest && !ActivityStore.IsCustomModsTest && launcher is not null && SelfUpdater.IsNewer(launcher.Version) && launcher.Urls.Count > 0 && !SelfUpdater.IsBlocked(launcher.Sha256)
+        _pendingLauncherUpdate = !ActivityStore.IsCustomModsTest && launcher is not null && SelfUpdater.IsNewer(launcher.Version) && launcher.Urls.Count > 0 && !SelfUpdater.IsBlocked(launcher.Sha256)
             ? launcher
             : null;
         LauncherUpdateButton.Visibility = _pendingLauncherUpdate is null ? Visibility.Collapsed : Visibility.Visible;
@@ -522,8 +515,6 @@ public partial class MainWindow : Window
         var requirement = GameMod.Requirement(channel, selection.Mod);
         activeSettings.DataOnly = GameMod.UsesExecutableFeatures(activeSettings, channel) && requirement.K2ExeSha256.Count > 0 && !GameCompatibilityPolicy.Supports(requirement, baseHash);
         activeSettings = EffectiveSettings.ForFeed(activeSettings, channel);
-        if (requireExactConfiguration && !FriendConfiguration.Matches(activeSettings, selection))
-            throw new FriendCopyException(() => T("Версия игры не позволяет применить конфигурацию игрока полностью. Ваши настройки не изменены.", "The game version cannot apply the player's full configuration. Your settings were not changed."));
         var selected = GamePackageSelector.Select(channel, activeSettings, activeSettings.RussianLocalization, activeSettings.CustomPlayerColors);
         var prepared = prepareWholeChannel ? await InstallModLibraryAsync(channel, selection.Mod) : null;
         var modules = new Dictionary<string, InstalledModule>(StringComparer.OrdinalIgnoreCase);
@@ -742,7 +733,7 @@ public partial class MainWindow : Window
 
     private async Task<bool> InstallPendingLauncherUpdateAsync(bool showErrors)
     {
-        if (ActivityStore.IsCommunityTest || ActivityStore.IsCustomModsTest || _headless) return false;
+        if (ActivityStore.IsCustomModsTest || _headless) return false;
         var release = _pendingLauncherUpdate;
         if (release is null || _busy || ConfirmationActive) return false;
         try
@@ -1055,12 +1046,10 @@ public partial class MainWindow : Window
     private IInputElement? _helpPreviousFocus;
     private void HelpButton_Click(object sender, RoutedEventArgs e)
     {
-        _socialDetailsPeer=null;
         if (sender is not Button { Tag: string key }) return;
         _helpPreviousFocus = Keyboard.FocusedElement ?? FocusManager.GetFocusedElement(this);
         HelpTitleText.Text = _text[$"{key}.title"] == $"{key}.title" ? _text[key] : _text[$"{key}.title"];
         HelpBodyText.Text = ModuleHelpText(key);
-        RenderArcaneWarsCredit(key);
         HelpOverlay.Visibility = Visibility.Visible;
         HelpOverlay.UpdateLayout();
         Motion.Reveal(HelpOverlay);
@@ -1073,7 +1062,7 @@ public partial class MainWindow : Window
     {
         var previous = _helpPreviousFocus;
         _helpPreviousFocus = null;
-        if (await Motion.HideAsync(HelpOverlay) && !ConfirmationActive && ModNoticeOverlay.Visibility != Visibility.Visible)
+        if (await Motion.HideAsync(HelpOverlay) && !ConfirmationActive)
             (previous as UIElement)?.Focus();
     }
     private async void HelpOverlay_KeyDown(object sender, KeyEventArgs e)
@@ -1101,7 +1090,6 @@ public partial class MainWindow : Window
         if (busy) CancelBackgroundFeed();
         if (busy && !_busy) _operationRevision++;
         _busy = busy;
-        RefreshOfferActions();
         if (!busy)
         {
             FinishTransfer();
@@ -1153,39 +1141,20 @@ public partial class MainWindow : Window
 
     private void SetActivePage(string page)
     {
+        if (page is not ("home" or "modules" or "modmanager" or "settings" or "about")) page = "home";
         if (_activePage != page) ActionJournal.Record("navigation", page);
-        if(page=="admin"&&_account.AdminLevel<1)page="home";
-        AdminPanel.Visibility=page=="admin"?Visibility.Visible:Visibility.Collapsed;
-        MainOptionsHost.Visibility=page=="admin"?Visibility.Collapsed:Visibility.Visible;
-        MainOptionsScroll.Visibility=page=="admin"?Visibility.Collapsed:Visibility.Visible;
-        SetNavState(AdminNav,page=="admin");
-        if (page == "multiplayer") page = "friends";
-        CloseSocialMenu();
         var changed = _activePage != page;
-        if (changed && _activePage == "friends") _chatUnreadDivider.End();
-        if (changed && page == "account") _accountReturnPage = _activePage;
         _activePage = page;
         var home = page == "home";
         var modules = page == "modules";
         RefreshActionLayout();
         var settings = page == "settings";
         AboutPatchPanel.Visibility = page == "about" ? Visibility.Visible : Visibility.Collapsed;
-        AboutModsPanel.Visibility = page == "mods" ? Visibility.Visible : Visibility.Collapsed;
         ModManagerPanel.Visibility = page == "modmanager" ? Visibility.Visible : Visibility.Collapsed;
         if (page == "modmanager" && changed) OpenCustomMods();
-        FriendsPanel.Visibility = page == "friends" ? Visibility.Visible : Visibility.Collapsed;
-        FriendsConversationScroll.Visibility = page == "friends" ? Visibility.Visible : Visibility.Collapsed;
         ChangelogCard.Visibility = Visibility.Visible;
         if (!home) CancelChangelogTransition();
-        var split = page == "friends";
-        Grid.SetColumnSpan(MainOptionsHost, split ? 1 : 3);
-        OptionsGapColumn.Width = new GridLength(split ? 20 : 0);
-        OptionsColumn.Width = new GridLength(page == "friends" ? .8 : 1.6, GridUnitType.Star);
-        NewsColumn.Width = split ? new GridLength(page == "friends" ? 1.5 : 1, GridUnitType.Star) : new GridLength(0);
         RefreshOperationPlacement();
-        RefreshCommunityPageLayout();
-        AccountPanel.Visibility = page == "account" ? Visibility.Visible : Visibility.Collapsed;
-        if (page != "account") ClearAccountPasswords();
         if (page != "about") CancelAboutTransition();
         else if (changed) RefreshAboutPage();
 
@@ -1217,27 +1186,11 @@ public partial class MainWindow : Window
         SetNavState(ModManagerNav, page == "modmanager");
         SetNavState(SettingsNav, settings);
         SetNavState(AboutNav, page == "about");
-        SetNavState(AboutModsNav, page == "mods");
-        SetNavState(FriendsNav, page == "friends");
-        AccountHeaderButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(page == "account" ? "#14253B" : "#00000000"));
-        AccountHeaderButton.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(page == "account" ? "#354964" : "#00000000"));
         MainOptionsScroll.ScrollToTop();
-        if (page == "admin" && changed) AdminContentScroll.ScrollToTop();
-        RenderSocialNotifications();
         if (modules) VisitComponents();
         RenderCompatibility();
         if (home) RefreshNews();
-        if (changed && !_initializing)
-        {
-            Motion.Reveal(page == "admin" ? (FrameworkElement)AdminPanel : MainOptionsScroll);
-            // Both Friends columns enter together after their first layout.
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
-            {
-                if (_activePage != page) return;
-                if (page == "friends") Motion.Reveal(FriendsConversationScroll);
-
-            }));
-        }
+        if (changed && !_initializing) Motion.Reveal(MainOptionsScroll);
     }
 
     private static void SetNavState(Button button, bool active)

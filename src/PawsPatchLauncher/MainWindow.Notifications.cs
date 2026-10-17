@@ -37,8 +37,6 @@ public partial class MainWindow
             _notificationClosed = true;
             ClearToastStack();
             _clipboardRequest?.Cancel();
-            AccountCopyUsernameButton.ResetFeedback();
-            SocialDetailsCopyUsernameButton.ResetFeedback();
             CopyConfigurationButton.ResetFeedback();
         };
     }
@@ -107,8 +105,8 @@ public partial class MainWindow
             view.Text.Text = message;view.Icon.Kind = icon;
             view.Icon.Foreground=(Brush)FindResource(state.Failed?"DangerBrush":"SuccessBrush");
             view.Progress.Background=view.Icon.Foreground;
-            view.Panel.BorderBrush=SocialBrush(state.Failed?"#C97764":"#4D9B75");
-            view.Panel.Background=SocialBrush(state.Failed?"#332024":"#142F28");
+            view.Panel.BorderBrush=ColorBrush(state.Failed?"#C97764":"#4D9B75");
+            view.Panel.Background=ColorBrush(state.Failed?"#332024":"#142F28");
         }
         view.Panel.Visibility = Visibility.Visible;
         view.CountText.Text = notice.Repetitions > 1 ? "×" + notice.Repetitions : "";

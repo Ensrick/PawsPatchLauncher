@@ -42,7 +42,7 @@ internal static class WindowExperienceChecks
                 return (int)SendMessage(handle, 0x84, IntPtr.Zero, (IntPtr)packed); // WM_NCHITTEST, own hidden-window HWND only.
             }
             Check(Hit(Element<Grid>("TitleBar"), 330, 24) == 2, "Titlebar does not return HTCAPTION for native drag/restore.");
-            foreach (var name in new[] { "ModsDiscordButton", "MinimizeWindowButton", "CloseWindowButton" })
+            foreach (var name in new[] { "MinimizeWindowButton", "CloseWindowButton" })
             {
                 var control = Element<FrameworkElement>(name);
                 Check(Hit(control, control.ActualWidth / 2, control.ActualHeight / 2) == 1, name + " no longer clickable in native caption.");

@@ -68,18 +68,15 @@ public partial class MainWindow
 
     private void ShowBetaDetails()
     {
-        if (ConfirmationActive || ModNoticeOverlay.IsVisible) return;
-        _socialDetailsPeer = null;
+        if (ConfirmationActive) return;
         _helpPreviousFocus = System.Windows.Input.Keyboard.FocusedElement ?? FocusManager.GetFocusedElement(this);
         HelpTitleText.Text = GameMod.Name(_settings.Mod, _text.Language == "ru") + " · Paw's Patch · " + T("Бета", "Beta");
         var feed = ChannelForMod("beta");
-        var entries = (_settings.Mod == GameMod.ArcaneWars ? feed?.PatchGuide
-            : feed?.ModGuides.FirstOrDefault(g => g.Id == _settings.Mod)?.PatchGuide)?.Entries.Where(e => e.Category == "beta").ToArray() ?? [];
+        var entries = feed?.ModGuides.FirstOrDefault(g => g.Id == _settings.Mod)?.PatchGuide?.Entries.Where(e => e.Category == "beta").ToArray() ?? [];
         HelpBodyText.Text = T("Тестовая ветка Paw's Patch для этого режима. Для совместной игры участникам нужна совместимая версия и конфигурация. Переключение вступит в силу после установки или применения настроек.",
             "The test branch of Paw's Patch for this mode. Multiplayer participants need a compatible version and configuration. Switching takes effect after installation or applying settings.")
             + "\n\n" + (entries.Length > 0 ? string.Join("\n\n", entries.Select(e => e.Title(_text.Language) + "\n" + e.Body(_text.Language)))
                 : T("Подробности выбранного выпуска доступны в справке и истории изменений.", "See the guide and changelog for details of the selected release."));
-        ArcaneWarsCreditPanel.Visibility = HelpLinkErrorText.Visibility = Visibility.Collapsed;
         Motion.Reveal(HelpOverlay);
         RevealDialogCard(HelpCard);
         HelpCloseButton.Focus();

@@ -35,8 +35,6 @@ internal static class ModModeTests
                 codes.Add(code);
             }
             Check(ConfigurationCode.Create(ConfigurationCode.Parse(code)) == code, "Code roundtrip: " + code);
-            Check(FriendConfiguration.TryParse(code, "stable", out _), "Friend parser: " + code);
-            FriendConfiguration.ValidateFeed(active, feed);
             var selected = GamePackageSelector.Select(feed, active, active.RussianLocalization, active.CustomPlayerColors);
             Check(selected.Any(p => p.Id == "pawpatch-core") == core, "Core enabled by an optional dependency: " + code);
             Check(core || selected.All(p => p.Id is "arcane-wars" or "startup-base" or "game-localization-en" or "vanilla-localization-ru" or "menu-runtime" || p.Id.StartsWith("aw-")), "Legacy layer leaked into standalone AW");
@@ -53,11 +51,7 @@ internal static class ModModeTests
         Check(GamePackageSelector.Select(feed, vanilla, true, true).Select(p => p.Id).SequenceEqual(new[] { "vanilla-localization-ru" }), "Vanilla must install only the chosen language");
         Check(GameExecutableSelector.Select(new(), vanilla, feed) == "k2.exe", "Vanilla launch selection");
         Check(ConfigurationCode.Create(vanilla) == "PAW-STABLE-VANILLA-RU1", "Vanilla language code");
-        Check(FriendConfiguration.TryParse("PAW-STABLE-VANILLA", "stable", out _), "Vanilla friend code");
         Check(!activeVanilla.PawPatchEnabled && !activeVanilla.LargeMapSizes && activeVanilla.RussianLocalization && vanilla.PawPatchEnabled && vanilla.RussianLocalization, "Vanilla overwrote remembered options or game language");
-        Check(FriendConfiguration.TryParse("PAW-STABLE-IMMORTALS", "stable", out _), "Immortals code rejected");
-        Check(FriendConfiguration.TryParse("PAW-STABLE-IMMORTALS-RU1", "stable", out _), "Immortals language code rejected");
-        Check(!FriendConfiguration.TryParse("PAW-STABLE-IW0-SP1-RM0-SG0-LM1-RU0-CL0-OOS0-PP0", "stable", out _), "Contradictory core/large maps accepted");
         var target = new UserSettings(); ConfigurationCode.Apply(activeVanilla, target);
         Check(target.Mod == GameMod.Vanilla && target.PawPatchEnabled && target.RussianLocalization, "Import erased remembered AW preferences");
 

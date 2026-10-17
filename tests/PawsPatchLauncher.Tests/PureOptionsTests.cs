@@ -29,7 +29,6 @@ internal static class PureOptionsTests
             Check((active.DesyncMode == "continue") == (sync && patch && !data), "sync gating");
             Check(prefs.CustomPlayerColors && prefs.DesyncMode == "continue", "pure selection mutated AW preferences");
             var code = ConfigurationCode.Create(active);
-            Check(FriendConfiguration.TryParse(code, channel, out var parsed) && ConfigurationCode.Create(parsed) == code, "peer roundtrip");
             var packages = GamePackageSelector.Select(beta, active, false, active.CustomPlayerColors);
             Check(packages.Any(p => p.Id == "pure-player-colors") == (colors && patch && !data), "color package");
             Check(!data || packages.All(p => p.ExecutableIndependent), "data-only native package");
@@ -44,15 +43,13 @@ internal static class PureOptionsTests
             }
             var other = new UserSettings { Mod = mod == "vanilla" ? "immortals" : "vanilla", CustomPlayerColors = false };
             GameMod.SetPawPatch(other, true); GameMod.SetColors(other, true);
-            ConfigurationCode.Apply(parsed, other);
+            ConfigurationCode.Apply(ConfigurationCode.Parse(code), other);
             Check(ConfigurationCode.Create(EffectiveSettings.ForFeed(other, beta)) == code, "import exact feature choices");
             Check(!other.CustomPlayerColors, "copy modified remembered AW colors");
             var old = new ChannelManifest { Channel = channel, Packages = beta.Packages };
             var masked = EffectiveSettings.ForFeed(prefs, old);
             Check(!masked.CustomPlayerColors && masked.DesyncMode == "official", "old feed must not expose new runtime options");
         }
-        foreach (string bad in new[] { "PAW-BETA-VANILLA-CL1", "PAW-STABLE-IMMORTALS-OOS1", "PAW-BETA-VANILLA-PP1-CL1-DATA" })
-            Check(!FriendConfiguration.TryParse(bad, bad.Contains("BETA") ? "beta" : "stable", out _), "invalid options accepted");
         }
         Console.WriteLine("PURE OPTIONS PASS " + checks + ": all feature/master/data combinations, mod isolation, imports and legacy feeds");
         return checks;

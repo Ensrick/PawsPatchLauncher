@@ -89,21 +89,9 @@ internal static class CompactComponentsChecks
             running=false;Call("RefreshGameLaunchState");
             Check(C<Button>("LaunchButton").IsEnabled,"launch remains blocked after game exits");
             Set("_gameRunningProbe",actualProbe);
-            var discord=C<Button>("ModsDiscordButton");
-            Check(discord.Parent==C<StackPanel>("TitleActions")&&discord.Content is LauncherIcon{Kind:IconKind.Discord},"Discord is not a top bar icon");
-            var opened=new List<string>();Set("_openHelpLink",new Func<string,Task>(url=>{opened.Add(url);return Task.CompletedTask;}));
-            foreach(var accept in new[]{false,true})
+            foreach(var mod in new[]{GameMod.Vanilla,GameMod.Immortals})
             {
-                discord.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Layout();
-                Check(C<Border>("ConfirmationOverlay").IsVisible&&opened.Count==0,"Discord bypassed browser confirmation");
-                C<Button>(accept?"ConfirmationDeleteButton":"ConfirmationCancelButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Layout();
-                Check(opened.Count==(accept?1:0),"browser confirmation outcome ignored");
-            }
-            Check(opened.Single()=="https://discord.gg/krCK7DDwyz","wrong community invite");
-            foreach(var mod in new[]{GameMod.Vanilla,GameMod.Immortals,GameMod.ArcaneWars})
-            {
-                settings.Mod=mod;Call("RenderArcaneWarsCredit","modules.core");
-                Check(C<Border>("ArcaneWarsCreditPanel").Visibility==(mod==GameMod.ArcaneWars?Visibility.Visible:Visibility.Collapsed),"Arcane author leaked into another mode");
+                settings.Mod=mod;
                 var help=(string)Call("CoreHelpText")!;
                 Check(help.Contains(language=="ru"?"лимите рот":"company limit"),"negative zero scope missing");
                 Check(!help.Contains("Восстанавливает отсутствующие")&&!help.Contains("Restores missing"),"translations advertised as patch fixes");

@@ -18,7 +18,7 @@ internal static class CompatibilityChecks
     internal static void Populate(MainWindow w)
     {
         if(!ActivityStore.IsSmokeTest)throw new InvalidOperationException("Fixture only");
-        var settings=Field<UserSettings>(w,"_settings"); settings.Mod=GameMod.ArcaneWars;
+        var settings=Field<UserSettings>(w,"_settings"); settings.Mod=GameMod.Immortals;
         if(Field<ChannelManifest?>(w,"_channel") is null) Set(w,"_channel",new ChannelManifest());
         Set(w,"_game",new GameInstallation(Path.Combine(Path.GetTempPath(),"paw-preview-no-game"),"preview.fixture","25068127","beta"));
         Set(w,"_compatibilityState",GameCompatibilityState.Unsupported);Set(w,"_compatibilityKey","preview-mismatch");
@@ -34,18 +34,18 @@ internal static class CompatibilityChecks
         T C<T>(string name)=>(T)w.FindName(name);
         async Task Scenario()
         {
-            FixtureAccess.AllowArcaneWars(w);
-            var settings=Field<UserSettings>(w,"_settings");settings.Mod=GameMod.ArcaneWars;settings.PawPatchEnabled=true;
-            settings.RussianLocalization=settings.AdditionalRoamingCompanies=settings.SiegeBalance=settings.DisablePowersAndShards=false;
-            settings.RoamingSpawnMode="standard";settings.CustomPlayerColors=settings.IndependentHostility=true;settings.DesyncMode="continue";settings.ModNoticeSeen=true;
+            var settings=Field<UserSettings>(w,"_settings");settings.Mod=GameMod.Immortals;GameMod.SetPawPatch(settings,true);
+            settings.RussianLocalization=false;settings.ModNoticeSeen=true;
+            var pureChoice=GameMod.PureComponents(settings);pureChoice.Colors=pureChoice.IgnoreDesync=pureChoice.IndependentHostility=true;
             Field<PawsPatchLauncher.Localization>(w,"_text").SetLanguage(language);Call(w,"ApplyLanguage");
             Set(w,"_gameRunningProbe",(Func<bool>)(()=>false));
             var bytes=Encoding.Unicode.GetBytes("\0Kohan\01.3.72\0");await File.WriteAllBytesAsync(path,bytes);
             var hash=Convert.ToHexString(SHA256.HashData(bytes));
             Set(w,"_game",new GameInstallation(root,path,"25068126","beta"));
-            var channel=new ChannelManifest{ColorDesyncContinue=true,IndependentColorHostility=true,Game=new GameRequirement{Version="1.3.72",SteamBuild="25068126",K2ExeSha256=[hash]}};
-            foreach(var id in new[]{"arcane-wars","startup-base","pawpatch-data","pawpatch-data-ru","aw-runtime","aw-hostility","aw-player-colors","player-colors"})
-                channel.Packages.Add(new(){Id=id,Version="1",Sha256=new('A',64),ExecutableIndependent=id is "arcane-wars" or "startup-base" or "pawpatch-data" or "pawpatch-data-ru"});
+            var channel=new ChannelManifest{PureRuntimeOptions=true,ColorDesyncContinue=true,IndependentColorHostility=true,Game=new GameRequirement{Version="1.3.72",SteamBuild="25068126",K2ExeSha256=[hash]}};
+            foreach(var id in new[]{"startup-base","immortals","pure-fixes-data","pure-fixes-runtime","pure-player-colors"})
+                channel.Packages.Add(new(){Id=id,Version="1",Sha256=new('A',64),ExecutableIndependent=id is "startup-base" or "immortals" or "pure-fixes-data",
+                    Mods=id is "pure-player-colors" ? [GameMod.Vanilla,GameMod.Immortals] : []});
             Set(w,"_channel",channel);Call(w,"RefreshModuleAvailability");
             Check(await (Task<bool>)Call(w,"CheckGameCompatibilityAsync",true)!,"supported hash rejected");
             Check(C<TextBlock>("InstalledGameText").Text=="1.3.72","installed game version missing");
@@ -57,7 +57,7 @@ internal static class CompatibilityChecks
             Check(popup is not null&&!C<Button>("LaunchButton").IsEnabled&&C<TextBlock>("GameCompatibilityHint").Visibility==Visibility.Visible,"warning / launch gate absent");
             foreach(var name in new[]{"ColorsToggle","IndependentHostilityToggle","IgnoreDesyncToggle"})
                 Check(!C<CheckBox>(name).IsEnabled&&C<CheckBox>(name).IsChecked==false,"native option not visibly locked: "+name);
-            Check(settings.CustomPlayerColors&&settings.IndependentHostility&&settings.DesyncMode=="continue","native choices erased");
+            Check(pureChoice.Colors&&pureChoice.IndependentHostility&&pureChoice.IgnoreDesync,"native choices erased");
             Check(C<Button>("PawCompatibilityButton").Visibility==Visibility.Visible,"partial Paw details missing");
             Check(C<Border>("ModulesNavBadge").Visibility==Visibility.Visible,"compatibility unread badge missing");
             Check(((string)Call(w,"CompatibilityExplanation")!).Contains(language=="ru"?"новее":"newer"),"newer-game guidance missing");
@@ -69,8 +69,6 @@ internal static class CompatibilityChecks
             Check(C<CheckBox>("PawPatchToggle").IsEnabled&&!C<CheckBox>("ColorsToggle").IsEnabled,"partial Paw/native control lock incorrect after dismissal");
             Call(w,"SetActivePage","modules");Call(w,"VisitComponents");
             Check(C<Border>("ModulesNavBadge").Visibility==Visibility.Collapsed&&C<Border>("CompatibilityBanner").Visibility==Visibility.Visible,"badge/banner lifecycle");
-            C<CheckBox>("SiegeBalanceToggle").IsChecked=true;Call(w,"GameplayOptionChanged",C<CheckBox>("SiegeBalanceToggle"),new RoutedEventArgs());
-            Check(settings.IndependentHostility,"editing file component erased native preference");settings.SiegeBalance=false;
             await (Task)Call(w,"LaunchGameAsync")!;
             Check(!Field<bool>(w,"_launchStarting")&&!C<Button>("LaunchButton").IsEnabled,"direct launch bypassed explicit Apply gate");
             Call(w,"CloseCompatibilityPopup");

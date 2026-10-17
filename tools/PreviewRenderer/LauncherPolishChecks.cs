@@ -43,17 +43,8 @@ internal static class LauncherPolishChecks
             Check(C<ComboBox>("GameVoiceCombo").IsEnabled,"separate speech disabled");
             var state=new InstallState{AppliedSettings=new(){Mod=GameMod.Immortals,ImmortalsPawPatchEnabled=true},Modules=new(){["pure-fixes-data"]=new(){Enabled=true,Version="1.0.0-pure.1"}}};
             Call("RefreshInstalledPatchVersions",state);var installed=C<TextBlock>("InstalledPatchText").Text;
-            foreach(var mod in new[]{GameMod.Vanilla,GameMod.ArcaneWars,GameMod.Immortals}){settings.Mod=mod;Call("RefreshInstalledPatchVersions",state);Check(C<TextBlock>("InstalledPatchText").Text==installed,"installed footer changed with draft mode");}
+            foreach(var mod in new[]{GameMod.Vanilla,GameMod.Immortals}){settings.Mod=mod;Call("RefreshInstalledPatchVersions",state);Check(C<TextBlock>("InstalledPatchText").Text==installed,"installed footer changed with draft mode");}
             settings.Mod=GameMod.Immortals;Call("RefreshStatus");
-            C<Button>("ArcaneAccessButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Layout();
-            Check(C<TextBlock>("HelpBodyText").Text.Contains("Darquan Mortis")&&C<Border>("HelpCard").IsVisible,"access explanation missing");Capture("access");await (Task)Call("CloseHelpAsync")!;
-            var opened=new List<string>();Set("_openHelpLink",new Func<string,Task>(url=>{opened.Add(url);return Task.CompletedTask;}));
-            C<Button>("ModsDiscordButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Layout();
-            Check(opened.Count==0&&C<Border>("ConfirmationCard").IsVisible,"Discord opened without confirmation");Capture("browser-confirmation");
-            await (Task)Call("CompleteConfirmationAsync",false)!;await Layout();Check(opened.Count==0,"cancel opened a link");
-            C<Button>("PrivacyPolicyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Layout();
-            Check(opened.Count==0&&C<TextBlock>("ConfirmationPathText").Text.EndsWith("PRIVACY.md"),"privacy confirmation missing");
-            await (Task)Call("CompleteConfirmationAsync",true)!;await Layout();Check(opened.Count==1,"accepted link did not open exactly once");
             var timings=new List<double>();
             for(var i=0;i<8;i++){var radio=C<RadioButton>(i%2==0?"VanillaModRadio":"ImmortalsModRadio");var watch=Stopwatch.StartNew();radio.IsChecked=true;w.UpdateLayout();timings.Add(watch.Elapsed.TotalMilliseconds);await Layout();}
             File.WriteAllText(Path.Combine(output,"selection-timing-"+language+".json"),JsonSerializer.Serialize(timings));

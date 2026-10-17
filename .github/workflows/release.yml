@@ -59,11 +59,6 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
       - name: Test
         run: dotnet run --project tests/PawsPatchLauncher.Tests/PawsPatchLauncher.Tests.csproj -c Release
-      - name: Test isolated account database
-        working-directory: tools/AdminDatabaseTests
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          node run.mjs
       - name: Publish autonomous Windows build
         shell: pwsh
         run: |

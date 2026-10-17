@@ -34,47 +34,6 @@
         <Style TargetType="ContextMenu">
             <Setter Property="local:PopupScrollIsolation.Enabled" Value="True"/>
         </Style>
-        <Style x:Key="SocialContextMenu" TargetType="ContextMenu" BasedOn="{StaticResource {x:Type ContextMenu}}">
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="MinWidth" Value="195"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ContextMenu">
-                        <Border x:Name="MenuSurface" Background="#132541" BorderBrush="#49607D" BorderThickness="1" CornerRadius="8" Padding="5"
-                                KeyboardNavigation.DirectionalNavigation="Cycle">
-                            <ItemsPresenter/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="SocialMenuItem" TargetType="MenuItem">
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="MenuItem">
-                        <Border x:Name="Surface" local:Motion.Background="#132541" CornerRadius="5" Padding="{TemplateBinding Padding}" HorizontalAlignment="Stretch">
-                            <StackPanel Orientation="Horizontal">
-                                <ContentPresenter x:Name="MenuIcon" Content="{TemplateBinding Icon}" Width="24" VerticalAlignment="Center"/>
-                                <TextBlock Text="{TemplateBinding Header}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="Icon" Value="{x:Null}"><Setter TargetName="MenuIcon" Property="Visibility" Value="Collapsed"/></Trigger>
-                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Surface" Property="local:Motion.Background" Value="#233C5C"/></Trigger>
-                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <Style TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Arial"/>
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
@@ -154,43 +113,7 @@
             <Setter Property="local:Motion.PressedBackground" Value="#243A56"/>
         </Style>
 
-        <Style x:Key="ChatIdentityButton" TargetType="Button">
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="HorizontalAlignment" Value="Left"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
 
-        <Style x:Key="ProfileHeaderButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ProfileSurface" CornerRadius="10" Padding="{TemplateBinding Padding}" BorderThickness="1"
-                                local:Motion.Background="{TemplateBinding Background}" local:Motion.BorderBrush="{TemplateBinding BorderBrush}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ProfileSurface" Property="local:Motion.Background" Value="#192C44"/><Setter TargetName="ProfileSurface" Property="local:Motion.BorderBrush" Value="#405774"/></Trigger>
-                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ProfileSurface" Property="local:Motion.Background" Value="#21364F"/></Trigger>
-                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
 
         <Style x:Key="TitleButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
             <Setter Property="FontWeight" Value="Normal"/>

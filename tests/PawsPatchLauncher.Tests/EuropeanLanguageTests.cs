@@ -84,13 +84,9 @@ internal static class EuropeanLanguageTests
                 var codeString = ConfigurationCode.Create(s);
                 var parsed = ConfigurationCode.Parse(codeString);
                 Check(GameLanguages.Text(parsed) == text && GameLanguages.Voice(parsed) == voice, "configuration round trip");
-                Check(FriendConfiguration.TryParse(codeString, channel, out _), "configuration rejected by peer parser");
                 var saved = JsonSerializer.Deserialize(JsonSerializer.Serialize(s, LauncherJsonContext.Default.UserSettings), LauncherJsonContext.Default.UserSettings)!;
                 Check(GameLanguages.Text(saved) == text && GameLanguages.Voice(saved) == voice, "saved profile loses languages");
                 var english = Selection(mod, channel, "en", "en", patch, data);
-                Check(FriendConfiguration.Matches(s, english), "peer equality includes language");
-                var imported = FriendConfiguration.WithLocalLanguages(english, s);
-                Check(GameLanguages.Text(imported) == text && GameLanguages.Voice(imported) == voice, "friend copy changes language");
                 ModChannelSelection.SelectMod(saved, mod == GameMod.Vanilla ? GameMod.Immortals : GameMod.Vanilla);
                 Check(GameLanguages.Text(saved) == text && GameLanguages.Voice(saved) == voice, "mod switch loses language");
                 var state = new InstallState { AppliedSettings = s };

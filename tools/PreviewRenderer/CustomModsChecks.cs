@@ -72,12 +72,10 @@ internal static class CustomModsChecks
             Check(C<StackPanel>("ModManagerPanel").IsVisible && C<Button>("ModManagerNav").IsVisible, "mod manager is a page of its own");
             Check(!C<Button>("ModManagerApply").IsEnabled && !C<Button>("ModManagerRevert").IsEnabled && C<Button>("CustomModsAdd").IsEnabled, "empty state");
             Check(C<StackPanel>("CustomModsBody").Children.Count == 2, "base game row and empty hint");
-            // No account and no release list: Vanilla is active, Immortals waits for a release list, Arcane Wars is locked with its reason.
+            // No release list: Vanilla is active, Immortals waits for a release list.
             var gameRows = Field<List<(string Mod, Button Button, bool Allowed)>>("_baseGameButtons");
-            Check(C<StackPanel>("ModManagerGamesBody").Children.Count == 3 && gameRows.Count == 2 && gameRows.All(r => r.Mod != GameMod.Vanilla), "game card lists three games, active Vanilla without action");
-            Check(gameRows.All(r => !r.Button.IsEnabled), "games without a release list or access cannot be installed");
-            Check(gameRows.Single(r => r.Mod == GameMod.ArcaneWars).Button.ToolTip is string reason && reason == (string)typeof(MainWindow).GetProperty("ArcaneAccessReason", flags)!.GetValue(w)!,
-                "locked Arcane Wars explains why");
+            Check(C<StackPanel>("ModManagerGamesBody").Children.Count == 2 && gameRows.Count == 1 && gameRows.All(r => r.Mod == GameMod.Immortals), "game card lists two games, active Vanilla without action");
+            Check(gameRows.All(r => !r.Button.IsEnabled), "games without a release list cannot be installed");
             Call("OpenGameSettings"); w.UpdateLayout();
             Check(C<Border>("GameSettingsOverlay").IsVisible && w.FindName("CustomModsTab") is null, "game settings dialog keeps only game options");
             Click("GameSettingsCancel"); w.UpdateLayout();
@@ -86,12 +84,6 @@ internal static class CustomModsChecks
                 "components page names the game and links to the Mod manager instead of choosing it");
             Snapshot("components", C<Grid>("MainOptionsHost"));
             Open();
-            // Exercise real resource decoding, including when LauncherTestName changes the assembly.
-            var glyphText = string.Join(" ", ChatGlyphs.All.Select(g => g.Token));
-            var message = new ChatMessageText { Text = glyphText };
-            Check(message.Text == glyphText, "chat message renders and retains every glyph");
-            foreach (var glyph in ChatGlyphs.All)
-                Check(ChatGlyphs.CreateImage(glyph).Source is BitmapSource { PixelWidth: > 0, PixelHeight: > 0 }, "glyph decodes: " + glyph.Id);
             var originalState = File.ReadAllText(Path.Combine(root, "startup", "autoexec.txt"));
             int pickerCalls = 0;
             bool pickerGuarded = false;
@@ -100,7 +92,6 @@ internal static class CustomModsChecks
                 pickerCalls++;
                 pickerGuarded = Field<bool>("_customModsBusy") && !C<Button>("CustomModsAdd").IsEnabled;
                 Click("CustomModsAdd"); // Nested dispatch must not open a second picker.
-                message.Text = glyphText; // Chat redraw when focus returns from a native dialog.
                 return null;
             }));
             Click("CustomModsAdd"); await Idle();

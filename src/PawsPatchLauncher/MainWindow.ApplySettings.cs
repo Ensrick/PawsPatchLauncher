@@ -44,10 +44,10 @@ public partial class MainWindow
         Grid.SetColumn(PatchChannelCard, stackedPreferences ? 0 : 2);
         Grid.SetColumnSpan(PatchChannelCard, stackedPreferences ? 3 : 1);
         PatchChannelCard.Margin = stackedPreferences ? new Thickness(0, 10, 0, 0) : new Thickness(0);
-        foreach (var choice in new[] { VanillaModRadio, ImmortalsModRadio, ArcaneWarsModRadio })
+        foreach (var choice in new[] { VanillaModRadio, ImmortalsModRadio })
         {
             choice.FontSize = narrow ? 14 : 16;
-            choice.Padding = choice == ArcaneWarsModRadio ? new Thickness(narrow ? 5 : 10, 13, narrow ? 30 : 38, 13) : new Thickness(narrow ? 5 : 10, 13, narrow ? 5 : 10, 13);
+            choice.Padding = new Thickness(narrow ? 5 : 10, 13, narrow ? 5 : 10, 13);
         }
     }
 

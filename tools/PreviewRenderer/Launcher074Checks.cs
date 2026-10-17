@@ -25,7 +25,8 @@ internal static class Launcher074Checks
         void Set(string name,object value)=>typeof(MainWindow).GetField(name,flags)!.SetValue(w,value);
         T C<T>(string name)=>(T)w.FindName(name);
         var n=0;void Check(bool ok,string why){if(!ok)throw new Exception("Launcher 0.7.4: "+why);n++;}
-        var toggleNames=new[]{"ColorsToggle","IndependentHostilityToggle","IgnoreDesyncToggle","AdditionalRoamingToggle","SiegeBalanceToggle","PowersShardsToggle"};
+        // Arcane Wars (siege, powers and shards) is not offered in this launcher; its toggles are not checked.
+        var toggleNames=new[]{"ColorsToggle","IndependentHostilityToggle","IgnoreDesyncToggle","AdditionalRoamingToggle"};
         void Capture(string name)
         {
             w.UpdateLayout();var view=(FrameworkElement)w.Content;
@@ -37,30 +38,30 @@ internal static class Launcher074Checks
         {
             var settings=Field<UserSettings>("_settings");
             Check(!settings.CustomPlayerColors&&!settings.SiegeBalance&&settings.DesyncMode=="official"&&settings.RoamingSpawnMode=="standard","Saved legacy profile retained enabled components");
-            var feed=new ChannelManifest { ColorDesyncContinue=true,IndependentColorHostility=true,Packages=new[]{"pawpatch-core","player-colors","powers-shards-original","roaming-profile-x2-with-new","roaming-profile-x2-no-new"}.Select(id=>new PackageRelease{Id=id,Required=id=="pawpatch-core"}).ToList() };
+            var feed=new ChannelManifest { ColorDesyncContinue=true,IndependentColorHostility=true,Packages=new[]{"pawpatch-core","player-colors","roaming-profile-x2-with-new","roaming-profile-x2-no-new"}.Select(id=>new PackageRelease{Id=id,Required=id=="pawpatch-core"}).ToList() };
             Set("_channel",feed);Set("_offeredModChannel",feed);GameMod.SetPawPatch(settings,true);
-            settings.CustomPlayerColors=settings.IndependentHostility=settings.AdditionalRoamingCompanies=settings.SiegeBalance=settings.DisablePowersAndShards=true;
+            settings.CustomPlayerColors=settings.IndependentHostility=settings.AdditionalRoamingCompanies=true;
             settings.DesyncMode="continue";settings.RoamingSpawnMode="x4";
             Call("RefreshModuleAvailability");Call("SetActivePage","modules");Call("RefreshStatus");
             Check(toggleNames.All(name=>C<CheckBox>(name).IsChecked==true),"Enabled fixture did not display selected options");
             C<CheckBox>("PawPatchToggle").IsChecked=false;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(toggleNames.All(name=>C<CheckBox>(name).IsChecked==false&&!C<CheckBox>(name).IsEnabled),"Master off left a checked/clickable component");
             Check(new[]{"StandardSpawnRadio","X2SpawnRadio","X4SpawnRadio"}.All(name=>!C<RadioButton>(name).IsEnabled)&&C<RadioButton>("StandardSpawnRadio").IsChecked==true,"Roaming frequency stayed enabled");
-            Check(C<Border>("SiegeBalanceCard").Opacity<.5&&C<Border>("ColorsModuleCard").Opacity<.5,"Disabled components are not dimmed");
+            Check(C<Border>("ColorsModuleCard").Opacity<.5,"Disabled components are not dimmed");
             Check(settings.RussianLocalization&&GameLanguages.Voice(settings)=="en","Master switch changed languages");
-            Check(!new SettingsStore().Load().SiegeBalance,"Disabled dependent options were not saved");
+            Check(!new SettingsStore().Load().CustomPlayerColors,"Disabled dependent options were not saved");
             await Task.Delay(260);Capture("disabled-components");
             C<CheckBox>("PawPatchToggle").IsChecked=true;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(toggleNames.All(name=>C<CheckBox>(name).IsEnabled&&C<CheckBox>(name).IsChecked==true),"Re-enable did not restore dependent choices");
             C<CheckBox>("PawPatchToggle").IsChecked=false;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             var restarted=new SettingsStore().Load();
             var installed=EffectiveSettings.ForChannel(restarted);
-            Check(installed.SuspendedArcaneComponents is null&&!installed.SiegeBalance,"Applied snapshot leaked remembered choices");
+            Check(installed.SuspendedArcaneComponents is null&&!installed.CustomPlayerColors,"Applied snapshot leaked remembered choices");
             new SettingsStore().Save(restarted);restarted=new SettingsStore().Load();
             GameMod.SetPawPatch(restarted,true);
-            Check(restarted.SiegeBalance&&restarted.CustomPlayerColors&&restarted.IndependentHostility&&restarted.AdditionalRoamingCompanies&&restarted.DisablePowersAndShards&&restarted.DesyncMode=="continue"&&restarted.RoamingSpawnMode=="x4","Restart after applying disabled configuration lost selection");
+            Check(restarted.CustomPlayerColors&&restarted.IndependentHostility&&restarted.AdditionalRoamingCompanies&&restarted.DesyncMode=="continue"&&restarted.RoamingSpawnMode=="x4","Restart after applying disabled configuration lost selection");
             C<CheckBox>("PawPatchToggle").IsChecked=true;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            foreach(var mod in new[]{GameMod.Vanilla,GameMod.Immortals,GameMod.ArcaneWars})
+            foreach(var mod in new[]{GameMod.Vanilla,GameMod.Immortals})
             foreach(var channel in new[]{"stable","beta"})
             {
                 Set("_installedGameVersion","1.3.72");
@@ -75,20 +76,10 @@ internal static class Launcher074Checks
                 settings.Mod=mod==GameMod.Vanilla?GameMod.Immortals:GameMod.Vanilla;Call("RefreshInstalledPatchVersions",state);
                 Check(C<TextBlock>("InstalledPatchText").Text.StartsWith(modLabel+"\n"),"Draft mode changed installed footer");
                 w.UpdateLayout();Check(C<TextBlock>("InstalledPatchText").ActualHeight<=36,"Two-line installed label wrapped to a third line");
-                if(mod==GameMod.ArcaneWars&&channel=="beta")Capture("installed-label");
+                if(mod==GameMod.Immortals&&channel=="beta")Capture("installed-label");
                 GameMod.SetPawPatch(state.AppliedSettings,false);Call("RefreshInstalledPatchVersions",state);
                 Check(C<TextBlock>("InstalledPatchText").Text==modLabel,"Pure mod still advertises Paw's Patch");
             }
-            var player=new SocialPlayer(Guid.NewGuid(),"fixture","friend",PawsTeam:true);
-            Call("RenderSocialDetails",player);var badge=C<ContentControl>("SocialDetailsAdminBadge").Content;
-            for(var i=0;i<20;i++)
-            {
-                Call("RenderSocialDetails",player with{LastSeen=DateTimeOffset.UtcNow});
-                Check(ReferenceEquals(badge,C<ContentControl>("SocialDetailsAdminBadge").Content),"Presence refresh rebuilt hovered role badge");
-            }
-            Call("RenderSocialDetails",player with{AdminLevel=1});Check(!ReferenceEquals(badge,C<ContentControl>("SocialDetailsAdminBadge").Content),"Changed role did not update badge");
-            Call("RenderSocialDetails",player with{DeletedAt=DateTimeOffset.UtcNow});Check(C<ContentControl>("SocialDetailsAdminBadge").Content is null,"Deleted player retained badge");
-            Call("CloseSocialDetails");
             Call("ClearToastStack");
             void Notify(string text,bool error=true)=>Call("ShowToast",(Func<string>)(()=>text),error);
             var message=language=="ru"?"Нет доступа к папке":"Folder access denied";

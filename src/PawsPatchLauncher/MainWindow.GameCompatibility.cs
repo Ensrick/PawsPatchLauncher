@@ -199,7 +199,7 @@ public partial class MainWindow
         InstalledGameLabel.Text = T("ВЕРСИЯ ИГРЫ", "GAME VERSION");
         InstalledGameText.Text = _game is null ? "—" : _installedGameVersion.Length > 0 ? _installedGameVersion : T("Не определена", "Unknown");
         var fileOnly = KnownFileOnlyGame;
-        InstalledGameText.Foreground = SocialBrush((problem && !fileOnly) || unreadable ? "#FF9D9D" : "#A9B7CB");
+        InstalledGameText.Foreground = ColorBrush((problem && !fileOnly) || unreadable ? "#FF9D9D" : "#A9B7CB");
         GameCompatibilityButton.Visibility = problem ? Visibility.Visible : Visibility.Collapsed;
         GameCompatibilityButton.ToolTip = T("Совместимость игры и патча", "Game and patch compatibility");
         AutomationProperties.SetName(GameCompatibilityButton, (string)GameCompatibilityButton.ToolTip);
@@ -222,7 +222,7 @@ public partial class MainWindow
         {
             ReadyStatusText.Text = problem ? _compatiblePatchUpdate is null ? T("Доступны файловые изменения", "File changes available")
                 : T("Обновите патч", "Update the patch") : T("Нужна проверка файлов", "File check required");
-            ReadyStatusText.Foreground = SocialBrush("#FF9D9D"); ReadyStatusBadge.Background = SocialBrush("#3B2226"); ReadyStatusBadge.BorderBrush = SocialBrush("#844B50");
+            ReadyStatusText.Foreground = ColorBrush("#FF9D9D"); ReadyStatusBadge.Background = ColorBrush("#3B2226"); ReadyStatusBadge.BorderBrush = ColorBrush("#844B50");
         }
         if (!problem)
         {
@@ -232,7 +232,7 @@ public partial class MainWindow
         var identity = _compatibilityNoticeKey.Length > 0 ? _compatibilityNoticeKey : _compatibilityKey;
         if (_compatibilityPopup is not null) { _compatibilityPopupKey = identity; return; }
         if (_selectedHasInstalledPatch && _compatibilityState != GameCompatibilityState.Checking && !fileOnly
-            && _compatibilityPopup is null && _compatibilityPopupKey != identity && !_busy && !ConfirmationActive && ModNoticeOverlay.Visibility != Visibility.Visible && GameSettingsOverlay.Visibility != Visibility.Visible)
+            && _compatibilityPopup is null && _compatibilityPopupKey != identity && !_busy && !ConfirmationActive && GameSettingsOverlay.Visibility != Visibility.Visible)
             ShowCompatibilityPopup();
     }
 
@@ -243,7 +243,7 @@ public partial class MainWindow
         if (_compatibilityPopup is not null) host.Children.Remove(_compatibilityPopup);
         if (_compatibilityBackdrop is not null) host.Children.Remove(_compatibilityBackdrop);
         _compatibilityPopup = _compatibilityBackdrop = null;
-        MainBody.IsHitTestVisible = !ConfirmationActive && ModNoticeOverlay.Visibility != Visibility.Visible;
+        MainBody.IsHitTestVisible = !ConfirmationActive;
     }
 
     private void GameCompatibility_Click(object sender, RoutedEventArgs e) => ShowCompatibilityPopup();
@@ -251,7 +251,7 @@ public partial class MainWindow
 
     private void ShowCompatibilityPopup(bool pawDetails = false)
     {
-        if (_busy || ConfirmationActive || ModNoticeOverlay.Visibility == Visibility.Visible || _headless) return;
+        if (_busy || ConfirmationActive || _headless) return;
         ActionJournal.Record("dialog.compatibility", pawDetails ? "component" : "game");
         CloseCompatibilityPopup();
         _compatibilityPopupKey = _compatibilityNoticeKey.Length > 0 ? _compatibilityNoticeKey : _compatibilityKey;
@@ -261,19 +261,19 @@ public partial class MainWindow
         heading.Children.Add(new TextBlock { Text = pawDetails ? T("Paw's Patch: доступные функции", "Paw's Patch: available features")
             : _compatiblePatchUpdate is not null ? T("Нужно обновить патч", "Patch update required")
             : KnownFileOnlyGame ? T("Только файловые изменения", "File changes only") : T("Версия игры не поддерживается", "Unsupported game version"),
-            FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = SocialBrush("#FFD0D0"), TextWrapping = TextWrapping.Wrap });
+            FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = ColorBrush("#FFD0D0"), TextWrapping = TextWrapping.Wrap });
         body.Children.Add(heading);
         body.Children.Add(new TextBlock { Text = T("Установлена игра: ", "Installed game: ") + (_installedGameVersion.Length > 0 ? _installedGameVersion : T("версия не определена", "unknown version"))
-            + "\n" + SupportedGameDescription(), FontSize = 13, Foreground = SocialBrush("#FFE3DC"), Margin = new(0, 16, 0, 12), TextWrapping = TextWrapping.Wrap });
-        var details = new TextBlock { Text = pawDetails ? PartialPawDescription() : CompatibilityExplanation(), Foreground = SocialBrush("#E9B9BC"), FontSize = 13, TextWrapping = TextWrapping.Wrap, LineHeight = 21 };
+            + "\n" + SupportedGameDescription(), FontSize = 13, Foreground = ColorBrush("#FFE3DC"), Margin = new(0, 16, 0, 12), TextWrapping = TextWrapping.Wrap });
+        var details = new TextBlock { Text = pawDetails ? PartialPawDescription() : CompatibilityExplanation(), Foreground = ColorBrush("#E9B9BC"), FontSize = 13, TextWrapping = TextWrapping.Wrap, LineHeight = 21 };
         body.Children.Add(new ScrollViewer { Content = details, MaxHeight = Math.Max(180, Math.Min(380, ActualHeight - 330)), VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         var action = new Button { Style = (Style)FindResource("GhostButton"), HorizontalAlignment = HorizontalAlignment.Right, Margin = new(0, 18, 0, 0), Padding = new(18, 10, 18, 10),
             Content = pawDetails ? T("Понятно", "Got it") : _compatiblePatchUpdate is not null ? T("Обновить патч", "Update patch") : T("К компонентам", "Go to components"),
-            Background = SocialBrush("#66333D"), Foreground = SocialBrush("#FFE3E7") };
+            Background = ColorBrush("#66333D"), Foreground = ColorBrush("#FFE3E7") };
         body.Children.Add(action);
         var popup = RestrictionCard(""); popup.Child = body; popup.MaxWidth = 660; popup.Padding = new(24); popup.Margin = new(24); popup.HorizontalAlignment = HorizontalAlignment.Center; popup.VerticalAlignment = VerticalAlignment.Center;
         _compatibilityPopup = popup;
-        var backdrop = new Border { Background = SocialBrush("#B8070C18") }; _compatibilityBackdrop = backdrop;
+        var backdrop = new Border { Background = ColorBrush("#B8070C18") }; _compatibilityBackdrop = backdrop;
         var host = (Grid)ToastHost.Parent; Grid.SetRowSpan(backdrop, 2); Panel.SetZIndex(backdrop, 940); host.Children.Add(backdrop);
         Grid.SetRowSpan(popup, 2); Panel.SetZIndex(popup, 950); host.Children.Add(popup); MainBody.IsHitTestVisible = false;
         close.Click += async (_, _) => { if (await Motion.HideAsync(popup)) CloseCompatibilityPopup(); };

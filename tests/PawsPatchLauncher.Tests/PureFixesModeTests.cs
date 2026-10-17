@@ -97,8 +97,7 @@ internal static class PureFixesModeTests
             Check(GameExecutableSelector.Select(new(), effective, channel) == (enabled && !dataOnly ? "k2_paws_pure_fixes_1372.exe" : "k2.exe"), "wrong game executable");
             var code = ConfigurationCode.Create(effective);
             Check(ConfigurationCode.Create(ConfigurationCode.Parse(code)) == code, "configuration code does not roundtrip: " + code);
-            Check(FriendConfiguration.TryParse(code, "stable", out _), "friend parser rejected " + code);
-            FriendConfiguration.ValidateFeed(effective, channel); count++;
+            count++;
             var target = new UserSettings { PawPatchEnabled = true };
             ConfigurationCode.Apply(effective, target);
             Check(GameMod.PawPatchSelected(target) == enabled && target.PawPatchEnabled, "import lost patch selection or AW preference");

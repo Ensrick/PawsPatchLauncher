@@ -5,20 +5,9 @@ namespace PawsPatchLauncher;
 
 public partial class MainWindow
 {
-    private string CoreHelpText()
-    {
-        if (!GameMod.IsArcaneWars(_settings)) return PureFixesDescription(DataOnlyMode);
-        if (DataOnlyMode) return PartialPawDescription();
-        var text = _text["modules.core.help"];
-        var beta = _settings.Channel == "beta"
-            ? _channel?.PatchGuide?.Entries.Where(e => e.Category == "beta").Select(e => e.Title(_text.Language)).ToArray() ?? []
-            : [];
-        if (beta.Length > 0) text += T("\n\nТакже в выбранной бете:\n", "\n\nAlso in the selected Beta:\n") + string.Join("\n", beta.Select(t => "• " + t));
-        return text;
-    }
+    private string CoreHelpText() => PureFixesDescription(DataOnlyMode);
 
-    private string CoreHelpTooltipText() => CoreHelpText() + (GameMod.IsArcaneWars(_settings)
-        ? "\n\n" + ArcaneWarsAuthorText + "\n" + ArcaneWarsDiscordInvite : "");
+    private string CoreHelpTooltipText() => CoreHelpText();
 
     private string ModuleHelpText(string key) => key switch
     {
@@ -66,14 +55,9 @@ public partial class MainWindow
     {
         if (mod == _settings.Mod) return true;
         if (_busy || ConfirmationActive) { RefreshModControls(); return false; }
-        if (mod == GameMod.ArcaneWars && !CanSelectArcaneWars) { RefreshModControls(); return false; }
+        if (mod == GameMod.ArcaneWars) { RefreshModControls(); return false; }
         CancelBackgroundFeed();
         ModChannelSelection.SelectMod(_settings, mod);
-        if (mod == GameMod.ArcaneWars && !LiveArcaneAccess && !CanUseArcaneSelection)
-        {
-            _settings.PinnedRelease = null;
-            ModChannelSelection.SelectChannel(_settings, StoredArcaneReleases().Keys.Order().First());
-        }
         _latestChannel = _feedClient.KnownChannel(_settings.Channel);
         _offeredModChannel = _feedClient.CachedGuideChannel(_settings.Channel, _settings.PinnedRelease);
         _channel = _offeredModChannel;
@@ -89,11 +73,7 @@ public partial class MainWindow
         RefreshNews();
         ApplyPatchChannelLanguage();
         // The cards live on the Components page; revealing them elsewhere would show them there.
-        if (_activePage == "modules")
-        {
-            if (mod != GameMod.ArcaneWars) Motion.Reveal(GameMod.HasPureFixes(_channel) ? CoreModuleCard : VanillaEmptyCard);
-            else foreach (var card in ArcaneComponentCards()) Motion.Reveal(card);
-        }
+        if (_activePage == "modules") Motion.Reveal(GameMod.HasPureFixes(_channel) ? CoreModuleCard : VanillaEmptyCard);
         // Selection is local. The normal startup/periodic/manual checks refresh releases.
         // Fetch only when this channel has never been loaded in this session.
         if (_feedClient.KnownChannel(_settings.Channel) is null)
@@ -171,22 +151,19 @@ public partial class MainWindow
             VanillaModRadio.Content = GameMod.Name(GameMod.Vanilla);
             ImmortalsModRadio.Content = "Immortals";
             ImmortalsModRadio.ToolTip = null;
-            ArcaneWarsModRadio.Content = "Arcane Wars";
             PatchChannelCard.Visibility = _activePage == "modules" ? Visibility.Visible : Visibility.Collapsed;
             VanillaModRadio.IsChecked = vanilla;
-            ArcaneWarsModRadio.IsChecked = arcane;
             ImmortalsModRadio.IsChecked = _settings.Mod == GameMod.Immortals;
             VanillaModRadio.IsEnabled = ImmortalsModRadio.IsEnabled = !_busy;
-            RefreshTeamAccess();
             var pureAvailable = GameMod.HasPureFixes(_channel);
             PawPatchToggle.IsChecked = GameMod.PawPatchSelected(_settings) && (arcane || pureAvailable);
             PawPatchToggle.IsEnabled = !_busy && (arcane || pureAvailable);
             System.Windows.Automation.AutomationProperties.SetName(PawPatchToggle, "Paw's Patch");
-            foreach (var radio in new[] { VanillaModRadio, ImmortalsModRadio, ArcaneWarsModRadio })
+            foreach (var radio in new[] { VanillaModRadio, ImmortalsModRadio })
                 System.Windows.Automation.AutomationProperties.SetName(radio, (string)radio.Content);
             VanillaTitleText.Text = vanilla ? T("Оригинальная игра", "The original game") : "Immortals";
-            VanillaDescriptionText.Text = T("Для этого режима пока нет дополнительных компонентов. Выбранный язык игры сохраняется. Настройки Arcane Wars будут восстановлены при возвращении к нему.",
-                "There are no additional components for this mode yet. Your game language is retained. Your Arcane Wars choices will be restored when you return to it.");
+            VanillaDescriptionText.Text = T("Для этого режима пока нет дополнительных компонентов. Выбранный язык игры сохраняется.",
+                "There are no additional components for this mode yet. Your game language is retained.");
             var modules = _activePage == "modules";
             ModSelectorCard.Visibility = modules ? Visibility.Visible : Visibility.Collapsed;
             PinnedComponentsHost.Visibility = modules ? Visibility.Visible : Visibility.Collapsed;

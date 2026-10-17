@@ -426,7 +426,7 @@ public partial class MainWindow
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Tag = identity };
         panel.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
         if (unread) panel.Children.Add(new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4),
-            Background = SocialBrush("#E55E71"), Margin = new Thickness(7, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
+            Background = ColorBrush("#E55E71"), Margin = new Thickness(7, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
         button.Content = panel;
         System.Windows.Automation.AutomationProperties.SetName(button, label);
         System.Windows.Automation.AutomationProperties.SetHelpText(button, unread ? T("Есть непрочитанные изменения", "Unread changes") : "");

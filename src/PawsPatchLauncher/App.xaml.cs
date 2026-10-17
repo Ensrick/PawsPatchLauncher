@@ -49,7 +49,7 @@ public partial class App : Application
         var configuration = SettingsStore.LoadConfiguration();
         var feed = new FeedClient(configuration);
         StartupWindow? startup = null;
-        if (!ActivityStore.IsCommunityTest && !ActivityStore.IsCustomModsTest && !e.Args.Contains("--skip-startup-update") && !e.Args.Contains("--update-health"))
+        if (!ActivityStore.IsCustomModsTest && !e.Args.Contains("--skip-startup-update") && !e.Args.Contains("--update-health"))
         {
             startup = new StartupWindow(feed, new SettingsStore().Load().Language);
             MainWindow = startup;

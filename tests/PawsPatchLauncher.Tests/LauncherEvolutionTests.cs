@@ -39,10 +39,6 @@ internal static class LauncherEvolutionTests
             }
         }
         Check(File.ReadAllText(Path.Combine(dir,"user-actions.jsonl")).Contains("redacted"),"Unsafe journal field not redacted");
-        Check(ChatGlyphs.All.Count==26 && ChatGlyphs.All.Select(x=>x.Id).Distinct().Count()==26,"Original game glyph map is incomplete");
-        foreach(var glyph in ChatGlyphs.All) {
-            AccountService.ValidateMessage(glyph.Token,"text");
-        }
         if (ActivityStore.IsSmokeTest)
         {
             ActionJournal.Record("test.archive");

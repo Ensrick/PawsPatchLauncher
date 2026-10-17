@@ -72,7 +72,6 @@ internal static class ModLibraryChecks
                 ShowActivated = false, ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.Manual
             };
             windows.Add(window);
-            FixtureAccess.AllowArcaneWars(window);
             Set(window, "_game", new GameInstallation(game, Path.Combine(game, "k2.exe"), "fixture", "stable"));
             // A user's open game must neither block nor be inspected by this isolated fixture.
             Set(window, "_gameRunningProbe", new Func<bool>(() => false));
@@ -86,7 +85,7 @@ internal static class ModLibraryChecks
         async Task<bool> CheckFeed(MainWindow window) => await (Task<bool>)Call(window, "CheckFeedAsync", false)!;
         void Select(MainWindow window, string mod)
         {
-            var name = mod == GameMod.ArcaneWars ? "ArcaneWarsModRadio" : mod == GameMod.Immortals ? "ImmortalsModRadio" : "VanillaModRadio";
+            var name = mod == GameMod.Immortals ? "ImmortalsModRadio" : "VanillaModRadio";
             var selector = Control<RadioButton>(window, name);
             Check(selector.IsEnabled, mod + " selector is disabled.");
             selector.IsChecked = true;
@@ -113,15 +112,6 @@ internal static class ModLibraryChecks
             Check(!Control<Button>(window, "LaunchButton").IsEnabled, "Launch is enabled before applying the selected configuration.");
             Check(!Control<Button>(window, "UpdateButton").IsEnabled && !Flag(window, "_patchUpdateAvailable"), "Switching a stored mod offers a download/update.");
         }
-        void Connection(MainWindow window, bool online)
-        {
-            var account = (AccountService)Field(window, "_account")!;
-            typeof(AccountService).GetProperty("State")!.SetValue(account, online ? AccountState.SignedIn : AccountState.Offline);
-            var connection = typeof(AccountService).GetProperty("Connection", flags)!.GetValue(account)!;
-            var request = connection.GetType().GetMethod("Begin", flags)!.Invoke(connection, null);
-            connection.GetType().GetMethod("Complete", flags)!.Invoke(connection, [request, online]);
-            Call(window, "RenderAccount"); Call(window, "RefreshStatus");
-        }
         void Ready(MainWindow window, string mod)
         {
             Check(State().AppliedSettings?.Mod == mod && Settings(window).Mod == mod, "Applied mode and selection disagree.");
@@ -141,23 +131,23 @@ internal static class ModLibraryChecks
                 Set(window, "_compatibilityState", GameCompatibilityState.Unsupported);
                 Set(window, "_lastProbeDataOnly", true);
                 Set(window, "_latestChannel", compatibleOffer);
-                // Also model a candidate left over from viewing AW before selecting Immortals.
+                // Also model a candidate left over from viewing Immortals before selecting Vanilla.
                 Set(window, "_compatiblePatchUpdate", compatibleOffer);
-                Set(window, "_compatibilityNoticeKey", "unread-aw-compatibility-fixture");
+                Set(window, "_compatibilityNoticeKey", "unread-immortals-compatibility-fixture");
                 await (Task<bool>)Call(window, "CheckGameCompatibilityAsync", true)!;
                 Call(window, "RenderCompatibility");
                 Check(Control<Button>(window, "GameCompatibilityButton").Visibility == Visibility.Collapsed
                     && Control<TextBlock>(window, "GameCompatibilityHint").Visibility == Visibility.Collapsed,
-                    "An AW compatibility warning is shown for active Immortals.");
+                    "An Immortals compatibility warning is shown for active Vanilla.");
                 Check(Control<Border>(window, "CompatibilityBanner").Visibility == Visibility.Collapsed
                     && Control<Border>(window, "ModulesNavBadge").Visibility == Visibility.Collapsed,
-                    "AW compatibility creates an Immortals component banner or unread badge.");
+                    "Immortals compatibility creates a Vanilla component banner or unread badge.");
                 Check(Field(window, "_compatibilityPopup") is null && Field(window, "_compatibilityBackdrop") is null,
-                    "AW compatibility opened a patch-update modal for Immortals.");
+                    "Immortals compatibility opened a patch-update modal for Vanilla.");
                 Check(Control<TextBlock>(window, "ReadyStatusText").Text == readyText && Control<Button>(window, "LaunchButton").IsEnabled,
-                    "AW compatibility replaced Immortals readiness with a patch-update requirement.");
+                    "Immortals compatibility replaced Vanilla readiness with a patch-update requirement.");
                 Check(Control<Grid>(window, "MainBody").IsHitTestVisible && StateText() == stateText,
-                    "AW compatibility blocked Immortals UI or changed installed state.");
+                    "Immortals compatibility blocked Vanilla UI or changed installed state.");
             }
             finally
             {
@@ -184,7 +174,7 @@ internal static class ModLibraryChecks
         {
             await (Task)Call(window, "CheckReadinessAsync")!;
             Check(Field(window, "_readiness") is ReadinessReport { Errors.Count: 0 },
-                "File verification rejected a fully applied mode without the Arcane Wars core.");
+                "File verification rejected a fully applied mode.");
         }
         void ChangeLanguage(MainWindow window, string code)
         {
@@ -230,34 +220,22 @@ internal static class ModLibraryChecks
         {
             var originalExe = await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe"));
             var initial = new ChannelManifest { PublishedAt = "2026-09-10T10:00:00Z", Game = legacyGame
-                ? new() { Version = "1.3.72", SteamBuild = "25068126", K2ExeSha256 = [KohanActivityReader.SupportedSha256] }
+                ? new() { Version = "1.3.72", SteamBuild = "25068126", K2ExeSha256 = ["1EB79BBB678668BE5A05F8C98103CD9988048490CE7C53C74C9A1D0813E9CD45"] }
                 : new() { K2ExeSha256 = [originalExe] } };
-            if (legacyGame)
-            {
-                // Paw's Patch for Vanilla and Immortals: a file part and an engine part that only runs on 1.3.72.
-                var pureData = await Package("pure-fixes-data", "1.0.0", 50, new() { ["data/pure.txt"] = "PURE" });
-                var pureRuntime = await Package("pure-fixes-runtime", "1.0.0", 60, new() { ["k2_paws_pure_fixes_1372.exe"] = "Engine fixes for 1.3.72; never launch." });
-                pureRuntime.ExecutableIndependent = false;
-                pureData.Mods = pureRuntime.Mods = [GameMod.Vanilla, GameMod.Immortals];
-                initial.Packages.AddRange([pureData, pureRuntime]);
-                initial.Packages.Add(await Package("pawpatch-data-ru", "1.0.0", 30, new() { ["data/paw.txt"] = "PAW files" }));
-            }
-            initial.Packages.Add(await Package("arcane-wars", "0.82.0", 10, new() { ["data/shared.txt"] = "AW", ["data/aw.txt"] = "AW base" }, true));
+            // Paw's Patch for Vanilla and Immortals: a file part and an engine part that only runs on 1.3.72.
+            var pureData = await Package("pure-fixes-data", "1.0.0", 50, new() { ["data/pure.txt"] = "PURE" });
+            var pureRuntime = await Package("pure-fixes-runtime", "1.0.0", 60, new() { ["k2_paws_pure_fixes_1372.exe"] = "Engine fixes for 1.3.72; never launch." });
+            pureRuntime.ExecutableIndependent = false;
+            pureData.Mods = pureRuntime.Mods = [GameMod.Vanilla, GameMod.Immortals];
+            initial.Packages.AddRange([pureData, pureRuntime]);
             initial.Packages.Add(await Package("startup-base", "1.0.0", 20, new() { ["startup/base.txt"] = "base" }, true));
-            initial.Packages.Add(await Package("pawpatch-core", "1.0.0", 30, new() { ["data/shared.txt"] = "PAW", ["data/cost.txt"] = "0.75" }, true));
-            initial.Packages.Add(await Package("siege-balance-standard", "1.0.0", 45, new() { ["data/cost.txt"] = "1.00" }));
-            initial.Packages.Add(await Package("roaming-profile-standard-no-new", "1.0.0", 40, new()));
-            initial.Packages.Add(await Package("powers-shards-original", "1.0.0", 40, new()));
-            initial.Packages.Add(await Package("localization-ru", "1.0.0", 110, new() { ["startup/language.txt"] = "ru" }));
-            initial.Packages.Add(await Package("aw-siege-balance", "1.0.0", 40, new() { ["data/cost.txt"] = "0.75" }));
             initial.Packages.Add(await Package("game-localization-en", "1.0.0", 90, new() { ["startup/language.txt"] = "en" }));
             initial.Packages.Add(await Package("vanilla-localization-ru", "1.0.0", 100, new() { ["startup/language.txt"] = "ru" }));
-            initial.Packages.Add(await Package("aw-localization-ru", "1.0.0", 110, new() { ["startup/language.txt"] = "ru" }));
             initial.Packages.Add(await Package("immortals", "2.1.0", 10, new() { ["data/shared.txt"] = "IMM", ["data/imm.txt"] = "Immortals" }));
             initial.Packages.Add(await Package("immortals-localization-ru", "1.0.0", 100, new() { ["startup/language.txt"] = "ru" }));
             await WriteFeed(initial);
-            new SettingsStore().Save(new UserSettings { Language = language, Mod = legacyGame ? GameMod.Vanilla : GameMod.ArcaneWars, ModNoticeSeen = true, GamePath = game,
-                Channel = "stable", PawPatchEnabled = legacyGame, VanillaPawPatchEnabled = legacyGame, ImmortalsPawPatchEnabled = legacyGame,
+            new SettingsStore().Save(new UserSettings { Language = language, Mod = GameMod.Vanilla, ModNoticeSeen = true, GamePath = game,
+                Channel = "stable", PawPatchEnabled = true, VanillaPawPatchEnabled = true, ImmortalsPawPatchEnabled = legacyGame,
                 LargeMapSizes = false, RussianLocalization = true, IndependentHostility = false,
                 RoamingSpawnMode = "standard", AdditionalRoamingCompanies = false, SiegeBalance = false, DisablePowersAndShards = false });
             return (initial, originalExe);
@@ -268,20 +246,17 @@ internal static class ModLibraryChecks
             var (initial, originalExe) = await InitialFeed();
             var initialRelease = ChannelFingerprint.Create(initial);
             var window = Window();
-            Connection(window, false);
-            Check(!Control<RadioButton>(window, "ArcaneWarsModRadio").IsEnabled, "Offline membership allowed an uninstalled mod.");
-            Connection(window, true);
             Check(await CheckFeed(window), "Signed local feed was not accepted.");
             InstallOnly(window);
             await Install(window);
-            Check(ModLibrary.Packages(initial, GameMod.ArcaneWars).All(new ModuleInstaller(game).IsPrepared), "Install omitted disabled AW components or a game language.");
-            Check(!File.Exists(Path.Combine(game, "data/cost.txt")), "Installing the library activated a disabled component.");
+            Check(ModLibrary.Packages(initial, GameMod.Vanilla).All(new ModuleInstaller(game).IsPrepared), "Install omitted Paw's Patch or a game language.");
+            Check(File.Exists(Path.Combine(game, "data/pure.txt")) && !File.Exists(Path.Combine(game, "data/imm.txt")), "Vanilla with Paw's Patch was not applied.");
             var stateBeforeSelection = StateText();
             Select(window, GameMod.Immortals);
             InstallOnly(window);
             Check(StateText() == stateBeforeSelection, "Selecting an uninstalled mod changed game files/state.");
             await Install(window);
-            Check(new ModLibrary(game).Find(GameMod.ArcaneWars, "stable")?.ReleaseId == initialRelease, "Installing Immortals discarded the stored AW release.");
+            Check(new ModLibrary(game).Find(GameMod.Vanilla, "stable")?.ReleaseId == initialRelease, "Installing Immortals discarded the stored Vanilla release.");
             Check(new ModLibrary(game).Find(GameMod.Immortals, "stable")?.Packages.Single(p => p.Id == "immortals").Version == "2.1.0", "Immortals was not retained with its installed version.");
 
             // Model languages selected in earlier sessions. Initial installation
@@ -290,96 +265,89 @@ internal static class ModLibraryChecks
                 await new ModuleInstaller(game).PrepareAsync(package, package.Urls[0]);
 
             RemoveDownloadSources();
-            Connection(window, false);
             Check(!await CheckFeed(window), "Missing local sources were treated as an online check.");
             Ready(window, GameMod.Immortals);
             stateBeforeSelection = StateText();
-            Select(window, GameMod.ArcaneWars);
+            Select(window, GameMod.Vanilla);
             await ApplyOnly(window);
-            Check(StateText() == stateBeforeSelection && File.Exists(Path.Combine(game, "data/imm.txt")), "A tab switch applied the stored AW release without confirmation.");
+            Check(StateText() == stateBeforeSelection && File.Exists(Path.Combine(game, "data/imm.txt")), "A tab switch applied the stored Vanilla release without confirmation.");
             await Apply(window);
-            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "AW" && !File.Exists(Path.Combine(game, "data/imm.txt")), "Offline AW switch retained Immortals files.");
-            Check(!Control<Button>(window, "UpdateButton").IsEnabled, "Offline local entitlement enabled a download.");
-            try { Call(window, "EnsureModDownloadAccess", GameMod.ArcaneWars); throw new Exception("Offline download guard bypassed."); }
-            catch (TargetInvocationException error) { Check(error.InnerException is InvalidOperationException, "Wrong offline download rejection."); }
+            Check(File.Exists(Path.Combine(game, "data/pure.txt")) && !File.Exists(Path.Combine(game, "data/imm.txt")) && !File.Exists(Path.Combine(game, "data/shared.txt")),
+                "Offline Vanilla switch retained Immortals files.");
+            Check(!Control<Button>(window, "UpdateButton").IsEnabled, "An offline switch enabled a download.");
             var burstState = StateText();
             var clickTimes = new List<double>();
-            for (var i = 0; i < 15; i++)
-            foreach (var mod in new[] { GameMod.Immortals, GameMod.Vanilla, GameMod.ArcaneWars })
+            for (var i = 0; i < 45; i++)
             {
-                var timer = System.Diagnostics.Stopwatch.StartNew(); Select(window, mod); window.UpdateLayout();
+                var timer = System.Diagnostics.Stopwatch.StartNew(); Select(window, i % 2 == 0 ? GameMod.Immortals : GameMod.Vanilla); window.UpdateLayout();
                 clickTimes.Add(timer.Elapsed.TotalMilliseconds);
             }
-            Check(StateText() == burstState && Settings(window).Mod == GameMod.ArcaneWars, "Rapid offline selection changed the active installation.");
+            Check(StateText() == burstState && Settings(window).Mod == GameMod.Immortals, "Rapid offline selection changed the active installation.");
             Check(clickTimes.Max() < 500, "An offline mode click stalled for half a second.");
             Console.WriteLine($"OFFLINE MODE PERFORMANCE {language}: 45 clicks; max={clickTimes.Max():F1}ms; mean={clickTimes.Average():F1}ms; no applied writes");
-            var siegeToggle = Control<CheckBox>(window, "SiegeBalanceToggle");
-            Check(!siegeToggle.IsEnabled,"A component is selectable while Paw's Patch is disabled");
-            var coreToggle=Control<CheckBox>(window,"PawPatchToggle");
-            coreToggle.IsChecked=true;coreToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-            Check(siegeToggle.IsEnabled, "Offline component toggle is disabled.");
-            siegeToggle.IsChecked = true;
-            siegeToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-            Check(Settings(window).SiegeBalance, "Component toggle did not change the selected configuration.");
-            await ApplyOnly(window);
-            await Apply(window);
-            Check(File.ReadAllText(Path.Combine(game, "data/cost.txt")) == "0.75", "Previously disabled component could not be applied offline.");
+            Select(window, GameMod.Vanilla);
+            var coreToggle = Control<CheckBox>(window, "PawPatchToggle");
+            Check(coreToggle.IsEnabled && coreToggle.IsChecked == true, "Paw's Patch toggle is unavailable for stored Vanilla.");
+            coreToggle.IsChecked = false; coreToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Check(!GameMod.PawPatchSelected(Settings(window)), "Paw's Patch toggle did not change the selected configuration.");
+            await ApplyOnly(window); await Apply(window);
+            Check(!File.Exists(Path.Combine(game, "data/pure.txt")), "Turning Paw's Patch off offline left its files.");
+            coreToggle.IsChecked = true; coreToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            await ApplyOnly(window); await Apply(window);
+            Check(File.ReadAllText(Path.Combine(game, "data/pure.txt")) == "PURE", "Paw's Patch could not be applied again offline.");
             ChangeLanguage(window, "en");
             Check(GameLanguages.Voice(Settings(window)) == "en", "Legacy combined translation kept an incompatible speech choice.");
             await ApplyOnly(window); await Apply(window);
             Check(File.ReadAllText(Path.Combine(game, "startup/language.txt")) == "en", "Offline English selection was not applied.");
-            Select(window, GameMod.Vanilla);
-            await ApplyOnly(window); await Apply(window);
             await CheckFiles(window);
-            Check(!Settings(window).RussianLocalization && File.ReadAllText(Path.Combine(game, "startup/language.txt")) == "en", "Vanilla changed the common game language.");
-            Check(!File.Exists(Path.Combine(game, "data/aw.txt")) && !File.Exists(Path.Combine(game, "data/imm.txt")), "Vanilla retained inactive mod files.");
             ChangeLanguage(window, "ru");
             await ApplyOnly(window); await Apply(window);
+            Check(File.ReadAllText(Path.Combine(game, "startup/language.txt")) == "ru", "Offline Russian selection was not applied.");
             Select(window, GameMod.Immortals);
             await ApplyOnly(window); await Apply(window);
             Check(Settings(window).RussianLocalization && File.ReadAllText(Path.Combine(game, "startup/language.txt")) == "ru", "Immortals did not preserve the chosen language.");
             await CheckFiles(window);
+            Select(window, GameMod.Vanilla);
+            await ApplyOnly(window); await Apply(window);
 
             var offered = JsonSerializer.Deserialize(JsonSerializer.Serialize(initial, LauncherJsonContext.Default.ChannelManifest), LauncherJsonContext.Default.ChannelManifest)!;
             offered.PublishedAt = "2026-09-11T10:00:00Z";
-            offered.Packages.RemoveAll(package => package.Id == "pawpatch-core");
-            offered.Packages.Add(await Package("pawpatch-core", "2.0.0", 30, new() { ["data/shared.txt"] = "PAW updated" }, true));
+            offered.Packages.RemoveAll(package => package.Id == "immortals");
+            offered.Packages.Add(await Package("immortals", "2.2.0", 10, new() { ["data/shared.txt"] = "IMM updated", ["data/imm.txt"] = "Immortals" }));
             await WriteFeed(offered);
-            Connection(window, true);
-            Check(await CheckFeed(window), "AW-only update feed was not accepted.");
-            Ready(window, GameMod.Immortals);
+            Check(await CheckFeed(window), "Immortals-only update feed was not accepted.");
+            Ready(window, GameMod.Vanilla);
             await CheckInactiveCompatibility(window, offered);
-            Check(!Flag(window, "_patchUpdateAvailable") && !Control<Button>(window, "UpdateButton").IsEnabled, "AW-only update was offered to active Immortals.");
+            Check(!Flag(window, "_patchUpdateAvailable") && !Control<Button>(window, "UpdateButton").IsEnabled, "Immortals-only update was offered to active Vanilla.");
             stateBeforeSelection = StateText();
-            Select(window, GameMod.ArcaneWars);
+            Select(window, GameMod.Immortals);
             await ApplyOnly(window);
-            Check(StateText() == stateBeforeSelection, "Selecting AW for an offered update modified the active Immortals install.");
-            Check(Selected(window).Packages.Single(package => package.Id == "pawpatch-core").Version == "1.0.0", "Selecting stored AW substituted the remote release before Apply.");
+            Check(StateText() == stateBeforeSelection, "Selecting Immortals for an offered update modified the active Vanilla install.");
+            Check(Selected(window).Packages.Single(package => package.Id == "immortals").Version == "2.1.0", "Selecting stored Immortals substituted the remote release before Apply.");
             await Apply(window);
-            Check(Flag(window, "_patchUpdateAvailable") && Control<Button>(window, "UpdateButton").IsEnabled, "AW update was not offered after AW became active.");
-            Check(State().ReleaseId == initialRelease && new ModLibrary(game).Find(GameMod.ArcaneWars, "stable")?.ReleaseId == initialRelease,
+            Check(Flag(window, "_patchUpdateAvailable") && Control<Button>(window, "UpdateButton").IsEnabled, "Immortals update was not offered after Immortals became active.");
+            Check(State().ReleaseId == initialRelease && new ModLibrary(game).Find(GameMod.Immortals, "stable")?.ReleaseId == initialRelease,
                 "Apply silently upgraded the stored release while a newer feed was available.");
 
             RemoveDownloadSources();
             window.Close();
             var reopened = Window(); // Fresh MainWindow, FeedClient and SettingsStore: no in-memory release survives.
-            Connection(reopened, false);
-            Check(Settings(reopened).Mod == GameMod.ArcaneWars && Settings(reopened).SiegeBalance && Settings(reopened).RussianLocalization,
-                "Restart lost the selected mod, component or common language.");
+            Check(Settings(reopened).Mod == GameMod.Immortals && Settings(reopened).RussianLocalization,
+                "Restart lost the selected mod or common language.");
             Check(!await CheckFeed(reopened), "Offline restart unexpectedly reached a feed source.");
-            Ready(reopened, GameMod.ArcaneWars);
-            Check(Selected(reopened).Packages.Single(package => package.Id == "pawpatch-core").Version == "1.0.0"
+            Ready(reopened, GameMod.Immortals);
+            Check(Selected(reopened).Packages.Single(package => package.Id == "immortals").Version == "2.1.0"
                 && ChannelFingerprint.Create(Selected(reopened)) == initialRelease, "Offline restart loaded the offered version instead of the installed release.");
-            Select(reopened, GameMod.Immortals);
+            Select(reopened, GameMod.Vanilla);
             await ApplyOnly(reopened); await Apply(reopened);
-            Check(State().Modules["immortals"].Version == "2.1.0" && File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM",
-                "Offline restart could not restore the inactive installed Immortals version.");
-            Check(!Flag(reopened, "_patchUpdateAvailable"), "Cached AW-only update leaked into Immortals after restart.");
-            Check(new ModLibrary(game).Load().Mods.Select(entry => entry.Mod).Distinct().Count() == 2, "Stored mod entries changed; unmodified Vanilla has no component release.");
+            Check(File.ReadAllText(Path.Combine(game, "data/pure.txt")) == "PURE" && !File.Exists(Path.Combine(game, "data/imm.txt")),
+                "Offline restart could not restore the inactive installed Vanilla release.");
+            Check(!Flag(reopened, "_patchUpdateAvailable"), "Cached Immortals-only update leaked into Vanilla after restart.");
+            Check(new ModLibrary(game).Load().Mods.Select(entry => entry.Mod).Distinct().Count() == 2, "Stored mod entries changed.");
             Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == originalExe, "UI test altered the base executable.");
             Check((await new ModuleInstaller(game).VerifyAsync()).Count == 0, "Final active game files do not match their signed package payloads.");
             Check(blockedNetwork.Attempts == 0, "Fixture attempted an external network request.");
-            Console.WriteLine($"MOD LIBRARY UI PASS {count} {language}: install-only, gold Apply, launch lock, offline component/language switching, active-mod updates, fresh-window installed release; signed local ZIPs; no native window/game/network.");
+            Console.WriteLine($"MOD LIBRARY UI PASS {count} {language}: install-only, gold Apply, launch lock, offline patch/language switching, active-mod updates, fresh-window installed release; signed local ZIPs; no native window/game/network.");
         }
 
         // Mod manager Game rows: one click selects the game and runs the same install or apply as Components.
@@ -405,43 +373,40 @@ internal static class ModLibraryChecks
         {
             var (initial, originalExe) = await InitialFeed();
             var window = Window();
-            Connection(window, true);
             Check(await CheckFeed(window), "Signed local feed was not accepted.");
             Call(window, "SetActivePage", "modmanager"); window.UpdateLayout();
             var text = (PawsPatchLauncher.Localization)Field(window, "_text")!;
             var switchLabel = (string)Call(window, "T", "Переключить", "Switch")!;
             Check(LauncherIcon.GetKind(Control<Button>(window, "ModManagerNav")) == IconKind.Mods, "Mod manager navigation has no icon.");
-            Check(Control<StackPanel>(window, "ModManagerGamesBody").Children.Count == 3, "Game card does not list Vanilla, Immortals and Arcane Wars.");
+            Check(Control<StackPanel>(window, "ModManagerGamesBody").Children.Count == 2, "Game card does not list Vanilla and Immortals.");
             var immortalsBytes = ModLibrary.Packages(initial, GameMod.Immortals).Sum(p => p.Size);
             Check(immortalsBytes > 0 && DownloadSize(window, GameMod.Immortals) == immortalsBytes, "Immortals download size is wrong.");
-            Check(Equals(GameButton(window, GameMod.Immortals)?.Content, text["button.install"])
-                && Equals(GameButton(window, GameMod.ArcaneWars)?.Content, text["button.install"]), "A game that is not stored is not offered as Install.");
+            Check(Equals(GameButton(window, GameMod.Immortals)?.Content, text["button.install"]), "A game that is not stored is not offered as Install.");
             await OneClick(window, GameMod.Immortals);
             Check(new ModLibrary(game).Find(GameMod.Immortals, "stable") is not null && File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM",
                 "One click did not download, store and apply Immortals.");
-            await OneClick(window, GameMod.ArcaneWars);
-            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "AW" && !File.Exists(Path.Combine(game, "data/imm.txt")),
-                "One click did not switch the files to Arcane Wars.");
+            await OneClick(window, GameMod.Vanilla);
+            Check(File.Exists(Path.Combine(game, "data/pure.txt")) && !File.Exists(Path.Combine(game, "data/imm.txt")) && new ModLibrary(game).Find(GameMod.Immortals, "stable") is not null,
+                "Installing Vanilla failed or dropped the stored Immortals release.");
             Check(DownloadSize(window, GameMod.Immortals) == 0 && Equals(GameButton(window, GameMod.Immortals)?.Content, switchLabel),
                 "Stored Immortals is not offered as a switch.");
             RemoveDownloadSources(); // A stored game must switch with nothing left to download.
             await OneClick(window, GameMod.Immortals);
-            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM" && new ModLibrary(game).Find(GameMod.ArcaneWars, "stable") is not null,
-                "Switching back to stored Immortals failed or dropped the stored Arcane Wars release.");
+            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "IMM", "Switching to stored Immortals offline failed.");
             var stateText = StateText();
             Set(window, "_customModsDirty", true);
-            GameButton(window, GameMod.ArcaneWars)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            GameButton(window, GameMod.Vanilla)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(StateText() == stateText && Settings(window).Mod == GameMod.Immortals && Field(window, "_customModsError") is string,
                 "Unapplied custom mod edits did not block a game switch.");
             Set(window, "_customModsDirty", false); Call(window, "ReloadCustomMods");
             Set(window, "_busy", true); Call(window, "RefreshCustomModsState", false);
-            Check(!GameButton(window, GameMod.ArcaneWars)!.IsEnabled, "A Game row action is enabled during another operation.");
+            Check(!GameButton(window, GameMod.Vanilla)!.IsEnabled, "A Game row action is enabled during another operation.");
             Set(window, "_busy", false); Call(window, "RefreshCustomModsState", false);
-            Check(GameButton(window, GameMod.ArcaneWars)!.IsEnabled, "Game row actions stay disabled after the operation.");
+            Check(GameButton(window, GameMod.Vanilla)!.IsEnabled, "Game row actions stay disabled after the operation.");
             Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == originalExe, "UI test altered the base executable.");
             Check((await new ModuleInstaller(game).VerifyAsync()).Count == 0, "Final active game files do not match their signed package payloads.");
             Check(blockedNetwork.Attempts == 0, "Fixture attempted an external network request.");
-            Console.WriteLine($"MOD MANAGER GAMES PASS {count} {language}: nav icon, three Game rows, one-click download+install of Immortals and Arcane Wars, offline switch of a stored game, dirty and busy guards; signed local ZIPs; no native window/game/network.");
+            Console.WriteLine($"MOD MANAGER GAMES PASS {count} {language}: nav icon, two Game rows, one-click download+install of Immortals, offline switch of a stored game, dirty and busy guards; signed local ZIPs; no native window/game/network.");
         }
 
         IEnumerable<object> Logical(object node)
@@ -470,7 +435,6 @@ internal static class ModLibraryChecks
         {
             var (_, originalExe) = await InitialFeed();
             var window = Window();
-            Connection(window, true);
             Check(await CheckFeed(window), "Signed local feed was not accepted.");
             await (Task<bool>)Call(window, "CheckGameCompatibilityAsync", true)!;
             Check((GameCompatibilityState)Field(window, "_compatibilityState")! == GameCompatibilityState.Unsupported && (string)Field(window, "_installedGameVersion")! == "1.3.68",
@@ -510,14 +474,12 @@ internal static class ModLibraryChecks
 
             await FileOnly(GameMod.Immortals, "data/imm.txt", "Immortals");
             Check(!Startup().Contains(mountHeader), "Vanilla's custom mod was mounted for Immortals.");
-            await FileOnly(GameMod.ArcaneWars, "data/paw.txt", "Arcane Wars");
-            Check(File.ReadAllText(Path.Combine(game, "data/shared.txt")) == "AW" && !File.Exists(Path.Combine(game, "data/imm.txt")), "Arcane Wars kept Immortals files.");
             RemoveDownloadSources(); // Back to the stored Vanilla, offline.
             await FileOnly(GameMod.Vanilla, "data/pure.txt", "Back to Vanilla");
             Check(Startup().Contains(mountHeader), "Vanilla's custom mod was not mounted again after switching back.");
             Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == originalExe, "UI test altered the base executable.");
             Check(blockedNetwork.Attempts == 0, "Fixture attempted an external network request.");
-            Console.WriteLine($"MOD MANAGER 1.3.68 PASS {count} {language}: file-only install of Vanilla with Paw's Patch, Immortals and Arcane Wars from the Mod manager, engine part stored but not installed, custom RWD mount, Play checks with k2.exe, offline switch back; no native window/game/network.");
+            Console.WriteLine($"MOD MANAGER 1.3.68 PASS {count} {language}: file-only install of Vanilla with Paw's Patch and Immortals from the Mod manager, engine part stored but not installed, custom RWD mount, Play checks with k2.exe, offline switch back; no native window/game/network.");
         }
 
         var dispatcher = Dispatcher.CurrentDispatcher;

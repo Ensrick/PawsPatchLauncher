@@ -23,7 +23,6 @@ internal static class PawDependencyTests
             var expected=new[]{"arcane-wars","startup-base","menu-runtime"}.Concat(russian?new[]{"aw-localization-ru"}:[]);
             Check(selected.Select(p=>p.Id).Order().SequenceEqual(expected.Order()),"Raw legacy preferences selected standalone patch packages");
             Check(GameExecutableSelector.Select(new(),preferences,feed)=="k2_paws_menu_1372.exe","Launch chose a component executable without its core");
-            Check(FriendConfiguration.TryParse(ConfigurationCode.Create(preferences),"stable",out var parsed)&&Disabled(parsed),"Peer configuration restored disabled components");
             preferences.PawPatchEnabled = true;
             var original = ConfigurationCode.Create(preferences);
             GameMod.SetPawPatch(preferences, false);

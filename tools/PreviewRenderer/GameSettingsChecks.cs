@@ -58,14 +58,13 @@ internal static class GameSettingsChecks
         var running = false;
         Set("_gameRunningProbe", (Func<bool>)(() => running));
         Set("_gameUserSettingsPath", (Func<string>)(() => file));
-        FixtureAccess.AllowArcaneWars(w);
         Field<PawsPatchLauncher.Localization>("_text").SetLanguage(language); Call("ApplyLanguage"); Call("SetActivePage", "modules");
         w.Show(); w.UpdateLayout();
         async Task Scenario()
         {
             await Task.Delay(100);
             Check(C<Button>("GameSettingsButton").IsVisible && C<Button>("GameSettingsButton").IsEnabled, "gear available");
-            foreach (var mod in new[] { GameMod.Vanilla, GameMod.Immortals, GameMod.ArcaneWars })
+            foreach (var mod in new[] { GameMod.Vanilla, GameMod.Immortals })
             {
                 Field<UserSettings>("_settings").Mod = mod; Call("RefreshModControls"); w.UpdateLayout();
                 Check(C<Button>("GameSettingsButton").IsVisible && C<Button>("GameSettingsButton").IsEnabled, "gear in " + mod);

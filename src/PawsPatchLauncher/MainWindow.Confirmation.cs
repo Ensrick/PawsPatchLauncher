@@ -51,7 +51,7 @@ public partial class MainWindow
     private Task<bool> ConfirmActionAsync(string title, string body, string detailsLabel, string details, string action)
     {
         // Confirmation reserves the UI, but is not an installation/removal operation.
-        if (ConfirmationActive || _busy || FeedBlocksActions || ModNoticeOverlay.Visibility == Visibility.Visible) return Task.FromResult(false);
+        if (ConfirmationActive || _busy || FeedBlocksActions) return Task.FromResult(false);
         // Headless commands never confirm on the user's behalf.
         if (_headless)
         {
@@ -62,7 +62,6 @@ public partial class MainWindow
         _confirmation = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         _confirmationPreviousFocus = Keyboard.FocusedElement;
         Motion.Hide(HelpOverlay);
-        SocialDetailsOverlay.IsHitTestVisible = false;
         ConfirmationRemoveModsToggle.Visibility = Visibility.Collapsed;
         ConfirmationRemoveModsToggle.IsChecked = true;
         MainBody.IsHitTestVisible = TitleBar.IsHitTestVisible = false;
@@ -76,14 +75,14 @@ public partial class MainWindow
         ConfirmationChangesPanel.Visibility = Visibility.Collapsed;
         ConfirmationChangesPanel.Children.Clear();
         System.Windows.Automation.AutomationProperties.SetName(ConfirmationChangesPanel,"");
-        ConfirmationIconBadge.Background=SocialBrush("#432E35");ConfirmationIconBadge.BorderBrush=SocialBrush("#87565A");ConfirmationActionIcon.Foreground=SocialBrush("#F3AA96");
+        ConfirmationIconBadge.Background=ColorBrush("#432E35");ConfirmationIconBadge.BorderBrush=ColorBrush("#87565A");ConfirmationActionIcon.Foreground=ColorBrush("#F3AA96");
         ConfirmationCancelButton.Content = T("Отмена", "Cancel");
         ConfirmationDeleteButton.Content = action;
         ConfirmationDeleteButton.IsEnabled = true;
-        ConfirmationDeleteButton.Background = SocialBrush("#653A38");
-        ConfirmationDeleteButton.BorderBrush = SocialBrush("#BC7967");
-        Motion.SetHoverBackground(ConfirmationDeleteButton, SocialBrush("#854D43"));
-        Motion.SetPressedBackground(ConfirmationDeleteButton, SocialBrush("#542F2F"));
+        ConfirmationDeleteButton.Background = ColorBrush("#653A38");
+        ConfirmationDeleteButton.BorderBrush = ColorBrush("#BC7967");
+        Motion.SetHoverBackground(ConfirmationDeleteButton, ColorBrush("#854D43"));
+        Motion.SetPressedBackground(ConfirmationDeleteButton, ColorBrush("#542F2F"));
         LauncherIcon.SetKind(ConfirmationDeleteButton, IconKind.Trash);
         ConfirmationActionIcon.Kind = IconKind.Trash;
         ConfirmationCloseButton.ToolTip = T("Отмена", "Cancel");
@@ -103,10 +102,7 @@ public partial class MainWindow
         await Motion.HideAsync(ConfirmationOverlay);
         if(!ReferenceEquals(_confirmation,completion)) { _confirmationFinishing=false;return; }
         MainBody.IsHitTestVisible = TitleBar.IsHitTestVisible = true;
-        SocialDetailsOverlay.IsHitTestVisible = true;
         _confirmation = null;
-        RefreshOfferActions();
-        RefreshSocialCopyAvailability();
         _confirmationFinishing = false;
         if (IsLoaded && _confirmationPreviousFocus is UIElement { IsVisible: true, IsEnabled: true } previous) previous.Focus();
         _confirmationPreviousFocus = null;

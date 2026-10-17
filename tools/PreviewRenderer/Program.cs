@@ -22,23 +22,15 @@ public static class Program
     {
         if (args.Contains("--icon-checks")) { IconChecks.Run(args[0]); return; }
         var language = args.FirstOrDefault(arg => arg.StartsWith("--language="))?.Split('=')[1] ?? "ru";
-        var communityChecks = args.Contains("--community-checks");
         var pureOptionsConfig = args.FirstOrDefault(a=>a.StartsWith("--pure-options-config="))?["--pure-options-config=".Length..];
         var compactConfig = args.FirstOrDefault(arg => arg.StartsWith("--compact-config="))?["--compact-config=".Length..];
         var compactGame = args.FirstOrDefault(arg => arg.StartsWith("--compact-game="))?["--compact-game=".Length..];
         var polishConfig = args.FirstOrDefault(arg => arg.StartsWith("--polish-config="))?["--polish-config=".Length..];
-        var messageCopyChecks = args.Contains("--message-copy-checks");
-        var messageSelectionChecks = args.Contains("--message-selection-checks");
         var popupScrollChecks = args.Contains("--popup-scroll-checks");
-        var mediaProbe = args.FirstOrDefault(a=>a.StartsWith("--media-probe=",StringComparison.Ordinal))?["--media-probe=".Length..];
-        var messageMediaChecks = args.Contains("--message-media-checks");
-        var mediaLayoutChecks = args.Contains("--media-layout-checks");
         var startupChecks = args.Contains("--startup-checks");
         var startupPreview = args.Contains("--startup-preview");
         var updateExperienceChecks = args.Contains("--update-experience-checks");
         var modModeChecks = args.Contains("--mod-mode-checks");
-        var refinementChecks = args.Contains("--refinement-checks");
-        var teamChecks = args.Contains("--team-checks");
         var patchVersionChecks = args.Contains("--patch-version-checks");
         var modLibraryChecks = args.Contains("--mod-library-checks");
         var headlessChecks = args.Contains("--headless-checks");
@@ -46,8 +38,6 @@ public static class Program
         var retainedSelectionChecks = args.Contains("--retained-selection-checks");
         var gameExitChecks = args.Contains("--game-exit-checks");
         var uiRoundTwoChecks = args.Contains("--ui-round-two-checks");
-        var modNoticeChecks = args.Contains("--mod-notice-checks");
-        var modNoticePreview = args.Contains("--mod-notice-preview");
         var firstRunPreview = args.Contains("--first-run-preview");
         var modPreview = args.FirstOrDefault(a=>a.StartsWith("--mod="))?.Split('=')[1];
         var width = int.Parse(args.FirstOrDefault(arg => arg.StartsWith("--width="))?.Split('=')[1] ?? "1440");
@@ -56,38 +46,18 @@ public static class Program
         var enhancements = args.Contains("--enhancements");
         var motionChecks = args.Contains("--motion");
         var feedbackChecks = args.Contains("--feedback");
-        var friendsPolishChecks = args.Contains("--friends-polish-checks");
-        var layoutRefreshChecks = args.Contains("--layout-refresh-checks");
-        var chatActivityChecks = args.Contains("--chat-activity-checks");
         var updateRefreshChecks = args.Contains("--update-refresh-checks");
-        var arrivalPolishChecks = args.Contains("--arrival-polish-checks");
-        var chatArrivalChecks = args.Contains("--chat-arrival-checks");
         var appearanceChecks = args.Contains("--appearance");
         var changelogChecks = args.Contains("--changelog");
         var aboutChecks = args.Contains("--about-checks");
-        var powersChecks = args.Contains("--powers-checks");
-        var combinationAudit = args.Contains("--combination-audit");
         var launcherUpdateChecks = args.Contains("--launcher-update-checks");
-        var componentSettingsChecks = args.Contains("--component-settings-checks");
         var gameSettingsChecks = args.Contains("--game-settings-checks");
         var customModsChecks = args.Contains("--custom-mods-checks");
-        var helpCreditChecks = args.Contains("--help-credit-checks");
-        var accountChecks = args.Contains("--account-checks");
-        var socialChecks = args.Contains("--social-checks");
-        var reliabilityChecks = args.Contains("--reliability-checks");
         var compactTransferChecks = args.Contains("--compact-transfer-checks");
         var languageReliabilityConfig = args.FirstOrDefault(a => a.StartsWith("--language-reliability-config="))?["--language-reliability-config=".Length..];
-        var socialHubChecks = args.Contains("--social-hub-checks");
-        var socialDemo = args.FirstOrDefault(a=>a.StartsWith("--social-demo="))?.Split('=')[1];
-        var adminDemo=args.FirstOrDefault(a=>a.StartsWith("--admin-demo="))?.Split('=')[1];
-        var adminChecks=args.Contains("--admin-checks");
         var progressMotionChecks=args.Contains("--progress-motion-checks");
-        var historyResourceChecks=args.Contains("--history-resource-checks");
         var compatibilityChecks=args.Contains("--compatibility-checks");
         var compatibilityDemo=args.Contains("--compatibility-demo");
-        var accountForm = args.FirstOrDefault(arg => arg.StartsWith("--account-form="))?.Split('=')[1];
-        var accountDemo = args.FirstOrDefault(a => a.StartsWith("--account-demo=", StringComparison.Ordinal))?.Split('=', 2)[1];
-        var powersPreview = args.Contains("--powers-preview");
         var aboutCategory = args.FirstOrDefault(arg => arg.StartsWith("--about-category="))?.Split('=')[1];
         var guideSubject = args.FirstOrDefault(arg => arg.StartsWith("--guide="))?.Split('=')[1];
         var guideVariant = args.FirstOrDefault(arg => arg.StartsWith("--guide-variant="))?.Split('=')[1];
@@ -107,25 +77,7 @@ public static class Program
         var helpPreview = args.Contains("--help-preview");
         var helpKey = args.FirstOrDefault(arg => arg.StartsWith("--help-key="))?.Split('=')[1] ?? "configuration";
         var focus = args.FirstOrDefault(arg => arg.StartsWith("--focus="))?.Split('=')[1];
-        var evolutionChecks = args.Contains("--evolution-checks");
-        var chatInteractionChecks = args.Contains("--chat-interaction-checks");
-        var chatGlyphChecks = args.Contains("--chat-glyph-checks");
-        var friendCopyChecks = args.Contains("--friend-copy-checks");
-        var friendConfigurationCardChecks = args.Contains("--friend-configuration-card-checks");
-        var peerOfferChecks = args.Contains("--peer-offer-checks");
-        var friendsStartupChecks = args.Contains("--friends-startup-checks");
-        var socialActionChecks = args.Contains("--social-action-checks");
-        var chatRegressionChecks = args.Contains("--chat-regression-checks");
-        var chatCacheChecks = args.Contains("--chat-cache-checks");
-        var chatRowsChecks = args.Contains("--chat-rows-checks");
-        var connectionChecks = args.Contains("--connection-checks");
-        var connectionPreview = args.Contains("--connection-preview");
         var launcher074Checks = args.Contains("--launcher-074-checks");
-        var gameActivityChecks = args.Contains("--game-activity-checks");
-        var launcher080Checks = args.Contains("--launcher-080-checks");
-        var gameParticipantChecks = args.Contains("--game-participant-checks");
-        var avatarPreviewChecks = args.Contains("--avatar-preview-checks");
-        var avatarPreviewDemo = args.Contains("--avatar-preview-demo");
         var modePerf = args.FirstOrDefault(a=>a.StartsWith("--mode-perf="))?["--mode-perf=".Length..];
         var modeGame = args.FirstOrDefault(a=>a.StartsWith("--mode-game="))?["--mode-game=".Length..];
         args = args.Where(arg => !arg.StartsWith("--")).ToArray();
@@ -135,46 +87,21 @@ public static class Program
         // Avoid a second real MainWindow during deferred Application startup. Use an inert invisible fixture.
         app.StartupUri = new Uri("pack://application:,,,/PreviewRenderer;component/PreviewBootstrap.xaml");
         app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        if (communityChecks) { CommunityChecks.Run(language,Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (pureOptionsConfig is not null) { PureOptionsUiChecks.Run(pureOptionsConfig); app.Shutdown(); return; }
-        if (friendConfigurationCardChecks) { FriendConfigurationCardChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (popupScrollChecks) { PopupScrollChecks.Run(Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (mediaProbe is not null) { MediaLayoutChecks.Probe(new Uri(mediaProbe)); app.Shutdown(); return; }
-        if (messageCopyChecks) { MessageCopyChecks.Run(language,Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (messageSelectionChecks) { MessageSelectionChecks.Run(Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (messageMediaChecks) { SocialFinishChecks.Run(language); MediaLayoutChecks.Run(language); app.Shutdown(); return; }
-        if (mediaLayoutChecks) { MediaLayoutChecks.Run(language); app.Shutdown(); return; }
-        if (launcher080Checks) { Launcher080Checks.Run(Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (launcher074Checks) { Launcher074Checks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (gameActivityChecks) { GameActivityChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (patchVersionChecks) { PatchVersionChecks.Run(language); app.Shutdown(); return; }
-        if (gameParticipantChecks) { GameParticipantChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (avatarPreviewChecks || avatarPreviewDemo) { AvatarPreviewChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!, avatarPreviewDemo); app.Shutdown(); return; }
         if (updateExperienceChecks) { UpdateExperienceChecks.Run(language); app.Shutdown(); return; }
         if (retainedSelectionChecks) { RetainedSelectionChecks.Run(language, guideChannel, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (legacyModMigrationChecks) { LegacyModMigrationChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (connectionPreview) { ConnectionUiChecks.Preview(language); app.Run(); return; }
-        if (connectionChecks) { ConnectionUiChecks.Run(language); ChatInteractionChecks.Run(language); ChatPresentationChecks.Run(language); app.Shutdown(); return; }
-        if (chatCacheChecks) { ChatCacheChecks.Run(language); SocialRefreshChecks.Run(language); app.Shutdown(); return; }
-        if (chatRowsChecks) { ChatRowsChecks.Run(language); app.Shutdown(); return; }
-        if (chatGlyphChecks) { ChatInteractionChecks.Run(language); app.Shutdown(); return; }
-        if (chatInteractionChecks) { ChatInteractionChecks.Run(language); FriendSettingsChecks.Run(language); app.Shutdown(); return; }
-        if (friendCopyChecks) { FriendSettingsChecks.Run(language); app.Shutdown(); return; }
-        if (peerOfferChecks) { OfferUiChecks.Run(language); app.Shutdown(); return; }
-        if (friendsStartupChecks) { FriendsStartupChecks.Run(language); SocialRefreshChecks.Run(language); app.Shutdown(); return; }
-        if (socialActionChecks) { SocialActionAvailabilityChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (chatRegressionChecks) { ChatPresentationChecks.Run(language); SocialChecks.Run(language); FriendsPolishChecks.Run(language); UpdateRefreshChecks.Run(language); app.Shutdown(); return; }
         if (modePerf is not null) { ModePerformanceChecks.Run(modePerf,modeGame!);app.Shutdown();return; }
-        if (evolutionChecks) { LauncherEvolutionChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (startupPreview) { StartupChecks.RenderChecking(language, args[0]); app.Shutdown(); return; }
         if (compactConfig is not null) { CompactComponentsChecks.Run(compactConfig, compactGame!, language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (polishConfig is not null) { LauncherPolishChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!, polishConfig); app.Shutdown(); return; }
         if (startupChecks) { StartupChecks.Run(language, args[0]); app.Shutdown(); return; }
-        if (adminChecks) { AdminChecks.Run(language); app.Shutdown(); return; }
         if (compactTransferChecks) { CompactTransferChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); StartupChecks.RenderChecking(language,args[0]); app.Shutdown(); return; }
-        if (modNoticeChecks) ModNoticeChecks.Run(language);
-        // Other fixtures exercise established Arcane Wars profiles, with onboarding already read.
-        if (ActivityStore.IsSmokeTest && languageReliabilityConfig is null) new SettingsStore().Save(new UserSettings { ModNoticeSeen = true });
+        // Other fixtures start from an established Vanilla profile.
+        if (ActivityStore.IsSmokeTest && languageReliabilityConfig is null) new SettingsStore().Save(new UserSettings { Mod = GameMod.Vanilla, ModNoticeSeen = true });
         if (uiRoundTwoChecks)
         {
             UiRoundTwoChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!);
@@ -192,8 +119,6 @@ public static class Program
             app.Shutdown(); return;
         }
         if (modModeChecks) ModModeChecks.Run(language);
-        if (refinementChecks) RefinementChecks.Run(language);
-        if (teamChecks) TeamAccessChecks.Run(language);
         if (motionChecks)
         {
             var motionFixture = new MainWindow();
@@ -201,31 +126,17 @@ public static class Program
             finally { motionFixture.Close(); }
         }
         if (feedbackChecks) FeedbackChecks.Run(language);
-        if (friendsPolishChecks) FriendsPolishChecks.Run(language);
-        if (layoutRefreshChecks) LayoutRefreshChecks.Run(language);
-        if (chatActivityChecks) ChatActivityChecks.Run(language,args[0]);
         if(progressMotionChecks)ProgressMotionChecks.Run(language);
-        if(historyResourceChecks)HistoryResourceChecks.Run(language);
         if(compatibilityChecks)CompatibilityChecks.Run(language);
         if (updateRefreshChecks) UpdateRefreshChecks.Run(language);
-        if (arrivalPolishChecks) ArrivalPolishChecks.Run(language);
-        if (chatArrivalChecks) { ArrivalPolishChecks.Run(language, true); app.Shutdown(); return; }
         if (motionChecks) SmoothExperienceChecks.Run(language);
         if (appearanceChecks) AppearanceChecks.Run(language, args[0]);
         if (changelogChecks) ChangelogChecks.Run(language);
         if (aboutChecks) AboutChecks.Run(language);
-        if (powersChecks) PowersUiChecks.Run(language);
-        if (combinationAudit) CombinationUiAudit.Run();
         if (launcherUpdateChecks) LauncherUpdateChecks.Run();
-        if (componentSettingsChecks) ComponentSettingsChecks.Run(language);
         if (gameSettingsChecks) { GameSettingsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (customModsChecks) { CustomModsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
-        if (helpCreditChecks) HelpCreditChecks.Run(language);
-        if (accountChecks) AccountChecks.Run(language);
         if (languageReliabilityConfig is not null) { LanguageReliabilityChecks.Run(languageReliabilityConfig, language); app.Shutdown(); return; }
-        if (reliabilityChecks) { ChatDividerChecks.Run(language, args[0]); ChatPresentationChecks.Run(language); app.Shutdown(); return; }
-        if (socialChecks) { SocialChecks.Run(language); SocialRefreshChecks.Run(language); SessionMenuChecks.Run(language,args[0]); ChatPresentationChecks.Run(language); FriendSettingsChecks.Run(language); OfferUiChecks.Run(language); IdentityMediaUiChecks.Run(language); SocialRefinementChecks.Run(language); SocialFinishChecks.Run(language); MediaLayoutChecks.Run(language); }
-        if (socialHubChecks) SocialHubChecks.Run(language);
         if (diagnosticsChecks) DiagnosticsUiChecks.Run(language);
         if (windowChecks) WindowExperienceChecks.Run(language);
         if (storageConfirmationChecks) StorageConfirmationChecks.Run(language);
@@ -234,17 +145,15 @@ public static class Program
         if (typographyChecks) TypographyChecks.Run(language);
         // Create the rendered window after other fixtures: unshown WPF radio groups share a root.
         var window = new MainWindow();
-        if (modNoticePreview || firstRunPreview)
+        if (firstRunPreview)
         {
             var firstRun = (UserSettings)typeof(MainWindow).GetField("_settings", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
             firstRun.Mod = GameMod.Vanilla;
-            firstRun.ModNoticeSeen = false;
         }
         if(modPreview is not null)
         {
             var selection=(UserSettings)typeof(MainWindow).GetField("_settings",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)!;
-            selection.Mod=modPreview=="vanilla"?GameMod.Vanilla:modPreview=="immortals"?GameMod.Immortals:GameMod.ArcaneWars;
-            selection.PawPatchEnabled=modPreview!="pure-aw";
+            selection.Mod=modPreview=="immortals"?GameMod.Immortals:GameMod.Vanilla;
         }
         if (guideFeed is not null)
         {
@@ -278,49 +187,16 @@ public static class Program
             updateButton.Content = string.Format(localization["button.launcherupdate"], "99.99.99");
         }
         if (enhancements) PopulateEnhancementsPreview(window);
-        if (powersPreview) PowersUiChecks.Populate(window);
         if (args.Length >= 2)
             typeof(MainWindow).GetMethod("SetActivePage", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [args[1]]);
         if (guideSubject is not null || aboutCategory is not null)
         {
-            typeof(MainWindow).GetField("_guideSubject", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, guideSubject ?? GameMod.ArcaneWars);
+            typeof(MainWindow).GetField("_guideSubject", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, guideSubject ?? "general");
             typeof(MainWindow).GetField("_guideVariant", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, guideVariant ?? (aboutCategory is null ? "mod" : "patch"));
             Invoke(window, "RefreshAboutPage");
         }
         if (aboutCategory is not null) ((Task)Invoke(window, "SwitchAboutCategoryAsync", aboutCategory)!).GetAwaiter().GetResult();
-        if (accountForm is not null) Invoke(window, "ShowAccountForm", accountForm == "register");
-        if (accountDemo is not null) AccountChecks.Populate(window, accountDemo);
-        if (socialDemo=="search")
-        {
-            SocialHubChecks.Populate(window);Invoke(window,"ResetBroadcast");
-
-            ((TextBox)window.FindName("FriendsSearchInput")).Text="friend";
-            Invoke(window,"FriendsShowAdd_Click",window.FindName("FriendsShowAddButton"),new RoutedEventArgs());
-        }
-        else if (socialDemo is "broadcast" or "broadcast-selected")
-        {
-            SocialHubChecks.Populate(window);
-            if(socialDemo=="broadcast-selected")
-                foreach(var recipient in ((StackPanel)window.FindName("BroadcastRows")).Children.OfType<CheckBox>().Where(c=>c.IsEnabled).Take(2))
-                    recipient.IsChecked=true;
-        }
-        else if (socialDemo == "history") HistoryResourceChecks.PopulateHistory(window);
-        else if (socialDemo == "media") MediaLayoutChecks.Populate(window);
-        else if (socialDemo == "offers") OfferUiChecks.Populate(window);
-        else if (socialDemo == "copy") OfferUiChecks.PopulateConfirmation(window);
-        else if (socialDemo is "offer-confirm" or "offer-match") SocialRefinementChecks.PopulateConfirmation(window,socialDemo=="offer-match");
-        else if (socialDemo == "add") { SocialChecks.Populate(window, "chat"); Invoke(window, "OpenFriendsDialog", "add"); }
-        else if (socialDemo is not null) SocialChecks.Populate(window, socialDemo);
-        if(adminDemo is "monitor-resources" or "monitor-status")MonitorChecks.Populate(window,adminDemo=="monitor-resources"?"resources":"status");
-        else if(adminDemo=="resources")HistoryResourceChecks.PopulateResources(window);
-        else if(adminDemo is not null)AdminChecks.Populate(window,adminDemo);
         if(compatibilityDemo)CompatibilityChecks.Populate(window);
-        if (accountForm == "confirmation") { Invoke(window,"ShowAccountForm",true); ((TextBox)window.FindName("AccountEmailInput")).Text="player@example.test"; Invoke(window,"BeginEmailConfirmation"); Invoke(window,"RenderAccount"); }
-        if (accountDemo == "avatar")
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(args[0]))!);
-            File.WriteAllBytes(Path.ChangeExtension(args[0], ".jpg"), AccountChecks.AvatarFixture());
-        }
         var content = (FrameworkElement)window.Content;
         content.Measure(new Size(width, height));
         content.Arrange(new Rect(0, 0, width, height));
@@ -345,7 +221,7 @@ public static class Program
         }
         if (args.Length == 3 && double.TryParse(args[2], out var offset))
         {
-            var scroll = (ScrollViewer)window.FindName(((Grid)window.FindName("AdminPanel")).Visibility == Visibility.Visible ? "AdminContentScroll" : "MainOptionsScroll");
+            var scroll = (ScrollViewer)window.FindName("MainOptionsScroll");
             scroll.ScrollToVerticalOffset(offset);
             content.UpdateLayout();
             window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
@@ -361,18 +237,12 @@ public static class Program
             Console.WriteLine("FOCUS PASS " + focus);
         }
         CheckOptionsLayout(window, content, args.Length >= 2 ? args[1] : "home");
-        if(socialDemo=="history")
-        {
-            var chat=(ScrollViewer)window.FindName("FriendsChatScroll");chat.ScrollToVerticalOffset(600);
-            content.UpdateLayout();window.Dispatcher.Invoke(()=>{},System.Windows.Threading.DispatcherPriority.ContextIdle);content.UpdateLayout();
-            Invoke(window,"RefreshHistoryJump");
-        }
         TypographyChecks.Layout(window, content, args.Length >= 2 ? args[1] : "home");
         AboutChecks.Layout(window, content);
         if (args.Length >= 2 && args[1] == "settings") CheckStorageLabelGap(window);
         if (args.Length >= 2 && args[1] == "modules") CheckMultiplayerNoteAlignment(window);
         CheckScrollbars(window, content);
-        foreach (var name in new[] { "HomeNav", "ModulesNav", "FriendsNav", "SettingsNav", "AboutNav", "AboutModsNav" })
+        foreach (var name in new[] { "HomeNav", "ModulesNav", "ModManagerNav", "SettingsNav", "AboutNav" })
         {
             var button = (Button)window.FindName(name);
             if (button.Visibility != Visibility.Visible) continue;
@@ -543,7 +413,7 @@ public static class Program
 
     private static void CheckOptionsLayout(MainWindow window, FrameworkElement content, string page)
     {
-        var scroll = (ScrollViewer)window.FindName(((Grid)window.FindName("AdminPanel")).Visibility == Visibility.Visible ? "AdminContentScroll" : "MainOptionsScroll");
+        var scroll = (ScrollViewer)window.FindName("MainOptionsScroll");
         var stack = (StackPanel)scroll.Content;
         var bar = (FrameworkElement)scroll.Template.FindName("PART_VerticalScrollBar", scroll);
         var rightEdge = bar.Visibility == Visibility.Visible
@@ -615,7 +485,7 @@ public static class Program
             window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
             content.UpdateLayout();
         }
-        foreach (var name in new[] { "MainOptionsScroll", "AdminContentScroll", "NewsScrollViewer", "FriendsChatScroll" })
+        foreach (var name in new[] { "MainOptionsScroll", "NewsScrollViewer" })
         {
             var scroll = (ScrollViewer)window.FindName(name);
             if (scroll.ActualWidth <= 0 || scroll.ActualHeight <= 0) continue;

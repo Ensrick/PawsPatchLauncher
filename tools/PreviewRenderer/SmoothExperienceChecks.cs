@@ -78,31 +78,15 @@ internal static class SmoothExperienceChecks
             editor.RaiseEvent(key);Check(!key.Handled,"smoothing intercepted editor caret key");
             fixture.Close();
 
-            Field<PawsPatchLauncher.Localization>("_text").SetLanguage(language);Invoke("ApplyLanguage");SocialChecks.Populate(w,"chat");
+            Field<PawsPatchLauncher.Localization>("_text").SetLanguage(language);Invoke("ApplyLanguage");
             w.Show();w.UpdateLayout();await Task.Delay(220);
             foreach(var size in new[]{new Size(1050,680),new Size(1440,900)})
             {
                 w.Width=size.Width;w.Height=size.Height;w.UpdateLayout();
                 var header=Control<Grid>("WorkspaceHeader");var body=Control<Grid>("WorkspaceBody");
-                Check(header.ActualHeight==70&&body.Margin.Top==12&&body.RowDefinitions[1].ActualHeight==10,"header did not recover 24 vertical pixels");
-                var button=Control<Button>("AccountHeaderButton");var name=Control<TextBlock>("AccountHeaderNameText");
-                var bounds=name.TransformToAncestor(button).TransformBounds(new Rect(name.RenderSize));
-                Check(bounds.Top>=0&&bounds.Bottom<=button.ActualHeight&&Control<Border>("AccountAvatarBorder").ActualHeight==48,"compact profile clipped text or shrank avatar");
+                Check(header.ActualHeight>0&&body.Margin.Top==12&&body.RowDefinitions[1].ActualHeight==10,"header lost its compact layout");
             }
-            foreach(var name in new[]{"MainOptionsScroll","NewsScrollViewer","FriendsChatScroll"})Check(SmoothScroll.GetEnabled(Control<ScrollViewer>(name)),"missing smooth view "+name);
-            var friend=Field<IReadOnlyList<SocialPlayer>>("_socialPlayers").First(p=>p.Relation=="friend");
-            Invoke("ShowSocialDetails",friend);await Task.Delay(200);
-            var dismissal=(Task)Invoke("DismissSocialDetailsAsync")!;
-            if(moving)
-            {
-                Check(Control<Border>("SocialDetailsOverlay").Visibility==Visibility.Visible&&!Control<Border>("SocialDetailsCard").IsHitTestVisible&&Control<Border>("SocialDetailsCard").IsEnabled,"profile did not retain blocking layer while fading");
-                await Task.Delay(65);var alpha=Control<Border>("SocialDetailsOverlay").Opacity;
-                Check(alpha>0&&alpha<1&&Control<TextBlock>("SocialDetailsName").Text==friend.Name,"profile content disappeared before fade");
-            }
-            await dismissal;Check(Control<Border>("SocialDetailsOverlay").Visibility==Visibility.Collapsed&&Control<TextBlock>("SocialDetailsName").Text=="","profile not cleaned after close");
-            Invoke("ShowSocialDetails",friend);await Task.Delay(200);dismissal=(Task)Invoke("DismissSocialDetailsAsync")!;
-            await Task.Delay(30);Invoke("ShowSocialDetails",friend);await dismissal;await Task.Delay(260);
-            Check(Control<Border>("SocialDetailsOverlay").Visibility==Visibility.Visible&&Control<Border>("SocialDetailsCard").IsEnabled&&Control<TextBlock>("SocialDetailsName").Text==friend.Name,"old close destroyed reopened profile");
+            foreach(var name in new[]{"MainOptionsScroll","NewsScrollViewer"})Check(SmoothScroll.GetEnabled(Control<ScrollViewer>(name)),"missing smooth view "+name);
             var confirmation=(Task<bool>)Invoke("ConfirmActionAsync","Fixture","Body","Detail","Value","Action")!;await Task.Delay(200);
             var cancel=(Task)Invoke("CompleteConfirmationAsync",false)!;
             if(moving)
@@ -110,9 +94,7 @@ internal static class SmoothExperienceChecks
                 Check(!confirmation.IsCompleted&&Control<Grid>("MainBody").IsEnabled&&Control<Border>("ConfirmationOverlay").Visibility==Visibility.Visible,"confirmation removed its blocking overlay before fade");
                 await Task.Delay(65);Check(Control<Border>("ConfirmationOverlay").Opacity is >0 and <1,"confirmation has no intermediate fade");
             }
-            await cancel;Check(!await confirmation&&Control<Border>("ConfirmationOverlay").Visibility==Visibility.Collapsed&&Control<Border>("SocialDetailsOverlay").Visibility==Visibility.Visible,"confirmation close lost underlying profile");
-            dismissal=(Task)Invoke("DismissSocialDetailsAsync")!;Invoke("CloseSocialDetails");await dismissal;
-            Check(Control<Border>("SocialDetailsOverlay").Visibility==Visibility.Collapsed&&Control<TextBlock>("SocialDetailsName").Text=="","forced cleanup waited for animation");
+            await cancel;Check(!await confirmation&&Control<Border>("ConfirmationOverlay").Visibility==Visibility.Collapsed,"confirmation close lost underlying profile");
             Console.WriteLine($"SMOOTH EXPERIENCE PASS {checks} {language}: real off-screen WPF frames, wheel/reverse/nested/page/drag/editor/resize, close/reopen/modal blocking and compact header; Windows animations={moving}");
         }
         try

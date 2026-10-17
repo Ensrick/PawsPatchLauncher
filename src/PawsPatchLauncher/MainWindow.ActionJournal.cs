@@ -10,8 +10,6 @@ public partial class MainWindow
 {
     private void InitializeActionJournal()
     {
-        FriendsMessageInput.CopyTextRequested = value => CopyTextAsync(value, () => T("Скопировано.", "Copied."),
-            (message, failed) => { if (failed) ShowToast(message, true); });
         var editedFields = new HashSet<TextBox>();
         AddHandler(TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, e) =>
         {

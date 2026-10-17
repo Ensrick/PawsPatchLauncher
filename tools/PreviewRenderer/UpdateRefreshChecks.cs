@@ -42,31 +42,16 @@ internal static class UpdateRefreshChecks
         {
             Field<PawsPatchLauncher.Localization>("_text").SetLanguage(language); Invoke("ApplyLanguage");
             Field<UserSettings>("_settings").Channel="stable"; Field<UserSettings>("_settings").PinnedRelease=null;
-            SocialChecks.Populate(w,"chat");
             w.Show(); w.UpdateLayout(); await Task.Delay(250);
-            var rows=Control<StackPanel>("FriendsRowsPanel"); var messages=Control<StackPanel>("FriendsMessagesPanel");
-            var row=rows.Children[0]; var message=messages.Children[0];
-            var chat=Control<Border>("FriendsChatCard"); var height=chat.ActualHeight;
-            var composer=Control<ChatComposer>("FriendsMessageInput"); composer.Text="draft stays"; composer.CaretPosition=composer.Document.ContentStart.GetPositionAtOffset(7)!; var caret=composer.CaretPosition;
-            var inputChanges=0; var socialChanges=0; var logoutChanges=0;
-            composer.IsEnabledChanged+=(_,_)=>inputChanges++;
-            Control<Button>("FriendsSendButton").IsEnabledChanged+=(_,_)=>socialChanges++;
-            Control<Button>("AccountLogoutButton").IsEnabledChanged+=(_,_)=>logoutChanges++;
             for(var i=0;i<2;i++)
             {
                 handler.Fail=i==1; handler.Gate=new(TaskCreationOptions.RunContinuationsAsynchronously);
                 var task=(Task<bool>)Invoke("CheckFeedAsync",true)!;
                 await Task.Delay(50); w.UpdateLayout();
                 Check(!task.IsCompleted && Field<bool>("_checkingFeed"),"fake response was not held");
-                Check(Math.Abs(chat.ActualHeight-height)<.1,"chat height changed while checking");
                 handler.Gate.SetResult(); var success=await task; w.UpdateLayout();
                 Check(success==(i==0),"unexpected feed outcome");
-                Check(ReferenceEquals(row,rows.Children[0])&&ReferenceEquals(message,messages.Children[0]),"background update rebuilt chat");
-                Check(Math.Abs(chat.ActualHeight-height)<.1,"chat resized after check");
-                Check(composer.Text=="draft stays"&&composer.CaretPosition.CompareTo(caret)==0,"draft/caret lost");
             }
-            Check(inputChanges==0&&socialChanges==0,"chat enabled state toggled");
-            Check(logoutChanges==0,"background check dimmed sign-out");
             handler.Fail=false; handler.Gate=new(TaskCreationOptions.RunContinuationsAsynchronously);
             var superseded=(Task<bool>)Invoke("CheckFeedAsync",true)!;
             var confirmation=(Task<bool>)Invoke("ConfirmActionAsync","Fixture","body","details","details","Confirm")!;
@@ -80,7 +65,6 @@ internal static class UpdateRefreshChecks
             Check(Field<bool>("_checkingFeed") && Field<bool>("_busy"),"manual check did not reserve UI");
             Check(!await oldRead && Field<bool>("_checkingFeed"),"old finally cleared new check's state");
             handler.Gate.SetResult(); Check(await manual && !Field<bool>("_checkingFeed") && !Field<bool>("_busy"),"manual completion failed");
-            Check(ReferenceEquals(message,messages.Children[0]),"manual refresh rebuilt unchanged chat");
             Invoke("SetActivePage","home"); await Task.Delay(220); w.UpdateLayout();
             var news=Control<StackPanel>("NewsEntriesPanel").Children[0];
             var newsHeight=Control<ScrollViewer>("NewsScrollViewer").ActualHeight;
@@ -90,7 +74,7 @@ internal static class UpdateRefreshChecks
             Check(Math.Abs(newsHeight-Control<ScrollViewer>("NewsScrollViewer").ActualHeight)<.1,"background read resizes history");
             handler.Gate.SetResult();Check(await homeRead,"Home feed check failed");w.UpdateLayout();
             Check(ReferenceEquals(news,Control<StackPanel>("NewsEntriesPanel").Children[0]),"unchanged history rebuilt");
-            Console.WriteLine($"UPDATE REFRESH UI PASS {checks} {language}: background success/failure without dimming or chat changes; confirmation/manual preemption; stale callbacks discarded; no real network/account/game");
+            Console.WriteLine($"UPDATE REFRESH UI PASS {checks} {language}: background success/failure; confirmation/manual preemption; stale callbacks discarded; no real network/account/game");
         }
         try
         {

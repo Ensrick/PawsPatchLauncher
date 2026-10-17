@@ -36,7 +36,7 @@ public partial class MainWindow
 
     private void OpenGameSettings()
     {
-        if (_busy || _launchStarting || ConfirmationActive || ModNoticeOverlay.IsVisible || GameSettingsOverlay.IsVisible) return;
+        if (_busy || _launchStarting || ConfirmationActive || GameSettingsOverlay.IsVisible) return;
         _gameSettingsEdits.Clear(); _gameSettingsInputs.Clear(); _gameSettingsError = null;
         _gameUserSettings = null; GameSettingsBody.Children.Clear();
         ApplyGameSettingsLanguage();

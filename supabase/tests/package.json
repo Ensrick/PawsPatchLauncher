@@ -1,9 +1,0 @@
-{
-  "private": true,
-  "scripts": {
-    "test:team": "node paws_team.mjs"
-  },
-  "dependencies": {
-    "@electric-sql/pglite": "0.5.8"
-  }
-}

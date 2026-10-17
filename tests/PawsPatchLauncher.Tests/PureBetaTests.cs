@@ -32,10 +32,8 @@ internal static class PureBetaTests
             p.IndependentHostility=Flag(4);p.AdditionalRoamingCompanies=Flag(5);p.RoamingSpawnMode=frequency;
             var active=EffectiveSettings.ForFeed(s,feed); var code=ConfigurationCode.Create(active);
             Check(active.PureBetaFeatures,"new feed must activate beta composition");
-            Check(FriendConfiguration.TryParse(code,"beta",out var peer)&&ConfigurationCode.Create(peer)==code,"peer roundtrip: "+code);
-            FriendConfiguration.ValidateFeed(peer,feed);
             var target=new UserSettings {Mod="arcane-wars",ImprovedAi=false,IndependentHostility=false,RoamingSpawnMode="x4"};
-            ConfigurationCode.Apply(peer,target);
+            ConfigurationCode.Apply(ConfigurationCode.Parse(code),target);
             Check(ConfigurationCode.Create(EffectiveSettings.ForFeed(target,feed))==code,"copy options");
             Check(!target.ImprovedAi&&!target.IndependentHostility&&target.RoamingSpawnMode=="x4","copy cannot alter stored Arcane settings");
             var packages=GamePackageSelector.Select(feed,active,false,active.CustomPlayerColors);
@@ -45,8 +43,6 @@ internal static class PureBetaTests
             Check(Has("pure-"+mod+"-roaming-"+frequency+(Flag(5)?"-with-new":"-no-new")),"mode-native roaming");
             Check(packages.All(p=>p.Mods.Contains(mod)),"no other mod payload");
             Check(!Has("city-assistant")&&!Has("aw-hostility")&&!Has("pawpatch-core"),"excluded AW data");
-            var components=FriendConfiguration.Components(active);
-            Check(components["improved_ai"]==Flag(2)&&components["lair_recovery"]==Flag(3),"peer details");
             s.Channel="stable";
             Check(!EffectiveSettings.ForFeed(s,feed).PureBetaFeatures,"mismatched feed cannot enable beta features");
             s.Channel="beta";s.DataOnly=true;
@@ -75,19 +71,14 @@ internal static class PureBetaTests
             var active=EffectiveSettings.ForFeed(s,released);var code=ConfigurationCode.Create(active);
             Check(active.PureBetaFeatures&&GameMod.PureComponents(active).WoundedLairDefenders,"promoted features and core defenders");
             Check(!p.WoundedLairDefenders,"active core feature must not overwrite legacy pinned preference");
-            Check(FriendConfiguration.TryParse(code,channel,out var peer)&&ConfigurationCode.Create(peer)==code,"stable/beta roundtrip");
-            FriendConfiguration.ValidateFeed(peer,released);
             var packages=GamePackageSelector.Select(released,active,false,active.CustomPlayerColors);
             Check(!packages.Any(p=>p.Id=="pure-lair-recovery")&&packages.Any(p=>p.Id=="pure-beta-common"),"defenders belong to the core runtime");
             Check(packages.Any(p=>p.Id=="pure-ai-improvements")==Flag(2),"stable AI selection");
-            Check(FriendConfiguration.Components(active)["lair_recovery"],"core defender presence");
             s.DataOnly=true;
             Check(!EffectiveSettings.ForFeed(s,released).PureBetaFeatures,"promoted data-only gating");
             s.DataOnly=false;GameMod.SetPawPatch(s,false);
             Check(!EffectiveSettings.ForFeed(s,released).PureBetaFeatures,"promoted master-off gating");
         }
-        foreach(var bad in new[]{"PAW-STABLE-VANILLA-PB1-AI1-LR1-IW0-SP1-RM0","PAW-BETA-VANILLA-PB1-AI1-LR1-IW0-SP1-RM0","PAW-BETA-VANILLA-PP1-PB1-AI1-LR1-IW0-SP1-RM0-DATA","PAW-BETA-VANILLA-PP1-PB1-AI1-LR1-IW0-SP3-RM0","PAW-BETA-VANILLA-PP1-PB1-AI1"})
-            Check(!FriendConfiguration.TryParse(bad,bad.Contains("STABLE")?"stable":"beta",out _),"invalid contract");
         Console.WriteLine("PURE BETA PASS "+count+": mode isolation, option matrix, native/data pairing, config exchange and legacy gating");
         return count;
     }

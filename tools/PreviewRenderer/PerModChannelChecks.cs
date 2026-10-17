@@ -16,11 +16,9 @@ internal static class PerModChannelChecks
         var root = Path.Combine(ActivityStore.Root, "per-mod-channels"); Directory.CreateDirectory(root);
         ChannelManifest Feed(string branch) => new()
         {
-            Channel = branch, Packages = [new() { Id = "arcane-wars", Version = "0.82", Size = 1, Sha256 = new string('A',64) },
-                new() { Id = "pawpatch-core", Required = true, Version = branch == "beta" ? "2-beta.1" : "1", Size = 1, Sha256 = new string('B',64) },
-                new() { Id = "immortals", Version = "2.1", Size = 1, Sha256 = new string('C',64) },
+            Channel = branch, Packages = [new() { Id = "immortals", Version = "2.1", Size = 1, Sha256 = new string('C',64) },
                 new() { Id = "pure-fixes-data", Version = "1", Size = 1, Sha256 = new string('D',64) },
-                new() { Id = "pure-fixes-runtime", Version = "1", Size = 1, Sha256 = new string('E',64) }]
+                new() { Id = "pure-fixes-runtime", Version = branch == "beta" ? "2-beta.1" : "1", Size = 1, Sha256 = new string('E',64) }]
         };
         var stable = Feed("stable"); var beta = Feed("beta");
         var config = new LauncherConfiguration { FeedUrls = [Path.Combine(root,"stable.json")], BetaFeedUrls = [Path.Combine(root,"beta.json")], CacheRoot = Path.Combine(root,"cache") };
@@ -30,7 +28,7 @@ internal static class PerModChannelChecks
             File.WriteAllText(config.BetaFeedUrls[0],JsonSerializer.Serialize(beta,LauncherJsonContext.Default.ChannelManifest));
         }
         SaveFeeds();
-        var profile = new UserSettings { Mod = GameMod.ArcaneWars, ModNoticeSeen = true, RussianLocalization = true, Language = language };
+        var profile = new UserSettings { Mod = GameMod.Immortals, ModNoticeSeen = true, RussianLocalization = true, Language = language };
         new SettingsStore().Save(profile);
         var window = new MainWindow(config, null) { Width = 1050, Height = 780, Left = -32000, Top = -32000,
             WindowStartupLocation = WindowStartupLocation.Manual, ShowActivated = false, ShowInTaskbar = false };
@@ -40,7 +38,6 @@ internal static class PerModChannelChecks
         T Control<T>(string name) => (T)window.FindName(name);
         typeof(MainWindow).GetField("_game",flags)!.SetValue(window,null);
         var settings = Field<UserSettings>("_settings");
-        FixtureAccess.AllowArcaneWars(window);
         Field<PawsPatchLauncher.Localization>("_text").SetLanguage(language);
         Call("ApplyLanguage"); Call("SetActivePage","modules"); window.Show(); window.UpdateLayout();
         int count = 0;
@@ -61,41 +58,30 @@ internal static class PerModChannelChecks
         {
             await (Task<bool>)Call("CheckFeedAsync",false)!;
             Check(window.FindName("HeaderReleaseRadio") is null && window.FindName("SettingsBetaRadio") is null,"Global selectors remain");
-            Check(Control<RadioButton>("ModBetaRadio").IsEnabled,"Available AW beta is hidden");
+            Check(Control<RadioButton>("ModBetaRadio").IsEnabled,"Available Immortals beta is hidden");
             Check(Control<RadioButton>("ModBetaRadio").IsVisible,"Selector is outside the visible Paw card");
             Control<RadioButton>("ModBetaRadio").IsChecked = true; await Settled();
-            Check(settings.Channel == "beta","Beta click did not change AW selection");
+            Check(settings.Channel == "beta","Beta click did not change the Immortals selection");
             Check(Control<FrameworkElement>("HelpOverlay").Visibility == Visibility.Visible,"First beta notice missing");
-            Check(Control<TextBlock>("HelpTitleText").Text.Contains("Arcane Wars"),"Notice refers to another mod");
+            Check(Control<TextBlock>("HelpTitleText").Text.Contains("Immortals"),"Notice refers to another mod");
             await (Task)Call("CloseHelpAsync")!;
-            Check(settings.BetaNoticesSeen.Contains(GameMod.ArcaneWars),"Beta notice not remembered");
-            await SelectMod("ImmortalsModRadio");
-            Check(settings.Mod == GameMod.Immortals && settings.Channel == "stable","AW beta leaked into Immortals");
-            Check(Control<RadioButton>("ModReleaseRadio").IsChecked == true && !Control<RadioButton>("ModBetaRadio").IsEnabled,"Unavailable Immortals beta is selectable");
-            Check(Control<RadioButton>("ModBetaRadio").ToolTip?.ToString()?.Contains(language == "ru" ? "недоступна" : "not yet") == true,"No unavailable-beta explanation");
+            Check(settings.BetaNoticesSeen.Contains(GameMod.Immortals),"Beta notice not remembered");
             await SelectMod("VanillaModRadio");
-            Check(settings.Channel == "stable" && !Control<RadioButton>("ModBetaRadio").IsEnabled,"Vanilla inherited AW beta");
-            await SelectMod("ArcaneWarsModRadio");
-            Check(settings.Channel == "beta" && Control<RadioButton>("ModBetaRadio").IsChecked == true,"AW did not remember beta");
+            Check(settings.Mod == GameMod.Vanilla && settings.Channel == "stable","Immortals beta leaked into Vanilla");
+            Check(Control<RadioButton>("ModReleaseRadio").IsChecked == true,"Vanilla does not show its own release choice");
+            await SelectMod("ImmortalsModRadio");
+            Check(settings.Channel == "beta" && Control<RadioButton>("ModBetaRadio").IsChecked == true,"Immortals did not remember beta");
             Check(Control<FrameworkElement>("HelpOverlay").Visibility != Visibility.Visible,"Beta notice repeats on mod return");
             Check(settings.RussianLocalization,"Mod/channel change reset game language");
-            Check(Control<TextBlock>("ModPatchVersionText").Text.Contains("2-beta.1"),"Paw version is not displayed");
             settings.PinnedRelease="keep-this-pin";
             await (Task)Call("ChangeChannelAsync",true)!;
             Check(settings.PinnedRelease=="keep-this-pin","Re-click discarded pin"); settings.PinnedRelease=null;
-            beta.Packages.Single(p=>p.Id=="pure-fixes-runtime").Version="2-beta.1"; SaveFeeds();
-            await (Task<bool>)Call("CheckFeedAsync",false)!;
-            await SelectMod("ImmortalsModRadio");
-            Check(Control<RadioButton>("ModBetaRadio").IsEnabled,"New Immortals beta stayed disabled");
-            Control<RadioButton>("ModBetaRadio").IsChecked=true; await Settled();
-            Check(settings.Channel=="beta" && Control<TextBlock>("HelpTitleText").Text.Contains("Immortals"),"Immortals beta/notice is wrong");
-            await (Task)Call("CloseHelpAsync")!;
             await SelectMod("VanillaModRadio");
-            Check(settings.Channel=="stable","Second beta choice changed Vanilla");
-            var restored=new SettingsStore().Load(); ModChannelSelection.SelectMod(restored,GameMod.ArcaneWars);
-            Check(restored.Channel=="beta","AW choice lost on restart");
-            ModChannelSelection.SelectMod(restored,GameMod.Immortals);
+            Check(settings.Channel=="stable","The Immortals beta choice changed Vanilla");
+            var restored=new SettingsStore().Load(); ModChannelSelection.SelectMod(restored,GameMod.Immortals);
             Check(restored.Channel=="beta","Immortals choice lost on restart");
+            ModChannelSelection.SelectMod(restored,GameMod.Vanilla);
+            Check(restored.Channel=="stable","Vanilla choice lost on restart");
             Check(!Directory.Exists(Path.Combine(root,".pawpatch")),"Selecting channels installed game files");
             // Help follows the selected mod's signed guide, including historical
             // versions; native-only features must be listed as unavailable in
@@ -115,7 +101,6 @@ internal static class PerModChannelChecks
                 Call("RefreshCompatibilityControls");
                 var tooltip=(string)Control<Button>("CoreHelpButton").ToolTip;
                 Check(tooltip.Contains("Dvorak")&&tooltip.Contains(nativeText)==(branch=="beta"),"Hover tooltip ignores selected mod/channel features: "+mod+" "+branch);
-                Check(!tooltip.Contains("Darquan Mortis")&&!tooltip.Contains("discord.gg"),"Pure tooltip contains Arcane Wars credits");
                 Control<Button>("CoreHelpButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(Control<TextBlock>("HelpBodyText").Text==tooltip,"Clicked help and hover tooltip disagree");
                 await (Task)Call("CloseHelpAsync")!;
@@ -124,17 +109,17 @@ internal static class PerModChannelChecks
             // text, but retain old values when an archive is explicitly pinned.
             foreach(var branch in new[]{"stable","beta"})
             {
-                settings.Mod=GameMod.ArcaneWars;settings.Channel=branch;
+                settings.Mod=GameMod.Immortals;settings.Channel=branch;
                 var old=Feed(branch);var current=Feed(branch);
-                old.PatchGuide=new() { Entries=[new("frequency","optional","","","Старый ×4: 240 / 40%","Old ×4: 240 / 40%")] };
-                current.PatchGuide=new() { Entries=[new("frequency","optional","","","Тёмный лорд ×4: 6 минут, 30%","Shadow Lord ×4: 6 minutes, 30%")] };
+                old.ModGuides=[new() { Id=GameMod.Immortals,PatchGuide=new() { Entries=[new("frequency","optional","","","Старый ×4: 240 / 40%","Old ×4: 240 / 40%")] } }];
+                current.ModGuides=[new() { Id=GameMod.Immortals,PatchGuide=new() { Entries=[new("frequency","optional","","","Тёмный лорд ×4: 6 минут, 30%","Shadow Lord ×4: 6 minutes, 30%")] } }];
                 typeof(MainWindow).GetField("_channel",flags)!.SetValue(window,old);
                 typeof(MainWindow).GetField("_latestChannel",flags)!.SetValue(window,current);
                 foreach(var pinned in new[]{false,true})
                 {
                     settings.PinnedRelease=pinned?ChannelFingerprint.Create(old):null;
                     Call("RefreshCompatibilityControls");
-                    var expected=(pinned?old:current).PatchGuide!.Entries[0].Body(language);
+                    var expected=(pinned?old:current).ModGuides[0].PatchGuide!.Entries[0].Body(language);
                     var tooltip=(string)Control<Button>("SpawnHelpButton").ToolTip;
                     Check(tooltip==expected,"Frequency tooltip ignores current/archive channel: "+branch+" "+pinned);
                     Control<Button>("SpawnHelpButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -191,7 +176,7 @@ internal static class PerModChannelChecks
                 Check(!Control<StackPanel>("AboutEntriesPanel").Children.OfType<Border>().Any(c=>Equals(c.Tag,"fast-save-transfer")),
                     mod+" stable guide retained the previous Beta feature");
             }
-            Console.WriteLine($"PER-MOD CHANNEL UI PASS {count} {language}: actual controls, independent choices, alternate feed discovery, unavailable beta, first notice, restart and language; local feeds only");
+            Console.WriteLine($"PER-MOD CHANNEL UI PASS {count} {language}: actual controls, independent choices, first notice, pins, restart and language; local feeds only");
         }
         try
         {

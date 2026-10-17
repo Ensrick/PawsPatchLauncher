@@ -49,7 +49,7 @@ internal static class RetainedSelectionChecks
         string StateText() => File.ReadAllText(Path.Combine(game, ".pawpatch", "state.json"));
         void Select(string mod)
         {
-            C<RadioButton>(mod == GameMod.ArcaneWars ? "ArcaneWarsModRadio" : mod == GameMod.Immortals ? "ImmortalsModRadio" : "VanillaModRadio").IsChecked = true;
+            C<RadioButton>(mod == GameMod.Immortals ? "ImmortalsModRadio" : "VanillaModRadio").IsChecked = true;
             Check(Prefs().Mod == mod && Prefs().Channel == channelName, "Mod click lost its remembered channel.");
         }
         void Languages(bool russian, string voice)
@@ -105,42 +105,36 @@ internal static class RetainedSelectionChecks
         {
             var exeHash = await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe"));
             var legacy = new ChannelManifest { Channel = channelName, PublishedAt = "2026-09-09T00:00:00Z", Game = new() { K2ExeSha256 = [exeHash] }, Packages = [
-                await Package("arcane-wars", 10, "data/mod.txt", "Arcane Wars", required: true),
                 await Package("startup-base", 20, "startup/base.txt", "startup", required: true),
-                await Package("pawpatch-core", 30, "data/patch.txt", "old AW patch", required: true),
                 await Package("immortals", 10, "data/mod.txt", "old Immortals"),
                 await Package("game-localization-en", 100, "startup/language.txt", "en"),
-                await Package("localization-ru", 110, "startup/language.txt", "ru AW"),
                 await Package("vanilla-localization-ru", 110, "startup/language.txt", "ru"),
                 await Package("immortals-localization-ru", 110, "startup/language.txt", "ru Immortals"),
                 await Package("pure-fixes-data", 900, "data/pure-fix.txt", "old pure fix"),
                 await Package("pure-fixes-runtime", 910, "k2_paws_pure_fixes_1372.exe", "Non-executable fixture") ] };
             await WriteFeed(legacy); await client.GetChannelAsync(channelName);
             foreach (var p in legacy.Packages) await installer.PrepareAsync(p, p.Urls[0]);
-            foreach (var mod in new[] { GameMod.ArcaneWars, GameMod.Immortals, GameMod.Vanilla }) await library.RememberAsync(legacy, mod);
+            foreach (var mod in new[] { GameMod.Immortals, GameMod.Vanilla }) await library.RememberAsync(legacy, mod);
             var current = new ChannelManifest { Channel = channelName, PublishedAt = "2026-09-14T00:00:00Z", Game = legacy.Game,
-                Packages = legacy.Packages.Where(p => p.Id is not ("pawpatch-core" or "immortals" or "pure-fixes-data")).ToList() };
+                Packages = legacy.Packages.Where(p => p.Id is not ("immortals" or "pure-fixes-data")).ToList() };
             current.Packages.AddRange([
-                await Package("pawpatch-core", 30, "data/patch.txt", "new AW patch", "2.0.0", true),
                 await Package("immortals", 10, "data/mod.txt", "new Immortals", "2.0.0"),
                 await Package("pure-fixes-data", 900, "data/pure-fix.txt", "new pure fix", "2.0.0"),
-                await Package("game-voice-ru", 120, "voices/ru.txt", "Russian speech"),
-                await Package("aw-localization-ru", 110, "startup/language.txt", "ru AW without core") ]);
+                await Package("game-voice-ru", 120, "voices/ru.txt", "Russian speech") ]);
             await WriteFeed(current); await client.GetChannelAsync(channelName);
             var prefs = new UserSettings { Language = language, GamePath = game, Mod = GameMod.Vanilla, Channel = channelName,
                 RussianLocalization = true, GameVoiceLanguage = "en", ModNoticeSeen = true, VanillaPawPatchEnabled = true };
-            foreach (var mod in new[] { GameMod.ArcaneWars, GameMod.Immortals, GameMod.Vanilla }) prefs.ModChannels[mod] = new() { Channel = channelName };
+            foreach (var mod in new[] { GameMod.Immortals, GameMod.Vanilla }) prefs.ModChannels[mod] = new() { Channel = channelName };
             foreach (var p in ModLibrary.Packages(current, GameMod.Vanilla)) await installer.PrepareAsync(p, p.Urls[0]);
             await ApplyFixture(current, prefs); await library.RememberAsync(current, GameMod.Vanilla);
             new SettingsStore().Save(prefs);
             window = new MainWindow(configuration, client) { Width = 1440, Height = 900, ShowActivated = false, ShowInTaskbar = false };
             Set("_game", new GameInstallation(game, Path.Combine(game, "k2.exe"), "fixture", channelName));
             Set("_gameRunningProbe", new Func<bool>(() => false));
-            FixtureAccess.AllowArcaneWars(window);
             Call("SetActivePage", "modules");
             Check(await (Task<bool>)Call("CheckFeedAsync", false)!, "Current signed catalog was rejected.");
             var before = StateText(); var libraryBefore = File.ReadAllText(Path.Combine(game, ".pawpatch", "mod-library.json"));
-            foreach (var mod in new[] { GameMod.ArcaneWars, GameMod.Immortals })
+            foreach (var mod in new[] { GameMod.Immortals })
             {
                 Select(mod);
                 Check(Prefs().RussianLocalization && GameLanguages.Voice(Prefs()) == "en", "Selecting a retained mod changed global language choices.");
@@ -155,7 +149,7 @@ internal static class RetainedSelectionChecks
                 }
                 Languages(true, "en");
             }
-            Select(GameMod.ArcaneWars);
+            Select(GameMod.Immortals);
             Languages(false, "en");
             Check(C<ComboBox>("GameVoiceCombo").IsEnabled, "Known modern catalog does not allow choosing separate speech.");
             C<ComboBox>("GameVoiceCombo").SelectedIndex = 1; UpdateRequired();
@@ -168,38 +162,18 @@ internal static class RetainedSelectionChecks
             Prefs().PinnedRelease = null;
             Set("_offeredModChannel", null); Call("RefreshStatus"); UpdateRequired(false);
             Set("_offeredModChannel", current); Call("RefreshStatus"); UpdateRequired();
-            // The standalone component path is unavailable in old AW catalogs too.
-            Languages(false, "en"); Prefs().PawPatchEnabled = false; Prefs().IndependentHostility = false;
-            Prefs().AdditionalRoamingCompanies = false; Prefs().RoamingSpawnMode = "standard";
-            Prefs().SiegeBalance = Prefs().DisablePowersAndShards = false;
-            Languages(true, "ru"); UpdateRequired();
-            Prefs().PawPatchEnabled = true; Prefs().AdditionalRoamingCompanies = true; Prefs().RoamingSpawnMode = "x4";
-            Prefs().SiegeBalance = Prefs().DisablePowersAndShards = true;
-            Languages(true, "en");
             var worst = 0d;
             for (var i = 0; i < 45; i++)
             {
-                var watch = Stopwatch.StartNew(); Select(i % 3 == 0 ? GameMod.Vanilla : i % 3 == 1 ? GameMod.Immortals : GameMod.ArcaneWars);
+                var watch = Stopwatch.StartNew(); Select(i % 2 == 0 ? GameMod.Vanilla : GameMod.Immortals);
                 worst = Math.Max(worst, watch.Elapsed.TotalMilliseconds);
-                if (Prefs().Mod == GameMod.Vanilla) Check(!C<Button>("UpdateButton").IsEnabled && !(bool)Field("_settingsPending")!, "AW update leaked into unchanged Vanilla.");
+                if (Prefs().Mod == GameMod.Vanilla) Check(!C<Button>("UpdateButton").IsEnabled && !(bool)Field("_settingsPending")!, "Immortals update leaked into unchanged Vanilla.");
                 else UpdateRequired();
             }
             Check(worst < 500, $"Mod clicks block for {worst:F0} ms.");
             Check(StateText() == before && File.ReadAllText(Path.Combine(game, ".pawpatch", "mod-library.json")) == libraryBefore,
                 "Previewing selections wrote game files or upgraded retained releases.");
-            // Simulate loss of the account connection: retained AW stays selectable,
-            // while the explicit update is unavailable until reconnecting.
-            var account = (AccountService)Field("_account")!;
-            typeof(AccountService).GetProperty("State")!.SetValue(account, AccountState.Offline);
-            var connection = typeof(AccountService).GetProperty("Connection", flags)!.GetValue(account)!;
-            var request = connection.GetType().GetMethod("Begin", flags)!.Invoke(connection, null);
-            connection.GetType().GetMethod("Complete", flags)!.Invoke(connection, [request, false]);
-            Call("RenderAccount"); Call("RefreshStatus");
-            Check(!C<Button>("UpdateButton").IsEnabled && !C<Button>("LaunchButton").IsEnabled && Field("_installationFailure") is null,
-                "Offline mixed selection permits an update or reports corruption.");
-            request = connection.GetType().GetMethod("Begin", flags)!.Invoke(connection, null);
-            connection.GetType().GetMethod("Complete", flags)!.Invoke(connection, [request, true]);
-            FixtureAccess.AllowArcaneWars(window); Call("RefreshStatus"); UpdateRequired();
+            Select(GameMod.Immortals); Call("RefreshStatus"); UpdateRequired();
             var content = (FrameworkElement)window.Content;
             content.Measure(new Size(1440, 900)); content.Arrange(new Rect(0, 0, 1440, 900)); content.UpdateLayout();
             await Task.Delay(350); content.UpdateLayout();
@@ -216,29 +190,28 @@ internal static class RetainedSelectionChecks
             while ((bool)Field("_busy")! && DateTimeOffset.UtcNow < deadline) await Task.Delay(20);
             var state = installer.LoadState();
             Check(!(bool)Field("_busy")! && Field("_installationFailure") is null, "Update and apply failed.");
-            Check(state.AppliedSettings?.Mod == GameMod.ArcaneWars && state.AppliedSettings.RussianLocalization && state.AppliedSettings.GameVoiceLanguage == "en",
+            Check(state.AppliedSettings?.Mod == GameMod.Immortals && state.AppliedSettings.RussianLocalization && state.AppliedSettings.GameVoiceLanguage == "en",
                 "Update did not preserve and apply the selected languages.");
-            Check(state.Modules["pawpatch-core"].Version == "2.0.0" && !state.Modules.ContainsKey("game-voice-ru"), "Wrong core or unselected speech applied.");
-            Check(library.Find(GameMod.ArcaneWars, channelName)?.ReleaseId == ChannelFingerprint.Create(current), "Updated mod was not retained.");
-            Check(library.Find(GameMod.Immortals, channelName)?.ReleaseId == ChannelFingerprint.Create(legacy), "AW update modified inactive Immortals.");
+            Check(state.Modules["immortals"].Version == "2.0.0" && !state.Modules.ContainsKey("game-voice-ru"), "Wrong mod or unselected speech applied.");
+            Check(library.Find(GameMod.Immortals, channelName)?.ReleaseId == ChannelFingerprint.Create(current), "Updated mod was not retained.");
             Check(!C<Button>("UpdateButton").IsEnabled && !(bool)Field("_settingsPending")!, "Completed update remains pending.");
-            // The same migration applies to an older retained Vanilla patch and
-            // Immortals, independently of the mod currently active in the game.
+            // The same migration applies to an older retained Vanilla patch,
+            // independently of the mod currently active in the game.
             await library.RememberAsync(legacy, GameMod.Vanilla);
-            foreach (var mod in new[] { GameMod.Vanilla, GameMod.Immortals })
+            foreach (var mod in new[] { GameMod.Vanilla })
             {
                 Select(mod); UpdateRequired();
                 C<Button>("UpdateButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 deadline = DateTimeOffset.UtcNow.AddSeconds(15);
                 while ((bool)Field("_busy")! && DateTimeOffset.UtcNow < deadline) await Task.Delay(20);
                 state = installer.LoadState();
-                Check(!(bool)Field("_busy")! && Field("_installationFailure") is null && !(bool)Field("_settingsPending")!, "Non-AW update failed.");
+                Check(!(bool)Field("_busy")! && Field("_installationFailure") is null && !(bool)Field("_settingsPending")!, "Vanilla update failed.");
                 Check(state.AppliedSettings?.Mod == mod && state.AppliedSettings.RussianLocalization && state.AppliedSettings.GameVoiceLanguage == "en",
-                    "Non-AW update changed language choices.");
-                Check(library.Find(mod, channelName)?.ReleaseId == ChannelFingerprint.Create(current), "Non-AW update was not retained.");
+                    "Vanilla update changed language choices.");
+                Check(library.Find(mod, channelName)?.ReleaseId == ChannelFingerprint.Create(current), "Vanilla update was not retained.");
             }
             Check(!installer.IsPrepared(current.Packages.Single(p => p.Id == "game-voice-ru")), "Unselected Russian speech was downloaded.");
-            Select(GameMod.ArcaneWars);
+            Select(GameMod.Immortals);
             var olderOffer = JsonSerializer.Deserialize(JsonSerializer.Serialize(current, LauncherJsonContext.Default.ChannelManifest), LauncherJsonContext.Default.ChannelManifest)!;
             olderOffer.Packages.RemoveAll(p => p.Id == "game-voice-ru");
             Set("_offeredModChannel", olderOffer); Languages(false, "ru");
@@ -248,15 +221,17 @@ internal static class RetainedSelectionChecks
             // All required packages are now retained; actual switching works with
             // every download source removed, including the two selected languages.
             foreach (var path in Directory.GetFiles(sources)) File.Delete(path);
+            Select(GameMod.Immortals); Check(C<Button>("ApplySettingsButton").IsEnabled, "Updated Immortals cannot apply offline.");
+            await (Task)Call("ApplySettingsAsync")!;
+            Check(installer.LoadState().AppliedSettings?.Mod == GameMod.Immortals && !(bool)Field("_settingsPending")! && Field("_installationFailure") is null,
+                "Offline switch failed after successful update.");
             Select(GameMod.Vanilla); Check(C<Button>("ApplySettingsButton").IsEnabled, "Stored Vanilla cannot apply offline.");
             await (Task)Call("ApplySettingsAsync")!;
-            Select(GameMod.ArcaneWars); Check(C<Button>("ApplySettingsButton").IsEnabled, "Updated AW cannot apply offline.");
-            await (Task)Call("ApplySettingsAsync")!;
-            Check(installer.LoadState().AppliedSettings?.Mod == GameMod.ArcaneWars && !(bool)Field("_settingsPending")! && Field("_installationFailure") is null,
-                "Offline switch failed after successful update.");
+            Check(installer.LoadState().AppliedSettings?.Mod == GameMod.Vanilla && !(bool)Field("_settingsPending")! && Field("_installationFailure") is null,
+                "Offline switch back to Vanilla failed.");
             Check(await CryptoAndIO.Sha256Async(Path.Combine(game, "k2.exe")) == exeHash, "Original game executable changed.");
             Check(network.Attempts == 0, "Scenario attempted external network access.");
-            Console.WriteLine($"RETAINED SELECTION PASS {n} {channelName}/{language}: split languages, pins, no offer, standalone components, 45 clicks (max {worst:F1} ms), explicit update, offline reuse.");
+            Console.WriteLine($"RETAINED SELECTION PASS {n} {channelName}/{language}: split languages, pins, no offer, 45 clicks (max {worst:F1} ms), explicit update, offline reuse.");
         }
         var dispatcher = Dispatcher.CurrentDispatcher;
         try

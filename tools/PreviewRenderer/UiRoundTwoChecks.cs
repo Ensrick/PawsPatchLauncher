@@ -53,60 +53,6 @@ internal static class UiRoundTwoChecks
         async Task Scenario()
         {
             Field<PawsPatchLauncher.Localization>("_text").SetLanguage(language); Call("ApplyLanguage");
-            AccountChecks.Populate(window, "profile");
-            var account = Field<AccountService>("_account");
-            var session = (AccountSession)typeof(AccountService).GetField("_session", flags)!.GetValue(account)!;
-            session.AdminLevel = 2; Call("RenderAccount");
-            var admin = Control<Button>("AdminNav");
-            foreach (var page in new[] { "home", "modules", "settings", "friends", "about", "account" })
-            {
-                Call("SetActivePage", page);
-                admin.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout();
-                Check(Field<string>("_activePage") == "admin" && Control<FrameworkElement>("AdminPanel").Visibility == Visibility.Visible,
-                    "Admin panel failed to open from " + page);
-                var request = Field<int>("_adminRequest");
-                Field<DispatcherTimer>("_adminSearchTimer").Start();
-                admin.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout();
-                Check(Field<string>("_activePage") == page && Control<FrameworkElement>("AdminPanel").Visibility == Visibility.Collapsed,
-                    "A second Admin click did not return to " + page);
-                Check(!Field<DispatcherTimer>("_adminSearchTimer").IsEnabled && Field<int>("_adminRequest") > request,
-                    "Closing Admin left a delayed search/response active.");
-            }
-            Call("SetActivePage", "modules"); admin.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Call("SetActivePage", "settings"); admin.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            admin.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Check(Field<string>("_activePage") == "settings", "Admin remembered an older tab after ordinary navigation.");
-            session.AdminLevel = 0; Call("RenderAccount"); admin.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Check(Field<string>("_activePage") != "admin", "Admin toggle bypassed its role check.");
-
-            SocialChecks.Populate(window, "chat");
-            var player = Field<IReadOnlyList<SocialPlayer>>("_socialPlayers")[0] with { Nickname = "paw", DisplayName = "Paw", AdminLevel = 2, Unread = 3 };
-            Set("_socialPlayers", (IReadOnlyList<SocialPlayer>)new[] { player });
-            foreach (var size in new[] { (1050d, 680d), (1280d, 800d) })
-            {
-                window.Width = size.Item1; window.Height = size.Item2;
-                Call("RenderSocialRows"); await Layout(); await Task.Delay(260); await Layout();
-                var row = (StackPanel)Control<Panel>("FriendsRowsPanel").Children[0];
-                var open = Descendants<Button>(row).First();
-                var identity = Descendants<SocialIdentityLine>(open).Single();
-                var username = (FrameworkElement)identity.Children[0];
-                var badge = (Border)identity.Children[1];
-                var gap = badge.TranslatePoint(new Point(), open).X - username.TranslatePoint(new Point(username.ActualWidth, 0), open).X;
-                Check(gap is >= 4 and <= 8, "Administrator badge is not immediately after @username.");
-                Check(Math.Abs(badge.TranslatePoint(new Point(0, badge.ActualHeight / 2), open).Y
-                    - username.TranslatePoint(new Point(0, username.ActualHeight / 2), open).Y) < 1,
-                    "Administrator badge left the username line.");
-                Check(badge.ActualWidth > 50 && badge.TranslatePoint(new Point(badge.ActualWidth, 0), open).X < open.ActualWidth,
-                    "Administrator badge is clipped by the chat card.");
-                if (size.Item1 == 1050) Capture(open, "administrator-card");
-            }
-            Set("_socialPlayers", (IReadOnlyList<SocialPlayer>)new[] { player with { AdminLevel = 0 } }); Call("RenderSocialRows"); await Layout();
-            Check(!Descendants<SocialIdentityLine>((DependencyObject)Control<Panel>("FriendsRowsPanel").Children[0]).Any(),
-                "Ordinary player retained an administrator badge/empty role row.");
-            Set("_socialPlayers", (IReadOnlyList<SocialPlayer>)new[] { player with { DeletedAt = DateTimeOffset.UtcNow } }); Call("RenderSocialRows"); await Layout();
-            Check(!Descendants<SocialIdentityLine>((DependencyObject)Control<Panel>("FriendsRowsPanel").Children[0]).Any(),
-                "Deleted player retained a trusted role badge.");
-
             var panel = Control<Border>("OperationStatusPanel");
             var details = Control<TextBlock>("TransferText");
             var progress = Control<ProgressBar>("OperationProgress");
@@ -161,7 +107,7 @@ internal static class UiRoundTwoChecks
                     && progress.Visibility == Visibility.Collapsed && !progress.HasAnimatedProperties,
                     "Completed operation retained a reserved work area or running progress animation.");
             }
-            Console.WriteLine($"ROUND TWO UI PASS {checks} {language}: role immediately after username, administrator navigation toggle, fixed operation geometry at two sizes/Home/footer, measured transfer data, verify/apply, stale callbacks, phase motion cleanup.");
+            Console.WriteLine($"ROUND TWO UI PASS {checks} {language}: fixed operation geometry at two sizes/Home/footer, measured transfer data, verify/apply, stale callbacks, phase motion cleanup.");
         }
         try
         {

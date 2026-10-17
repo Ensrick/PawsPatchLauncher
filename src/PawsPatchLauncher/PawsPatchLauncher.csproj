@@ -16,20 +16,12 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <DefineConstants Condition="'$(CommunityChatTestBuild)' == 'true'">$(DefineConstants);COMMUNITY_CHAT_TEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\tools\RwdTool\RwdTool.csproj" />
-    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
-    <PackageReference Include="NVorbis" Version="0.10.5" />
-    <PackageReference Include="Concentus.Oggfile" Version="1.0.7" />
-    <PackageReference Include="Concentus" Version="2.2.2" />
-    <PackageReference Include="XamlAnimatedGif" Version="2.3.2" />
     <Resource Include="Assets\K2Launcher.ico" />
-    <Resource Include="Assets\ChatGlyphs\*.png" />
     <EmbeddedResource Include="launcher.config.json" />
     <EmbeddedResource Include="ThirdPartyNotices.txt" />
-    <EmbeddedResource Include="Assets\notification-soft-pluck.wav" />
     <EmbeddedResource Include="Assets\mod-guides.json" />
     <EmbeddedResource Include="Assets\Languages\*.json" />
     <EmbeddedResource Include="Assets\Vanilla1372\autoexec.txt" />

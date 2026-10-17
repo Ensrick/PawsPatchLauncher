@@ -50,7 +50,7 @@ internal static class Pure030Tests
                     Check(enabled||!ps.Any(p=>ids.Contains(p.Id)),"Master-off retained pure package");
                     Check(ps.Any(p=>p.Id=="pure-player-colors")==((mask&1)!=0&&enabled&&!data),"Color package scope");
                     Check((s.DesyncMode=="continue")==((mask&2)!=0&&enabled&&!data),"Diagnostic switch scope");
-                    FriendConfiguration.ValidateFeed(s,f);selections++;
+                    selections++;
                 }
             }
         }

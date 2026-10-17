@@ -17,10 +17,7 @@ public partial class MainWindow
     }
 
     private string SelectionUpdateText => _selectionUpdateAvailable
-        ? GameMod.IsArcaneWars(_settings) && !LiveArcaneAccess
-            ? T("Для выбранных языков или компонентов нужны новые файлы мода. Восстановите подключение к аккаунту для обновления либо выберите настройки сохранённого выпуска.",
-                "The selected languages or components need newer mod files. Reconnect your account to update, or choose settings supported by the stored release.")
-            : T("Для выбранных языков или компонентов нужны новые файлы мода. Нажмите «Обновить и применить». Выбранные языки сохранятся.",
+        ? T("Для выбранных языков или компонентов нужны новые файлы мода. Нажмите «Обновить и применить». Выбранные языки сохранятся.",
                 "The selected languages or components need newer mod files. Use Update and apply. Your language choices will be kept.")
         : _settings.PinnedRelease is not null
             ? T("Выбранный старый выпуск не поддерживает эти языки или компоненты. Выберите последнюю версию патча либо настройки, доступные в этом выпуске.",

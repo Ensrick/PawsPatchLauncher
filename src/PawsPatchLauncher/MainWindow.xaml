@@ -10,106 +10,7 @@
         <WindowChrome CaptionHeight="46" ResizeBorderThickness="5" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
     <Window.Resources>
-        <Style x:Key="ProfileAvatarKeyboardFocus" TargetType="Control">
-            <Setter Property="Template">
-                <Setter.Value><ControlTemplate TargetType="Control">
-                    <Border Margin="-4" CornerRadius="8" BorderBrush="#E1B752" BorderThickness="1" IsHitTestVisible="False"/>
-                </ControlTemplate></Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ProfileAvatarButton" TargetType="Button">
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{StaticResource ProfileAvatarKeyboardFocus}"/>
-            <Setter Property="Template">
-                <Setter.Value><ControlTemplate TargetType="Button">
-                    <Grid Background="Transparent">
-                        <!-- The avatar/status content paints over the outer hover ring. -->
-                        <Ellipse x:Name="Outline" Margin="-1.5" Stroke="Transparent" StrokeThickness="1.5" IsHitTestVisible="False"/>
-                        <ContentPresenter/>
-                    </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Outline" Property="Stroke" Value="#E1B752"/></Trigger>
-                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="Outline" Property="Stroke" Value="#FFF0BB"/></Trigger>
-                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Cursor" Value="Arrow"/><Setter TargetName="Outline" Property="Stroke" Value="Transparent"/></Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate></Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="GameParticipantButton" TargetType="Button">
-            <Setter Property="Background" Value="#1A324D"/>
-            <Setter Property="BorderBrush" Value="#2A4564"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Template">
-                <Setter.Value><ControlTemplate TargetType="Button">
-                    <Border x:Name="Surface" CornerRadius="8" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#254563"/><Setter TargetName="Surface" Property="BorderBrush" Value="#71899E"/></Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#EBC76C"/></Trigger>
-                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="#132B43"/></Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate></Setter.Value>
-            </Setter>
-        </Style>
         <!-- Toggle semantics/keyboard access without a checkbox glyph: the whole card is the target. -->
-        <Style x:Key="BroadcastRecipient" TargetType="CheckBox">
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="Padding" Value="14,11"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CheckBox">
-                        <Border x:Name="RecipientCard" CornerRadius="9" BorderThickness="1"
-                                local:Motion.Background="#172D46" local:Motion.BorderBrush="#304965">
-                            <Grid>
-                                <Border x:Name="SelectionAccent" Width="3" Margin="0,12,0,12" CornerRadius="2"
-                                        HorizontalAlignment="Left" Background="#E5BF65" local:Motion.Opacity="0"/>
-                                <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
-                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="RecipientCard" Property="local:Motion.Background" Value="#233F5C"/>
-                                <Setter TargetName="RecipientCard" Property="local:Motion.BorderBrush" Value="#58789B"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="RecipientCard" Property="local:Motion.Background" Value="#2B4052"/>
-                                <Setter TargetName="RecipientCard" Property="local:Motion.BorderBrush" Value="#C6A457"/>
-                                <Setter TargetName="SelectionAccent" Property="local:Motion.Opacity" Value="1"/>
-                            </Trigger>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsChecked" Value="True"/>
-                                    <Condition Property="IsMouseOver" Value="True"/>
-                                </MultiTrigger.Conditions>
-                                <Setter TargetName="RecipientCard" Property="local:Motion.Background" Value="#384D5D"/>
-                                <Setter TargetName="RecipientCard" Property="local:Motion.BorderBrush" Value="#EDC875"/>
-                            </MultiTrigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="RecipientCard" Property="local:Motion.Background" Value="#142A41"/>
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="RecipientCard" Property="local:Motion.BorderBrush" Value="#FFE1A1"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Cursor" Value="Arrow"/>
-                                <Setter TargetName="RecipientCard" Property="local:Motion.Opacity" Value="0.48"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <LinearGradientBrush x:Key="WindowBackground" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#07101F" Offset="0"/>
             <GradientStop Color="#0A1930" Offset="0.52"/>
@@ -181,66 +82,6 @@
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="InputBorder" Property="local:Motion.Opacity" Value="0.45"/>
                             </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ChatComposerInput" TargetType="local:ChatComposer">
-            <Setter Property="Background" Value="#0A1729"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="BorderBrush" Value="#405878"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="9"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="CaretBrush" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="SelectionBrush" Value="{StaticResource GoldBrush}"/>
-            <Setter Property="SelectionOpacity" Value="0.5"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="local:ChatComposer">
-                        <Border x:Name="InputBorder" CornerRadius="5"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                local:Motion.Background="{TemplateBinding Background}" local:Motion.BorderBrush="{TemplateBinding BorderBrush}">
-                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="InputBorder" Property="local:Motion.BorderBrush" Value="#7892B3"/>
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="InputBorder" Property="local:Motion.BorderBrush" Value="{StaticResource GoldBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="InputBorder" Property="local:Motion.Opacity" Value="0.45"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="AccountPasswordInput" TargetType="PasswordBox">
-            <Setter Property="Height" Value="36"/>
-            <Setter Property="Background" Value="#0A1729"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="CaretBrush" Value="{StaticResource TextMainBrush}"/>
-            <Setter Property="BorderBrush" Value="#405878"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="9,0"/>
-            <Setter Property="FontFamily" Value="Arial"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="MaxLength" Value="128"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="PasswordBox">
-                        <Border x:Name="PasswordBorder" Background="{TemplateBinding Background}" local:Motion.BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
-                            <ScrollViewer x:Name="PART_ContentHost" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" VerticalAlignment="Stretch"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{StaticResource GoldBrush}"/></Trigger>
-                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -356,13 +197,9 @@
                     <TextBlock Text="P A W ' S   L A U N C H E R" FontWeight="Bold" FontSize="12" Foreground="{StaticResource GoldBrightBrush}"/>
                     <TextBlock Text="  /  KOHAN II" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
                 </StackPanel>
-                <Border x:Name="ConnectionNotice" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="330,0,18,0" MaxWidth="450" Padding="16,7" CornerRadius="8" Background="#542F3D" BorderBrush="#99556A" BorderThickness="1" Visibility="Collapsed" IsHitTestVisible="False">
-                    <TextBlock x:Name="ConnectionNoticeText" FontSize="14" FontWeight="SemiBold" Foreground="#FFD3D9" TextTrimming="CharacterEllipsis"/>
-                </Border>
                 <StackPanel x:Name="TitleActions" Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                     <Button x:Name="LauncherUpdateButton" Visibility="Collapsed" Height="32" Margin="0,7,12,7" Style="{StaticResource GoldButton}" Padding="12,4" Click="LauncherUpdateButton_Click"/>
                     <Button x:Name="LanguageButton" Visibility="Collapsed" Width="58" Height="32" Margin="0,7,6,7" Style="{StaticResource GhostButton}" Padding="4" Click="LanguageButton_Click">EN</Button>
-                    <Button x:Name="ModsDiscordButton" Style="{StaticResource TitleButton}" Width="42" Height="34" Margin="0,6,12,6" Padding="8,6" Foreground="#B9C2FF" local:Motion.HoverBackground="#3A416F" Click="ModsDiscord_Click"><local:LauncherIcon Kind="Discord" Width="23" Height="23"/></Button>
                     <Button x:Name="MinimizeWindowButton" Style="{StaticResource TitleButton}" Width="42" Height="46" Click="MinimizeButton_Click"><local:LauncherIcon Kind="Minimize"/></Button>
                     <Button x:Name="CloseWindowButton" Style="{StaticResource TitleButton}" local:Motion.HoverBackground="#753B43" local:Motion.PressedBackground="#512730" Width="46" Height="46" Click="CloseButton_Click"><local:LauncherIcon Kind="Close"/></Button>
                 </StackPanel>
@@ -394,19 +231,10 @@
                                 </Border>
                             </Grid>
                             <Button x:Name="ModManagerNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="ModManagerNav_Click"/>
-                            <Grid Margin="0,0,0,8">
-                                <Button x:Name="FriendsNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Click="FriendsNav_Click"/>
-                                <Border x:Name="FriendsNavBadge" Background="#B94757" CornerRadius="9" MinWidth="18" Height="18" Padding="4,0" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" IsHitTestVisible="False" Visibility="Collapsed">
-                                    <TextBlock x:Name="FriendsNavBadgeText" FontSize="11" FontWeight="Bold" Foreground="White" TextAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                            </Grid>
                             <Button x:Name="SettingsNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="SettingsNav_Click"/>
                             <Button x:Name="AboutNav" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Margin="0,0,0,8" Click="AboutNav_Click"/>
-                            <Button x:Name="AboutModsNav" Visibility="Collapsed" Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Click="AboutModsNav_Click"/>
                         </StackPanel>
                         <StackPanel Grid.Row="4">
-                            <Button x:Name="PrivacyPolicyButton" Style="{StaticResource GhostButton}" FontSize="12" Padding="8,8" HorizontalContentAlignment="Left" Margin="0,0,0,10" Click="PrivacyPolicy_Click"/>
-                            <Button x:Name="AdminNav" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Shield" HorizontalContentAlignment="Left" Margin="0,0,0,16" Visibility="Collapsed" Click="AdminNav_Click"/>
                             <TextBlock x:Name="LauncherVersionLabel" Style="{StaticResource SmallMetadataText}" Foreground="#708098"/>
                             <TextBlock x:Name="LauncherVersionText" Foreground="{StaticResource TextMutedBrush}" FontSize="13" Margin="0,3,0,0"/>
                             <TextBlock x:Name="InstalledPatchLabel" Style="{StaticResource SmallMetadataText}" Foreground="#708098" Margin="0,12,0,0"/>
@@ -448,314 +276,26 @@
                                 <Ellipse x:Name="HistoryButtonBadge" Width="7" Height="7" Fill="{StaticResource GoldBrightBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-3,-3,0" Visibility="Collapsed"/>
                             </Grid>
                         </Button>
-                        <Button x:Name="AccountHeaderButton" Grid.Column="3" Width="76" Height="70" Margin="12,0,0,0" Style="{StaticResource ProfileHeaderButton}" Background="Transparent" BorderBrush="Transparent" Padding="5,0" Click="AccountHeader_Click">
-                            <StackPanel HorizontalAlignment="Center">
-                                <Border x:Name="AccountAvatarBorder" Width="44" Height="44" CornerRadius="22" BorderThickness="1" local:Motion.BorderBrush="#60738D" local:Motion.Background="#162A45" HorizontalAlignment="Center">
-                                    <Grid>
-                                        <local:LauncherIcon x:Name="AccountAvatarPlaceholder" Kind="Person" Width="28" Height="28"/>
-                                        <Ellipse x:Name="AccountAvatarPicture" Width="42" Height="42" Visibility="Collapsed"/>
-                                    </Grid>
-                                </Border>
-                                <TextBlock x:Name="AccountHeaderNameText" FontSize="12" MaxWidth="64" TextTrimming="CharacterEllipsis" TextAlignment="Center" Margin="0,3,0,0"/>
-                            </StackPanel>
-                        </Button>
                     </Grid>
 
-                    <Grid x:Name="CommunityWorkspace" Grid.Row="2" Grid.RowSpan="3" SizeChanged="CommunityWorkspace_SizeChanged">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="14"/><ColumnDefinition x:Name="CommunityColumn" Width="440"/></Grid.ColumnDefinitions>
+                    <Grid x:Name="CommunityWorkspace" Grid.Row="2" Grid.RowSpan="3">
+                        
                         <Grid x:Name="PagesWorkspace" SizeChanged="PagesWorkspace_SizeChanged">
                             <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="18"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition x:Name="OptionsColumn" Width="1.6*"/>
-                            <ColumnDefinition x:Name="OptionsGapColumn" Width="20"/>
-                            <ColumnDefinition x:Name="NewsColumn" Width="1*"/>
+                            <ColumnDefinition x:Name="OptionsGapColumn" Width="0"/>
+                            <ColumnDefinition x:Name="NewsColumn" Width="0"/>
                         </Grid.ColumnDefinitions>
 
-                        <Grid x:Name="AdminPanel" Grid.ColumnSpan="3" Visibility="Collapsed">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <StackPanel x:Name="AdminHeaderPanel" Margin="0,0,12,0"/>
-                            <ScrollViewer x:Name="AdminContentScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                                          HorizontalScrollBarVisibility="Disabled" ClipToBounds="True">
-                                <StackPanel x:Name="AdminContentPanel" Margin="0,0,12,0"/>
-                            </ScrollViewer>
-                        </Grid>
 
-                        <Grid x:Name="MainOptionsHost" Grid.Column="0">
+                        <Grid x:Name="MainOptionsHost" Grid.Column="0" Grid.ColumnSpan="3">
                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                             <StackPanel x:Name="PinnedComponentsHost" Visibility="Collapsed" Margin="0,0,12,0"/>
                         <ScrollViewer x:Name="MainOptionsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled" ClipToBounds="True">
                             <StackPanel Margin="0,0,12,0">
-                                <StackPanel x:Name="FriendsPanel" Visibility="Collapsed">
-                                    <ContentControl x:Name="FriendsModerationNotice"/>
-                                    <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                                        <StackPanel>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                <TextBlock x:Name="FriendsTitleText" Style="{StaticResource CardTitle}" VerticalAlignment="Center" Margin="0"/>
-                                                <StackPanel x:Name="FriendsToolbar" Grid.Column="1" Orientation="Horizontal">
-                                                    <Button x:Name="FriendsShowAddButton" Style="{StaticResource GhostButton}" Background="#216343" BorderBrush="#45996A" Foreground="White" local:Motion.HoverBackground="#2C7954" local:Motion.PressedBackground="#17482F" Width="28" Height="28" Padding="0" Margin="0,0,4,0" Click="FriendsShowAdd_Click"><local:LauncherIcon Kind="AddFriend" Width="18" Height="18"/></Button>
-                                                    <Button x:Name="FriendsRequestsTab" Style="{StaticResource GhostButton}" Width="28" Height="28" Padding="0" Margin="0,0,4,0" Click="FriendsRequests_Click">
-                                                        <Grid><local:LauncherIcon Kind="Requests" Width="18" Height="18"/><Border x:Name="FriendsRequestsBadge" Background="#B94757" CornerRadius="7" MinWidth="14" Height="14" Padding="3,0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12,-7,-7,0" Visibility="Collapsed"><TextBlock x:Name="FriendsRequestsBadgeText" FontSize="9" Foreground="White"/></Border></Grid>
-                                                    </Button>
-                                                    <Button x:Name="FriendsBroadcastButton" Style="{StaticResource GhostButton}" Width="28" Height="28" Padding="0" Margin="0,0,4,0" Click="FriendsBroadcast_Click"><local:LauncherIcon Kind="Send" Width="18" Height="18"/></Button>
-                                                    <Button x:Name="FriendsBlockedTab" Style="{StaticResource GhostButton}" Width="28" Height="28" Padding="0" Margin="0" Click="FriendsBlocked_Click"><local:LauncherIcon Kind="BlockedUsers" Width="18" Height="18"/></Button>
-                                                </StackPanel>
-                                            </Grid>
-                                            <StackPanel x:Name="FriendsGuestPanel" Margin="0,12,0,0">
-                                                <TextBlock x:Name="FriendsGuestText" Style="{StaticResource CardDescription}"/>
-                                                <WrapPanel Margin="0,12,0,0">
-                                                    <Button x:Name="FriendsLoginButton" Style="{StaticResource GoldButton}" Click="AccountShowLogin_Click" Margin="0,0,8,8"/>
-                                                    <Button x:Name="FriendsRegisterButton" Style="{StaticResource GhostButton}" Click="AccountShowRegister_Click" Margin="0,0,0,8"/>
-                                                </WrapPanel>
-                                            </StackPanel>
-                                            <StackPanel x:Name="FriendsSignedInPanel" Margin="0,12,0,0" Visibility="Collapsed">
-                                                <Border x:Name="FriendsSearchPanel" Margin="0,0,0,8">
-                                                    <Grid>
-                                                        <TextBox x:Name="FriendsSearchInput" Style="{StaticResource ConfigurationInput}" Margin="0" Height="34" MaxLength="64" VerticalContentAlignment="Center" TextChanged="FriendsSearch_Changed" GotKeyboardFocus="FriendsSearch_FocusChanged" LostKeyboardFocus="FriendsSearch_FocusChanged"/>
-                                                        <TextBlock x:Name="FriendsSearchPlaceholder" Foreground="#71869F" Margin="10,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-                                                    </Grid>
-                                                </Border>
-                                                <TextBlock x:Name="FriendsStatusText" Style="{StaticResource CardDescription}" Foreground="#F3CF7B" Margin="0,0,0,8" Visibility="Collapsed"/>
-                                                <TextBlock x:Name="FriendsListEmptyText" Style="{StaticResource CardDescription}" Margin="0,10,0,10" AutomationProperties.LiveSetting="Polite"/>
-                                                <ProgressBar x:Name="FriendsListLoadingIndicator" Height="3" IsIndeterminate="True" Margin="0,0,0,10" Visibility="Collapsed"/>
-                                                <Button x:Name="FriendsListRetryButton" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,0,0,10" Visibility="Collapsed" Click="FriendsListRetry_Click"/>
-                                                <StackPanel x:Name="FriendsRowsPanel"/>
-                                                <StackPanel x:Name="FriendsOtherOutboxPanel" Margin="0,10,0,0"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                                <StackPanel x:Name="AccountPanel" Visibility="Collapsed">
-                                    <Border x:Name="AccountMessageCard" Style="{StaticResource Card}" Visibility="Collapsed" Margin="0,0,0,14">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                            <local:LauncherIcon x:Name="AccountMessageIcon" Kind="Warning" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                            <TextBlock x:Name="AccountMessageText" Grid.Column="1" Style="{StaticResource CardDescription}" Margin="0" AutomationProperties.LiveSetting="Assertive"/>
-                                        </Grid>
-                                    </Border>
-                                    <Border x:Name="AccountFormCard" Style="{StaticResource Card}" Visibility="Collapsed" Margin="0,0,0,14">
-                                        <StackPanel>
-                                            <WrapPanel Margin="0,0,0,14">
-                                                <Button x:Name="AccountShowLoginButton" Style="{StaticResource GhostButton}" Margin="0,0,8,0" Click="AccountShowLogin_Click"/>
-                                                <Button x:Name="AccountShowRegisterButton" Style="{StaticResource GhostButton}" Click="AccountShowRegister_Click"/>
-                                            </WrapPanel>
-                                            <TextBlock x:Name="AccountFormTitleText" Style="{StaticResource CardTitle}"/>
-                                            <TextBlock x:Name="AccountFormHintText" Style="{StaticResource CardDescription}" Margin="0,0,0,16"/>
-                                            <TextBlock x:Name="AccountPrivacyText" Style="{StaticResource CardDescription}" Margin="0,0,0,6"/>
-                                            <Button x:Name="AccountPrivacyButton" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,0,0,14" Click="PrivacyPolicy_Click"/>
-                                            <StackPanel x:Name="AccountFieldsPanel">
-                                                <StackPanel x:Name="AccountNicknamePanel" Visibility="Collapsed">
-                                                    <TextBlock x:Name="AccountDisplayNameLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <TextBox x:Name="AccountDisplayNameInput" Style="{StaticResource ConfigurationInput}" FontSize="14" MaxLength="32" TextWrapping="NoWrap"/>
-                                                    <TextBlock x:Name="AccountNicknameLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <TextBox x:Name="AccountNicknameInput" Style="{StaticResource ConfigurationInput}" FontSize="14" MaxLength="24" TextWrapping="NoWrap"/>
-                                                </StackPanel>
-                                                <TextBlock x:Name="AccountEmailLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                <TextBox x:Name="AccountEmailInput" Style="{StaticResource ConfigurationInput}" FontSize="14" MaxLength="254" TextWrapping="NoWrap"/>
-                                                <TextBlock x:Name="AccountPasswordLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                <Grid>
-                                                    <PasswordBox x:Name="AccountPasswordInput" Style="{StaticResource AccountPasswordInput}" Margin="0,0,0,10" KeyDown="AccountPassword_KeyDown"/>
-                                                    <TextBox x:Name="AccountPasswordInputVisible" Style="{StaticResource ConfigurationInput}" FontSize="14" Height="36" Padding="9,0" VerticalContentAlignment="Center" TextWrapping="NoWrap" MaxLength="128" IsUndoEnabled="False" Visibility="Collapsed" Margin="0,0,0,10" KeyDown="AccountPassword_KeyDown"/>
-                                                </Grid>
-                                                <StackPanel x:Name="AccountRepeatPanel" Visibility="Collapsed">
-                                                    <TextBlock x:Name="AccountRepeatLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <Grid>
-                                                        <PasswordBox x:Name="AccountRepeatInput" Style="{StaticResource AccountPasswordInput}" Margin="0,0,0,10" KeyDown="AccountPassword_KeyDown"/>
-                                                        <TextBox x:Name="AccountRepeatInputVisible" Style="{StaticResource ConfigurationInput}" FontSize="14" Height="36" Padding="9,0" VerticalContentAlignment="Center" TextWrapping="NoWrap" MaxLength="128" IsUndoEnabled="False" Visibility="Collapsed" Margin="0,0,0,10" KeyDown="AccountPassword_KeyDown"/>
-                                                    </Grid>
-                                                </StackPanel>
-                                            </StackPanel>
-                                            <CheckBox x:Name="AccountShowPasswordCheck" Tag="login" IsChecked="False" HorizontalAlignment="Left" Margin="0,0,0,10" Checked="ShowPassword_Changed" Unchecked="ShowPassword_Changed"/>
-                                            <CheckBox x:Name="AccountRememberCheck" IsChecked="True" HorizontalAlignment="Left" Margin="0,2,0,6" Checked="AccountRemember_Changed" Unchecked="AccountRemember_Changed"/>
-                                            <TextBlock x:Name="AccountRememberText" Style="{StaticResource CardDescription}" Margin="0,2,0,14"/>
-                                            <WrapPanel>
-                                                <Button x:Name="AccountSubmitButton" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="AccountSubmit_Click"/>
-                                            </WrapPanel>
-                                            <Button x:Name="AccountForgotButton" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="AccountForgot_Click"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border x:Name="AccountConfirmationCard" Style="{StaticResource Card}" Visibility="Collapsed" MaxWidth="580" HorizontalAlignment="Left">
-                                        <StackPanel>
-                                            <local:LauncherIcon Kind="Requests" Width="36" Height="36" Foreground="{StaticResource GoldBrightBrush}" HorizontalAlignment="Left" Margin="0,0,0,14"/>
-                                            <TextBlock x:Name="AccountConfirmationTitle" Style="{StaticResource CardTitle}"/>
-                                            <TextBlock x:Name="AccountConfirmationHint" Style="{StaticResource CardDescription}" Margin="0,0,0,18"/>
-                                            <TextBlock x:Name="AccountConfirmationEmailLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                            <TextBox x:Name="AccountConfirmationEmailInput" Style="{StaticResource ConfigurationInput}" MaxLength="254" MinWidth="260"/>
-                                            <TextBlock x:Name="AccountConfirmationCodeLabel" Style="{StaticResource FieldTitle}" Margin="0,4,0,8"/>
-                                            <TextBox x:Name="AccountConfirmationCodeInput" Style="{StaticResource ConfigurationInput}" Width="206" Height="48" HorizontalAlignment="Left" FontSize="26" Typography.NumeralAlignment="Tabular" MaxLength="6" TextAlignment="Center" VerticalContentAlignment="Center" IsUndoEnabled="False"
-                                                PreviewTextInput="AccountRecoveryCode_PreviewTextInput" DataObject.Pasting="AccountRecoveryCode_Pasting" TextChanged="AccountConfirmationCode_Changed" KeyDown="AccountConfirmationCode_KeyDown"/>
-                                            <WrapPanel Margin="0,12,0,0">
-                                                <Button x:Name="AccountConfirmButton" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="AccountConfirm_Click"/>
-                                                <Button x:Name="AccountResendButton" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Click="AccountResend_Click"/>
-                                            </WrapPanel>
-                                            <Button x:Name="AccountConfirmationBackButton" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="AccountShowLogin_Click"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border x:Name="AccountSignedInCard" Style="{StaticResource Card}" Visibility="Collapsed" Margin="0,0,0,14" MaxWidth="900">
-                                        <StackPanel>
-                                            <TextBlock x:Name="AccountProfileTitleText" Style="{StaticResource CardTitle}"/>
-                                            <ContentControl x:Name="AccountModerationNotice"/>
-                                            <Border Background="#182F48" BorderBrush="#365571" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,12,0,24">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                                <Button x:Name="AccountAvatarEditButton" Width="86" Height="86" Margin="0,0,20,0" VerticalAlignment="Center" Cursor="Hand" Click="AccountAvatarEdit_Click">
-                                                    <Button.Template><ControlTemplate TargetType="Button">
-                                                        <Grid>
-                                                            <Border CornerRadius="43" Background="#1A3047" BorderBrush="{StaticResource GoldBrush}" BorderThickness="2" Padding="2"><ContentPresenter/></Border>
-                                                            <Border x:Name="AvatarEditVeil" CornerRadius="43" Background="#B3071224" Opacity="0" Margin="3">
-                                                                <local:LauncherIcon Kind="Camera" Width="28" Height="28" Foreground="White"/>
-                                                            </Border>
-                                                        </Grid>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="AvatarEditVeil" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14"/></Storyboard></BeginStoryboard></Trigger.EnterActions>
-                                                                <Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="AvatarEditVeil" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14"/></Storyboard></BeginStoryboard></Trigger.ExitActions>
-                                                            </Trigger>
-                                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="AvatarEditVeil" Property="Opacity" Value="1"/></Trigger>
-                                                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value=".5"/></Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate></Button.Template>
-                                                    <Grid>
-                                                        <local:LauncherIcon x:Name="AccountProfileAvatarPlaceholder" Kind="Person" Width="40" Height="40" Foreground="{StaticResource GoldBrightBrush}"/>
-                                                        <Ellipse x:Name="AccountProfileAvatarPicture" Width="78" Height="78" Visibility="Collapsed"/>
-                                                    </Grid>
-                                                </Button>
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <Button x:Name="OwnProfileNameButton" Style="{StaticResource GhostButton}" Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Left" Click="OwnPlayerProfile_Click">
-                                                        <TextBlock x:Name="AccountProfileNameText" FontSize="24" FontWeight="Bold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
-                                                    </Button>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                                        <TextBlock x:Name="AccountProfileUsernameText" Style="{StaticResource MetadataText}" VerticalAlignment="Center"/>
-                                                        <ContentControl x:Name="AccountAdminBadge" VerticalAlignment="Center"/>
-                                                        <local:ClipboardButton x:Name="AccountCopyUsernameButton" Style="{StaticResource GhostButton}" Width="28" Height="26" Padding="0" Margin="8,0,0,0" Click="AccountCopyUsername_Click">
-                                                            <local:LauncherIcon Kind="Copy" Width="15" Height="15"/>
-                                                        </local:ClipboardButton>
-                                                    </StackPanel>
-                                                    <TextBlock x:Name="AccountProfileEmailText" Style="{StaticResource CardDescription}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Margin="0,6,0,0"/>
-                                                    <TextBlock x:Name="AccountProfileCreatedText" Style="{StaticResource MetadataText}" Margin="0,6,0,0"/>
-                                                </StackPanel>
-                                            </Grid>
-                                            </Border>
-                                            <TextBlock x:Name="AccountPersonalSectionText" Style="{StaticResource MetadataText}" Margin="0,0,0,10"/>
-                                            <UniformGrid Columns="2" Margin="0,0,-8,18">
-                                                <Button x:Name="AccountEditDisplayNameButton" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Person" HorizontalContentAlignment="Left" Tag="display" Click="AccountEdit_Click" Margin="0,0,8,8"/>
-                                                <Button x:Name="AccountEditNicknameButton" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Profile" HorizontalContentAlignment="Left" Tag="nickname" Click="AccountEdit_Click" Margin="0,0,8,8"/>
-                                            </UniformGrid>
-                                            <TextBlock x:Name="AccountSecuritySectionText" Style="{StaticResource MetadataText}" Margin="0,0,0,10"/>
-                                            <UniformGrid Columns="2" Margin="0,0,-8,18">
-                                                <Button x:Name="AccountEditEmailButton" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Profile" HorizontalContentAlignment="Left" Tag="email" Click="AccountEdit_Click" Margin="0,0,8,8"/>
-                                                <Button x:Name="AccountEditPasswordButton" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Shield" HorizontalContentAlignment="Left" Tag="password" Click="AccountEdit_Click" Margin="0,0,8,8"/>
-                                            </UniformGrid>
-                                            <WrapPanel>
-                                                <Button x:Name="AccountRetryButton" Style="{StaticResource GhostButton}" Margin="0,0,8,8" Click="AccountRetry_Click"/>
-                                                <Button x:Name="AccountLogoutButton" Style="{StaticResource GhostButton}" Background="#653A38" BorderBrush="#BC7967" Foreground="#FFF0E8"
-                                                        local:Motion.HoverBackground="#854D43" local:Motion.PressedBackground="#542F2F" local:LauncherIcon.Kind="Logout" Margin="0,0,0,8" Click="AccountLogout_Click"/>
-                                            </WrapPanel>
-                                            <Border BorderBrush="#694048" BorderThickness="0,1,0,0" Margin="0,18,0,0" Padding="0,14,0,0">
-                                                <Button x:Name="AccountDeleteButton" Style="{StaticResource GhostButton}" Background="#653A38" BorderBrush="#BC7967" Foreground="#FFF0E8"
-                                                        local:Motion.HoverBackground="#854D43" local:Motion.PressedBackground="#542F2F" Tag="delete" Click="AccountEdit_Click" HorizontalAlignment="Left"/>
-                                            </Border>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border x:Name="AccountEditorCard" Style="{StaticResource Card}" Visibility="Collapsed" Margin="0,0,0,14">
-                                        <StackPanel>
-                                            <TextBlock x:Name="AccountEditorTitleText" Style="{StaticResource CardTitle}"/>
-                                            <TextBlock x:Name="AccountEditorHintText" Style="{StaticResource CardDescription}" Margin="0,0,0,14"/>
-                                            <StackPanel x:Name="AccountEditorFieldsPanel">
-                                                <StackPanel x:Name="AccountEditValuePanel">
-                                                    <TextBlock x:Name="AccountEditValueLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <TextBox x:Name="AccountEditValueInput" Style="{StaticResource ConfigurationInput}" FontSize="14" TextWrapping="NoWrap" TextChanged="AccountEditorValue_Changed"/>
-                                                </StackPanel>
-                                                <StackPanel x:Name="AccountCurrentPasswordPanel">
-                                                    <TextBlock x:Name="AccountCurrentPasswordLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <Grid>
-                                                        <PasswordBox x:Name="AccountCurrentPasswordInput" Style="{StaticResource AccountPasswordInput}" Margin="0,0,0,10"/>
-                                                        <TextBox x:Name="AccountCurrentPasswordInputVisible" Style="{StaticResource ConfigurationInput}" FontSize="14" Height="36" Padding="9,0" VerticalContentAlignment="Center" TextWrapping="NoWrap" MaxLength="128" IsUndoEnabled="False" Visibility="Collapsed" Margin="0,0,0,10"/>
-                                                    </Grid>
-                                                </StackPanel>
-                                                <StackPanel x:Name="AccountNewPasswordPanel">
-                                                    <TextBlock x:Name="AccountNewPasswordLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <Grid>
-                                                        <PasswordBox x:Name="AccountNewPasswordInput" Style="{StaticResource AccountPasswordInput}" Margin="0,0,0,10"/>
-                                                        <TextBox x:Name="AccountNewPasswordInputVisible" Style="{StaticResource ConfigurationInput}" FontSize="14" Height="36" Padding="9,0" VerticalContentAlignment="Center" TextWrapping="NoWrap" MaxLength="128" IsUndoEnabled="False" Visibility="Collapsed" Margin="0,0,0,10"/>
-                                                    </Grid>
-                                                    <TextBlock x:Name="AccountNewRepeatLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <Grid>
-                                                        <PasswordBox x:Name="AccountNewRepeatInput" Style="{StaticResource AccountPasswordInput}" Margin="0,0,0,10"/>
-                                                        <TextBox x:Name="AccountNewRepeatInputVisible" Style="{StaticResource ConfigurationInput}" FontSize="14" Height="36" Padding="9,0" VerticalContentAlignment="Center" TextWrapping="NoWrap" MaxLength="128" IsUndoEnabled="False" Visibility="Collapsed" Margin="0,0,0,10"/>
-                                                    </Grid>
-                                                </StackPanel>
-                                            </StackPanel>
-                                            <CheckBox x:Name="AccountEditorShowPasswordCheck" Tag="editor" IsChecked="False" HorizontalAlignment="Left" Margin="0,0,0,12" Checked="ShowPassword_Changed" Unchecked="ShowPassword_Changed"/>
-                                            <TextBlock x:Name="AccountCooldownText" Style="{StaticResource MetadataText}" Margin="0,0,0,12"/>
-                                            <WrapPanel>
-                                                <Button x:Name="AccountEditorSubmitButton" Style="{StaticResource GoldButton}" Click="AccountEditorSubmit_Click" Margin="0,0,8,8"/>
-                                                <Button x:Name="AccountEditorCancelButton" Style="{StaticResource GhostButton}" Click="AccountEditorCancel_Click" Margin="0,0,0,8"/>
-                                            </WrapPanel>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border x:Name="AccountRecoveryCard" Style="{StaticResource Card}" Visibility="Collapsed" Margin="0,0,0,14">
-                                        <StackPanel>
-                                            <TextBlock x:Name="AccountRecoveryTitleText" Style="{StaticResource CardTitle}"/>
-                                            <TextBlock x:Name="AccountRecoveryHintText" Style="{StaticResource CardDescription}" Margin="0,0,0,14"/>
-                                            <StackPanel x:Name="AccountRecoveryFieldsPanel">
-                                                <TextBlock x:Name="AccountRecoveryEmailLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                <TextBox x:Name="AccountRecoveryEmailInput" Style="{StaticResource ConfigurationInput}" FontSize="14" MaxLength="254" TextWrapping="NoWrap"/>
-                                                <StackPanel x:Name="AccountRecoveryProofPanel" Visibility="Collapsed">
-                                                    <TextBlock x:Name="AccountRecoveryProofLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <WrapPanel Margin="0,0,0,12">
-                                                    <TextBox x:Name="AccountRecoveryProofInput" Style="{StaticResource ConfigurationInput}"
-                                                             Width="206" Height="48" HorizontalAlignment="Left" FontSize="26" Typography.NumeralAlignment="Tabular"
-                                                             TextAlignment="Center" VerticalContentAlignment="Center" Padding="10,0" MaxLength="6"
-                                                             TextWrapping="NoWrap" IsUndoEnabled="False" SpellCheck.IsEnabled="False" InputMethod.IsInputMethodEnabled="False"
-                                                             PreviewTextInput="AccountRecoveryCode_PreviewTextInput" DataObject.Pasting="AccountRecoveryCode_Pasting"
-                                                             TextChanged="AccountRecoveryCode_Changed" KeyDown="AccountRecoveryCode_KeyDown" Margin="0,0,12,4"/>
-                                                    <Button x:Name="AccountRecoveryResendButton" Style="{StaticResource GhostButton}" VerticalAlignment="Center"
-                                                            Click="AccountRecoveryResend_Click" Margin="0,0,0,4"/>
-                                                    </WrapPanel>
-                                                    <TextBlock x:Name="AccountRecoveryPasswordLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <Grid>
-                                                        <PasswordBox x:Name="AccountRecoveryPasswordInput" Style="{StaticResource AccountPasswordInput}" Margin="0,0,0,10"/>
-                                                        <TextBox x:Name="AccountRecoveryPasswordInputVisible" Style="{StaticResource ConfigurationInput}" FontSize="14" Height="36" Padding="9,0" VerticalContentAlignment="Center" TextWrapping="NoWrap" MaxLength="128" IsUndoEnabled="False" Visibility="Collapsed" Margin="0,0,0,10"/>
-                                                    </Grid>
-                                                    <TextBlock x:Name="AccountRecoveryRepeatLabel" Style="{StaticResource FieldTitle}" Margin="0,0,0,6"/>
-                                                    <Grid>
-                                                        <PasswordBox x:Name="AccountRecoveryRepeatInput" Style="{StaticResource AccountPasswordInput}" Margin="0,0,0,10"/>
-                                                        <TextBox x:Name="AccountRecoveryRepeatInputVisible" Style="{StaticResource ConfigurationInput}" FontSize="14" Height="36" Padding="9,0" VerticalContentAlignment="Center" TextWrapping="NoWrap" MaxLength="128" IsUndoEnabled="False" Visibility="Collapsed" Margin="0,0,0,10"/>
-                                                    </Grid>
-                                                </StackPanel>
-                                            </StackPanel>
-                                            <CheckBox x:Name="AccountRecoveryShowPasswordCheck" Tag="recovery" IsChecked="False" HorizontalAlignment="Left" Margin="0,0,0,10" Checked="ShowPassword_Changed" Unchecked="ShowPassword_Changed"/>
-                                            <WrapPanel Margin="0,8,0,0">
-                                                <Button x:Name="AccountRecoverySubmitButton" Style="{StaticResource GoldButton}" Click="AccountRecoverySubmit_Click" Margin="0,0,8,8"/>
-                                                <Button x:Name="AccountRecoveryCancelButton" Style="{StaticResource GhostButton}" Click="AccountRecoveryCancel_Click" Margin="0,0,0,8"/>
-                                            </WrapPanel>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                                <StackPanel x:Name="AboutModsPanel" Visibility="Collapsed">
-                                    <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                                        <StackPanel>
-                                            <TextBlock x:Name="AboutModsTitleText" Style="{StaticResource CardTitle}"/>
-                                            <WrapPanel x:Name="AboutModsTabsPanel" Margin="0,6,0,0">
-                                                <Button x:Name="AboutImmortalsTab" Content="Immortals" Tag="immortals" Style="{StaticResource GhostButton}" Padding="14,6" Margin="0,0,8,0" Click="AboutMod_Click"/>
-                                                <Button x:Name="AboutArcaneWarsTab" Content="Arcane Wars" Tag="arcane-wars" Style="{StaticResource GhostButton}" Padding="14,6" Click="AboutMod_Click"/>
-                                            </WrapPanel>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border x:Name="AboutModContentCard" Style="{StaticResource Card}" Padding="30">
-                                        <StackPanel Margin="0,20">
-                                            <local:LauncherIcon Kind="Components" Width="42" Height="42" Foreground="{StaticResource GoldBrightBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                                            <TextBlock x:Name="AboutModNameText" Style="{StaticResource CardTitle}" TextAlignment="Center"/>
-                                            <TextBlock x:Name="AboutModEmptyText" Style="{StaticResource CardDescription}" TextAlignment="Center"/>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
                                 <StackPanel x:Name="AboutPatchPanel" Visibility="Collapsed">
                                     <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                                         <StackPanel>
@@ -763,7 +303,6 @@
                                             <WrapPanel Margin="0,4,0,0">
                                                 <Button x:Name="GuideGeneralTab" Tag="general" Style="{StaticResource GhostButton}" Padding="14,7" Margin="0,0,8,8" Click="GuideSubject_Click"/>
                                                 <Button x:Name="GuideVanillaTab" Tag="vanilla" Style="{StaticResource GhostButton}" Padding="14,7" Margin="0,0,8,8" Click="GuideSubject_Click"/>
-                                                <Button x:Name="GuideArcaneTab" Tag="arcane-wars" Content="Arcane Wars" Style="{StaticResource GhostButton}" Padding="14,7" Margin="0,0,8,8" Click="GuideSubject_Click"/>
                                                 <Button x:Name="GuideImmortalsTab" Tag="immortals" Content="Immortals" Style="{StaticResource GhostButton}" Padding="14,7" Margin="0,0,0,8" Click="GuideSubject_Click"/>
                                             </WrapPanel>
                                             <WrapPanel x:Name="GuideVariantTabs" Visibility="Collapsed" Margin="0,8,0,0">
@@ -833,20 +372,6 @@
                                             </StackPanel>
                                         </Border>
                                         <TextBlock x:Name="LauncherUpdatesDescriptionText" Style="{StaticResource CardDescription}" Margin="0,16,0,0"/>
-                                        <Separator Margin="0,16,0,12" Background="#40536E"/>
-                                        <CheckBox x:Name="ShareGameActivityToggle" Margin="0,0,0,14" Click="ShareGameActivityToggle_Click"/>
-                                        <CheckBox x:Name="NotificationSoundToggle" Margin="0,0,0,10" Click="NotificationSoundToggle_Click"/>
-                                        <TextBlock x:Name="NotificationSoundNameText" TextTrimming="CharacterEllipsis" Foreground="#A8BBD2" Margin="0,0,0,10"/>
-                                        <DockPanel Margin="0,0,0,14">
-                                            <TextBlock x:Name="NotificationVolumeLabel" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                            <TextBlock x:Name="NotificationVolumeValue" DockPanel.Dock="Right" Width="42" TextAlignment="Right" VerticalAlignment="Center"/>
-                                            <local:DragAnywhereSlider x:Name="NotificationVolumeSlider" Style="{StaticResource NotificationVolumeSliderStyle}" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="NotificationVolume_Changed" VerticalAlignment="Center"/>
-                                        </DockPanel>
-                                        <WrapPanel>
-                                            <Button x:Name="NotificationSoundChooseButton" Style="{StaticResource GhostButton}" Margin="0,0,8,8" Click="NotificationSoundChoose_Click"/>
-                                            <Button x:Name="NotificationSoundPreviewButton" Style="{StaticResource GhostButton}" Margin="0,0,8,8" Click="NotificationSoundPreview_Click"/>
-                                            <Button x:Name="NotificationSoundResetButton" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Click="NotificationSoundReset_Click"/>
-                                        </WrapPanel>
                                     </StackPanel>
                                 </Border>
                                 <Border x:Name="PatchUpdatesCard" Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="Collapsed">
@@ -924,7 +449,6 @@
                                             <Button x:Name="BrowseButton" Style="{StaticResource GhostButton}" Padding="12,6" Margin="0,0,8,8" Click="BrowseButton_Click"/>
                                             <Button x:Name="OpenGameFolderButton" Style="{StaticResource GhostButton}" Padding="12,6" Margin="0,0,8,8" Click="OpenGameFolderButton_Click"/>
                                             <Button x:Name="OpenSavesFolderButton" Style="{StaticResource GhostButton}" Padding="12,6" Margin="0,0,8,8" Click="OpenSavesFolderButton_Click"/>
-                                            <Button x:Name="SendSaveBroadcastButton" Style="{StaticResource GhostButton}" Background="#216343" BorderBrush="#45996A" Foreground="White" local:Motion.HoverBackground="#2C7954" local:Motion.PressedBackground="#17482F" local:LauncherIcon.Kind="Send" Padding="12,6" Margin="0,0,0,8" Click="SendSaveBroadcast_Click"/>
                                         </WrapPanel>
                                         <Grid Grid.Row="2">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -956,13 +480,9 @@
                                 <Border x:Name="ModSelectorCard" Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10" Visibility="Collapsed">
     <StackPanel>
         <!-- The game is chosen in the Mod manager. These selectors stay as the hidden selection that Mod_Checked handles. -->
-        <Grid x:Name="ModChoiceGrid" Visibility="Collapsed"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Grid x:Name="ModChoiceGrid" Visibility="Collapsed"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
     <RadioButton x:Name="VanillaModRadio" Grid.Column="0" GroupName="GameMod" Tag="vanilla" Content="Vanilla" Style="{StaticResource ModeRadio}" Padding="10,13" MinHeight="48" FontSize="16" FontWeight="SemiBold" Checked="Mod_Checked"/>
     <RadioButton x:Name="ImmortalsModRadio" Grid.Column="2" GroupName="GameMod" Tag="immortals" Content="Immortals" Style="{StaticResource ModeRadio}" Padding="10,13" MinHeight="48" FontSize="16" FontWeight="SemiBold" Checked="Mod_Checked"/>
-<Grid Grid.Column="4">
-    <RadioButton x:Name="ArcaneWarsModRadio" GroupName="GameMod" Tag="arcane-wars" Content="Arcane Wars" Style="{StaticResource ModeRadio}" Padding="10,13,38,13" MinHeight="48" FontSize="16" FontWeight="SemiBold" Checked="Mod_Checked"/>
-    <Button x:Name="ArcaneAccessButton" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0" Width="22" Height="22" Padding="0" Style="{StaticResource GhostButton}" Background="#652E3D" BorderBrush="#D26A80" Foreground="#FFD4DC" local:Motion.HoverBackground="#8B4054" Click="ArcaneAccess_Click"><TextBlock Text="!" FontSize="16" FontWeight="Bold"/></Button>
-</Grid>
         </Grid>
         <Grid x:Name="ModePreferencesRow">
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -1193,60 +713,6 @@
                         </ScrollViewer>
 
                         </Grid>
-                        <Grid x:Name="FriendsConversationScroll" Grid.Column="2" Visibility="Collapsed">
-                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                                <Button x:Name="CompactFriendsBack" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,0,0,10" Visibility="Collapsed" Click="CompactFriendsBack_Click"/>
-                                <Border x:Name="FriendsChatEmptyCard" Grid.Row="1" Style="{StaticResource Card}">
-                                    <StackPanel>
-                                        <TextBlock x:Name="FriendsChatEmptyTitle" Style="{StaticResource CardTitle}"/>
-                                        <TextBlock x:Name="FriendsChatEmptyText" Style="{StaticResource CardDescription}"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border x:Name="FriendsChatCard" Grid.Row="1" Style="{StaticResource Card}" Visibility="Collapsed" Margin="0">
-                                    <Grid>
-                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                        <Button x:Name="FriendsChatProfileButton" Cursor="Hand" HorizontalContentAlignment="Stretch" Click="FriendsChatProfile_Click" Margin="-5,-5,-5,0" Padding="5">
-                                            <Button.Template><ControlTemplate TargetType="Button">
-                                                <Border x:Name="ProfileHeaderSurface" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter/>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ProfileHeaderSurface" Property="Background" Value="#1B324B"/></Trigger>
-                                                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ProfileHeaderSurface" Property="Background" Value="#1B324B"/></Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate></Button.Template>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                                <ContentControl x:Name="FriendsChatHeaderAvatar" Width="38" Height="38" Margin="0,0,10,0" IsHitTestVisible="False"/>
-                                                <TextBlock x:Name="FriendsChatTitle" Grid.Column="1" Style="{StaticResource CardTitle}" VerticalAlignment="Center" Margin="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Foreground="#EDF0F5">
-                                                    <Run x:Name="FriendsChatName"/><Run Text=" · " Foreground="#A8BBD2"/><Run x:Name="FriendsChatUsername" BaselineAlignment="Center" FontSize="12" FontWeight="Normal" Foreground="#A8BBD2"/><Run x:Name="FriendsChatMark" FontSize="11" Foreground="#F2C867"/>
-                                                </TextBlock>
-                                            </Grid>
-                                        </Button>
-                                        <ScrollViewer x:Name="FriendsChatScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,12,0,10">
-                                            <StackPanel>
-                                                <TextBlock x:Name="FriendsHistoryNotice" Visibility="Collapsed" Foreground="#A8BBD2" FontSize="12" TextWrapping="Wrap" Margin="4,0,4,8"/>
-                                                <Button x:Name="FriendsHistoryOlder" Visibility="Collapsed" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Click="FriendsHistoryOlder_Click"/>
-                                                <StackPanel x:Name="FriendsMessagesPanel"/>
-                                                <Button x:Name="FriendsHistoryNewer" Visibility="Collapsed" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Click="FriendsHistoryNewer_Click"/>
-                                            </StackPanel>
-                                        </ScrollViewer>
-                                        <Button x:Name="FriendsChatJumpBottom" Grid.Row="1" Panel.ZIndex="4" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Width="40" Height="40" Click="FriendsChatJumpBottom_Click">
-                                            <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="Shell" Background="#244361" BorderBrush="#607C96" BorderThickness="1" CornerRadius="20"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Shell" Property="Background" Value="#365B7D"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="Shell" Property="Background" Value="#18334C"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Shell" Property="Opacity" Value="0.55"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Shell" Property="BorderBrush" Value="#E8C36E"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
-                                            <Path Data="M 0,0 L 0,15 M -6,9 L 0,15 L 6,9" Stroke="#F4F1E7" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="14" Height="18" Stretch="Uniform"/>
-                                        </Button>
-                                        <TextBlock x:Name="FriendsChatLoadState" Grid.Row="1" Panel.ZIndex="3" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="12" Padding="8,4" Background="#13273D" Foreground="#A8BBD2" FontSize="12" TextWrapping="Wrap" IsHitTestVisible="False"/>
-                                        <StackPanel x:Name="FriendsOutboxPanel" Visibility="Collapsed"/>
-                                        <Grid Grid.Row="2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <local:ChatComposer x:Name="FriendsMessageInput" Style="{StaticResource ChatComposerInput}" Margin="0" MinHeight="38" MaxHeight="132" Padding="10,8" MaxLength="2000" VerticalScrollBarVisibility="Auto" PreviewKeyDown="FriendsMessage_KeyDown"/>
-                                            <Button x:Name="FriendsSendButton" Grid.Column="1" Width="40" Height="38" Padding="0" VerticalAlignment="Bottom" Style="{StaticResource GoldButton}" Margin="8,0,0,0" Click="FriendsSend_Click"><local:LauncherIcon Kind="Send" Width="20" Height="20"/></Button>
-                                            <Button x:Name="FriendsComposerMoreButton" Grid.Column="3" Width="34" Height="38" Padding="0" VerticalAlignment="Bottom" Style="{StaticResource GhostButton}" Margin="6,0,0,0" Click="FriendsComposerMore_Click"><local:LauncherIcon Kind="More" Width="20" Height="20"/></Button>
-                                            <Button x:Name="FriendsGlyphButton" Grid.Column="2" Width="34" Height="38" Padding="0" VerticalAlignment="Bottom" Style="{StaticResource GhostButton}" Margin="6,0,0,0" IsEnabled="{Binding IsEnabled, ElementName=FriendsMessageInput}" Click="FriendsGlyph_Click"><local:LauncherIcon Kind="Smile" Width="20" Height="20"/></Button>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                        </Grid>
                         <Border x:Name="ChangelogCard" Grid.Column="2" Style="{StaticResource Card}">
                             <Grid x:Name="ChangelogContentGrid">
                                 <Grid.RowDefinitions>
@@ -1330,121 +796,10 @@
                     </Grid>
                     </StackPanel>
                         </Grid>
-                        <GridSplitter x:Name="CommunitySplitter" Grid.Column="1" Width="14" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" DragStarted="CommunitySplitter_Started" DragDelta="CommunitySplitter_Delta" DragCompleted="CommunitySplitter_Completed" PreviewKeyDown="CommunitySplitter_KeyDown" MouseDoubleClick="CommunitySplitter_Reset" Focusable="True">
-                            <GridSplitter.Template><ControlTemplate TargetType="GridSplitter"><Border Background="Transparent"><Border x:Name="Grip" Width="3" Height="44" CornerRadius="2" Background="#40536E" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Grip" Property="Background" Value="#D3AF59"/></Trigger><Trigger Property="IsDragging" Value="True"><Setter TargetName="Grip" Property="Background" Value="#D3AF59"/></Trigger></ControlTemplate.Triggers></ControlTemplate></GridSplitter.Template>
-                        </GridSplitter>
-                        <Border x:Name="CommunityCard" Grid.Column="2" Style="{StaticResource Card}" Padding="16">
-                            <Grid>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                <Grid>
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <DockPanel Margin="0,0,8,0" VerticalAlignment="Center">
-                                        <local:LauncherIcon Kind="Chat" Width="20" Height="20" Margin="0,0,8,0" Foreground="#A8BBD2"/>
-                                        <TextBlock x:Name="CommunityTitle" Style="{StaticResource CardTitle}" FontSize="16" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0"/>
-                                    </DockPanel>
-                                    <Button x:Name="CommunityNotificationButton" Grid.Column="1" Width="28" Height="28" Padding="0" Style="{StaticResource GhostButton}" Click="CommunityNotifications_Click">
-                                        <local:LauncherIcon x:Name="CommunityNotificationIcon" Kind="Bell" Width="18" Height="18"/>
-                                    </Button>
-                                </Grid>
-                                <Grid Grid.Row="1" Margin="0,7,0,12">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="CommunityDescription" Style="{StaticResource SmallMetadataText}" TextWrapping="Wrap" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button x:Name="CommunityEn" Tag="en" Style="{StaticResource GhostButton}" Padding="6,5" FontSize="12" Margin="0,0,4,0" Click="CommunityChannel_Click" AutomationProperties.Name="English chat">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Viewbox Width="18" Height="12" Margin="0,0,5,0"><Canvas Width="30" Height="20" ClipToBounds="True">
-                                                    <Rectangle Width="30" Height="20" Fill="#012169"/>
-                                                    <Path Data="M0,0 L30,20 M30,0 L0,20" Stroke="White" StrokeThickness="5"/>
-                                                    <Path Data="M0,0 L30,20 M30,0 L0,20" Stroke="#C8102E" StrokeThickness="2"/>
-                                                    <Path Data="M15,0 L15,20 M0,10 L30,10" Stroke="White" StrokeThickness="7"/>
-                                                    <Path Data="M15,0 L15,20 M0,10 L30,10" Stroke="#C8102E" StrokeThickness="4"/>
-                                                </Canvas></Viewbox>
-                                                <TextBlock Text="EN"/>
-                                                <TextBlock x:Name="CommunityEnUnread" FontSize="10" Margin="4,0,0,0" Visibility="Collapsed"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button x:Name="CommunityRu" Tag="ru" Style="{StaticResource GhostButton}" Padding="6,5" FontSize="12" Click="CommunityChannel_Click" AutomationProperties.Name="Русский чат">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Viewbox Width="18" Height="12" Margin="0,0,5,0"><Canvas Width="30" Height="21">
-                                                    <Rectangle Width="30" Height="7" Fill="White"/>
-                                                    <Rectangle Canvas.Top="7" Width="30" Height="7" Fill="#0039A6"/>
-                                                    <Rectangle Canvas.Top="14" Width="30" Height="7" Fill="#D52B1E"/>
-                                                </Canvas></Viewbox>
-                                                <TextBlock Text="RU"/>
-                                                <TextBlock x:Name="CommunityRuUnread" FontSize="10" Margin="4,0,0,0" Visibility="Collapsed"/>
-                                            </StackPanel>
-                                        </Button>
-                                    </StackPanel>
-                                </Grid>
-                                <Grid Grid.Row="2">
-                                    <ScrollViewer x:Name="CommunityScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,6,0" ScrollChanged="CommunityScroll_Changed">
-                                        <StackPanel>
-                                            <TextBlock x:Name="CommunityHistoryNotice" Style="{StaticResource CardDescription}" TextWrapping="Wrap" Margin="0,0,0,10" Visibility="Collapsed"/>
-                                            <Button x:Name="CommunityOlder" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Visibility="Collapsed" Click="CommunityOlder_Click"/>
-                                            <StackPanel x:Name="CommunityRows"/>
-                                            <Button x:Name="CommunityNewer" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Visibility="Collapsed" Click="CommunityNewer_Click"/>
-                                        </StackPanel>
-                                    </ScrollViewer>
-                                    <TextBlock x:Name="CommunityEmpty" Style="{StaticResource CardDescription}" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16" TextAlignment="Center" IsHitTestVisible="False"/>
-                                    <Button x:Name="CommunityJump" VerticalAlignment="Bottom" HorizontalAlignment="Center" Style="{StaticResource GoldButton}" Margin="0,0,0,8" Visibility="Collapsed" Click="CommunityJump_Click"/>
-                                </Grid>
-                                <StackPanel Grid.Row="3" Margin="0,10,0,8">
-                                    <TextBlock x:Name="CommunityStatus" Foreground="#F3CF7B" FontSize="12" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
-                                    <Button x:Name="CommunityRetry" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,6,0,0" Visibility="Collapsed" Click="CommunityRetry_Click"/>
-                                </StackPanel>
-                                <Grid Grid.Row="4">
-                                    <StackPanel x:Name="CommunityGuest">
-                                        <TextBlock x:Name="CommunityGuestText" Style="{StaticResource CardDescription}" Margin="0,0,0,8"/>
-                                        <Button x:Name="CommunityLogin" Style="{StaticResource GoldButton}" Click="AccountShowLogin_Click"/>
-                                    </StackPanel>
-                                    <StackPanel x:Name="CommunityMember" Visibility="Collapsed">
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <local:ChatComposer x:Name="CommunityInput" Style="{StaticResource ChatComposerInput}" MinHeight="40" MaxHeight="108" MaxLength="2000" Padding="10,8" Margin="0" VerticalScrollBarVisibility="Auto" PreviewKeyDown="CommunityInput_KeyDown" TextChanged="CommunityInput_Changed"/>
-                                            <Button x:Name="CommunityGlyphButton" Grid.Column="1" Width="34" Height="40" Padding="0" VerticalAlignment="Bottom" Style="{StaticResource GhostButton}" Margin="4,0,0,0" IsEnabled="{Binding IsEnabled, ElementName=CommunityInput}" Click="CommunityGlyph_Click"><local:LauncherIcon Kind="Smile" Width="20" Height="20"/></Button>
-                                            <Button x:Name="CommunitySend" Grid.Column="2" Width="40" Height="40" Padding="0" VerticalAlignment="Bottom" Style="{StaticResource GoldButton}" Margin="4,0,0,0" Click="CommunitySend_Click"><local:LauncherIcon Kind="Send" Width="20" Height="20"/></Button>
-                                        </Grid>
-                                        <TextBlock x:Name="CommunityCount" Style="{StaticResource SmallMetadataText}" Margin="0,6,0,0" TextAlignment="Right"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Grid>
-                        </Border>
                     </Grid>
                 </Grid>
             </Grid>
 
-            <Border x:Name="ModNoticeOverlay" Grid.RowSpan="2" Panel.ZIndex="150" Background="#D907101F" Visibility="Collapsed" PreviewMouseDown="ModNotice_MouseDown" PreviewKeyDown="ModNotice_KeyDown" WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border x:Name="ModNoticeCard" MaxWidth="580" MaxHeight="580" Margin="24" Background="#132541" BorderBrush="#B75F70" BorderThickness="1" CornerRadius="12" Padding="26" HorizontalAlignment="Stretch" VerticalAlignment="Center" KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <Grid Margin="0,0,0,20">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Border Width="38" Height="38" CornerRadius="19" Background="#542E3A" BorderBrush="#B75F70" BorderThickness="1" Margin="0,0,14,0">
-                                <TextBlock Text="!" Foreground="#FFD0D8" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock x:Name="ModNoticeTitleText" Grid.Column="1" FontSize="22" FontWeight="Bold" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                        </Grid>
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <StackPanel>
-                                <TextBlock x:Name="ModNoticeBodyText" Foreground="#D5DDE8" FontSize="14" LineHeight="22" TextWrapping="Wrap"/>
-                                <Border Background="#0D1D32" BorderBrush="#3D5473" BorderThickness="1" CornerRadius="7" Padding="16" Margin="0,20,0,18">
-                                    <StackPanel>
-                                        <TextBlock Text="Immortals" FontSize="16" FontWeight="Bold" Foreground="{StaticResource GoldBrightBrush}"/>
-                                        <TextBlock x:Name="ImmortalsAuthorText" Style="{StaticResource CardDescription}" Margin="0,5,0,16"/>
-                                        <TextBlock Text="Arcane Wars" FontSize="16" FontWeight="Bold" Foreground="{StaticResource GoldBrightBrush}"/>
-                                        <TextBlock x:Name="ModNoticeArcaneAuthorText" Style="{StaticResource CardDescription}" Margin="0,5,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                                <TextBlock x:Name="ModsDistributionText" Style="{StaticResource CardDescription}" Margin="0,0,0,8"/>
-                                <TextBlock FontSize="14" TextWrapping="Wrap">
-                                    <Hyperlink x:Name="ModsDiscordLink" NavigateUri="https://discord.gg/krCK7DDwyz" ToolTip="https://discord.gg/krCK7DDwyz" Foreground="{StaticResource GoldBrightBrush}" RequestNavigate="ModsDiscord_RequestNavigate">discord.gg/krCK7DDwyz</Hyperlink>
-                                </TextBlock>
-                                <TextBlock x:Name="ModNoticeLinkErrorText" Style="{StaticResource CardDescription}" Foreground="#F4B7AA" Margin="0,10,0,0" Visibility="Collapsed"/>
-                            </StackPanel>
-                        </ScrollViewer>
-                        <Button x:Name="ModNoticeCloseButton" Grid.Row="2" Style="{StaticResource GoldButton}" HorizontalAlignment="Right" Padding="22,9" Margin="0,24,0,0" Click="ModNoticeClose_Click"/>
-                    </Grid>
-                </Border>
-            </Border>
             <Border x:Name="HelpOverlay" Grid.RowSpan="2" Panel.ZIndex="100" Background="#D907101F" Visibility="Collapsed" PreviewMouseDown="Overlay_MouseDown" PreviewKeyDown="HelpOverlay_KeyDown" WindowChrome.IsHitTestVisibleInChrome="True">
                 <Grid>
                     <Border x:Name="HelpCard" KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle" Width="520" MaxWidth="520" Background="#132541" BorderBrush="{StaticResource GoldBrush}" BorderThickness="1" CornerRadius="9" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -1456,30 +811,6 @@
                                 <TextBlock x:Name="HelpTitleText" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
                             </StackPanel>
                             <TextBlock x:Name="HelpBodyText" Foreground="#D5DDE8" FontSize="13" LineHeight="21" TextWrapping="Wrap" Margin="0,18,0,20"/>
-                            <Border x:Name="ArcaneWarsCreditPanel" Visibility="Collapsed" BorderBrush="#526984" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,0,0,20">
-                                <StackPanel>
-                                    <TextBlock FontSize="13" Foreground="#E8EDF5" TextWrapping="Wrap">
-                                        <Run x:Name="ArcaneWarsAuthorLabel"/><Run Text="Darquan Mortis" FontWeight="Bold"/>
-                                    </TextBlock>
-                                    <TextBlock x:Name="ArcaneWarsDistributionText" Style="{StaticResource CardDescription}" Margin="0,6,0,8"/>
-                                    <TextBlock FontSize="13" TextWrapping="Wrap">
-                                        <Hyperlink x:Name="ArcaneWarsDiscordLink" NavigateUri="https://discord.gg/krCK7DDwyz"
-                                                   ToolTip="https://discord.gg/krCK7DDwyz" RequestNavigate="ArcaneWarsDiscord_RequestNavigate">
-                                            <Hyperlink.Style>
-                                                <Style TargetType="Hyperlink">
-                                                    <Setter Property="Foreground" Value="{StaticResource GoldBrightBrush}"/>
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="#FFF4CF"/></Trigger>
-                                                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="Foreground" Value="#FFF4CF"/></Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Hyperlink.Style>
-                                            discord.gg/krCK7DDwyz
-                                        </Hyperlink>
-                                    </TextBlock>
-                                    <TextBlock x:Name="HelpLinkErrorText" Visibility="Collapsed" FontSize="13" Foreground="#F4B7AA" TextWrapping="Wrap" Margin="0,10,0,0"/>
-                                </StackPanel>
-                            </Border>
                             <Button x:Name="HelpCloseButton" Style="{StaticResource GoldButton}" HorizontalAlignment="Right" Padding="22,9" Click="HelpCloseButton_Click"/>
                         </StackPanel>
                     </Border>
@@ -1513,115 +844,6 @@
                             </StackPanel>
                         </StackPanel>
                     </Grid>
-                </Border>
-            </Border>
-            <Border x:Name="SocialDetailsOverlay" Grid.RowSpan="2" Panel.ZIndex="110" Background="#D907101F" Visibility="Collapsed"
-                    WindowChrome.IsHitTestVisibleInChrome="True" PreviewMouseDown="Overlay_MouseDown">
-                <Border x:Name="SocialDetailsCard" MaxWidth="580" MaxHeight="590" Margin="24" Padding="24" CornerRadius="14" Background="#11243B"
-                        BorderBrush="#536F8E" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                        KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <Grid Margin="0,0,0,20">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="84"/><ColumnDefinition Width="*"/><ColumnDefinition Width="32"/></Grid.ColumnDefinitions>
-                            <Button x:Name="SocialDetailsAvatarButton" Style="{StaticResource ProfileAvatarButton}" Width="68" Height="68"
-                                    HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="False" Click="SocialDetailsAvatar_Click">
-                                <ContentControl x:Name="SocialDetailsAvatar" Width="68" Height="68" Focusable="False"/>
-                            </Button>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock x:Name="SocialDetailsName" FontSize="24" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
-                                <ContentControl x:Name="SocialDetailsAdminBadge" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
-                                <TextBlock x:Name="SocialDetailsModerationText" Foreground="#FFB6B6" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,4" Visibility="Collapsed"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBlock x:Name="SocialDetailsUsername" Foreground="#9EB5CE" FontSize="12" VerticalAlignment="Center"/>
-                                    <local:ClipboardButton x:Name="SocialDetailsCopyUsernameButton" Style="{StaticResource GhostButton}" Width="26" Height="24" Padding="0" Margin="7,0,0,0" Click="SocialDetailsCopyUsername_Click">
-                                        <local:LauncherIcon Kind="Copy" Width="14" Height="14"/>
-                                    </local:ClipboardButton>
-                                </StackPanel>
-                                <TextBlock x:Name="SocialDetailsStatus" FontSize="13" Foreground="#62DCA6" Margin="0,6,0,0" TextWrapping="Wrap"/>
-                                <TextBlock x:Name="SocialDetailsActivity" FontSize="12" Foreground="#A8BBD2" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                                <DockPanel x:Name="SocialDetailsGameActivityRow" Margin="0,5,0,0" Visibility="Collapsed">
-                                    <Button x:Name="SocialDetailsGameActivityButton" DockPanel.Dock="Right" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="More"
-                                            Padding="8,3" Margin="8,0,0,0" FontSize="12" Click="SocialDetailsGameActivity_Click"/>
-                                    <TextBlock x:Name="SocialDetailsGameActivityText" FontSize="13" Foreground="#8BCBAE" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                </DockPanel>
-                                <TextBlock x:Name="SocialDetailsRelationshipText" FontSize="12" Foreground="#E0C381" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="Collapsed"/>
-                            </StackPanel>
-                            <Button Grid.Column="2" x:Name="SocialDetailsClose" Style="{StaticResource TitleButton}" Width="30" Height="30" Padding="0"
-                                    VerticalAlignment="Top" Click="SocialDetailsClose_Click"><local:LauncherIcon Kind="Close" Width="18" Height="18"/></Button>
-                        </Grid>
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,18">
-                            <StackPanel>
-                                <Border CornerRadius="8" Background="#1D3450" Padding="12,10" Margin="0,0,0,12">
-                                    <DockPanel>
-                                        <TextBlock x:Name="SocialDetailsChannelLabel" Foreground="#B2C5DB" VerticalAlignment="Center"/>
-                                        <TextBlock x:Name="SocialDetailsChannel" FontWeight="Bold" Foreground="#EBC76C" HorizontalAlignment="Right"/>
-                                    </DockPanel>
-                                </Border>
-                                <TextBlock x:Name="SocialDetailsComponentsLabel" Foreground="#A8BBD2" FontSize="12" Margin="0,0,0,8"/>
-                                <StackPanel x:Name="SocialDetailsComponents"/>
-                            </StackPanel>
-                        </ScrollViewer>
-                        <StackPanel Grid.Row="2">
-                            <TextBlock x:Name="SocialDetailsCopyHint" FontSize="12" Foreground="#A8BBD2" TextWrapping="Wrap" Margin="0,0,0,9"/>
-                            <Button x:Name="SocialDetailsCopyButton" Style="{StaticResource GoldButton}" local:LauncherIcon.Kind="Copy"
-                                    HorizontalAlignment="Stretch" Padding="18,10" Click="SocialDetailsCopy_Click"/>
-                            <Grid x:Name="SocialDetailsFriendActions" Margin="0,10,0,0">
-                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                                <Button x:Name="SocialDetailsRemoveButton" Style="{StaticResource GhostButton}" Tag="remove" local:LauncherIcon.Kind="Trash"
-                                        Background="#653A38" BorderBrush="#BC7967" Foreground="#FFF0E8" local:Motion.HoverBackground="#854D43" local:Motion.PressedBackground="#542F2F"
-                                        Padding="8,9" Margin="0,0,5,0" Click="SocialDetailsFriendAction_Click"/>
-                                <Button x:Name="SocialDetailsBlockButton" Grid.Column="1" Style="{StaticResource GhostButton}" Tag="block" local:LauncherIcon.Kind="Shield"
-                                        Background="#653A38" BorderBrush="#BC7967" Foreground="#FFF0E8" local:Motion.HoverBackground="#854D43" local:Motion.PressedBackground="#542F2F"
-                                        Padding="8,9" Margin="5,0,0,0" Click="SocialDetailsFriendAction_Click"/>
-                            </Grid>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-            </Border>
-            <Border x:Name="GameActivityOverlay" Grid.RowSpan="2" Panel.ZIndex="120" Background="#D907101F" Visibility="Collapsed"
-                    WindowChrome.IsHitTestVisibleInChrome="True" PreviewMouseDown="Overlay_MouseDown">
-                <Border x:Name="GameActivityCard" MaxWidth="570" MaxHeight="590" MinHeight="320" Margin="24" Padding="24" CornerRadius="14"
-                        Background="#11243B" BorderBrush="#536F8E" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                        KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <Grid Margin="0,0,0,18">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="32"/></Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock x:Name="GameActivityTitle" FontSize="22" FontWeight="Bold"/>
-                                <TextBlock x:Name="GameActivityPlayerName" Foreground="#A8BBD2" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
-                            </StackPanel>
-                            <Button x:Name="GameActivityClose" Grid.Column="1" Style="{StaticResource TitleButton}" Width="30" Height="30" Padding="0" VerticalAlignment="Top" Click="GameActivityClose_Click">
-                                <local:LauncherIcon Kind="Close" Width="18" Height="18"/>
-                            </Button>
-                        </Grid>
-                        <ScrollViewer x:Name="GameActivityScroll" Grid.Row="1" Margin="0,0,6,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <StackPanel x:Name="GameActivityBody" Margin="0,0,14,0"/>
-                        </ScrollViewer>
-                        <TextBlock x:Name="GameActivityStatus" Grid.Row="2" FontSize="12" Foreground="#A8BBD2" TextWrapping="Wrap" Margin="0,16,0,0"/>
-                    </Grid>
-                </Border>
-            </Border>
-            <Border x:Name="AvatarPreviewOverlay" Grid.RowSpan="2" Panel.ZIndex="130" Background="#BA030D1B" Visibility="Collapsed"
-                    WindowChrome.IsHitTestVisibleInChrome="True" PreviewMouseDown="Overlay_MouseDown">
-                <Border x:Name="AvatarPreviewCard" Width="298" Margin="24" Padding="20" CornerRadius="14" Background="#12253B"
-                        BorderBrush="#52708B" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Contained">
-                    <StackPanel>
-                        <Grid Margin="0,0,0,17">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="34"/></Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,12,0" VerticalAlignment="Center">
-                                <TextBlock x:Name="AvatarPreviewName" FontSize="18" FontWeight="Medium" Foreground="#F0F4F8" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock x:Name="AvatarPreviewUsername" FontSize="13" Foreground="#A7C3DD" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
-                            </StackPanel>
-                            <Button x:Name="AvatarPreviewClose" Grid.Column="1" Style="{StaticResource TitleButton}" Width="34" Height="34" Padding="0"
-                                    Foreground="#B1C6D9" VerticalAlignment="Center" Click="AvatarPreviewClose_Click">
-                                <local:LauncherIcon Kind="Close" Width="18" Height="18"/>
-                            </Button>
-                        </Grid>
-                        <Rectangle x:Name="AvatarPreviewPhoto" Width="256" Height="256" RadiusX="10" RadiusY="10"/>
-                    </StackPanel>
                 </Border>
             </Border>
             <Border x:Name="ConfirmationOverlay" Grid.RowSpan="2" Panel.ZIndex="200" Background="#B807101F" Visibility="Collapsed"
@@ -1663,65 +885,6 @@
                         </Grid>
                     </Border>
                 </Grid>
-            </Border>
-            <Border x:Name="FriendsDialogOverlay" Grid.RowSpan="2" Panel.ZIndex="105" Visibility="Collapsed" Background="#D907101F" PreviewMouseDown="FriendsDialog_MouseDown" PreviewKeyDown="FriendsDialog_KeyDown">
-                <Border x:Name="FriendsDialogCard" MaxWidth="590" Margin="24" Padding="22" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#12263C" BorderBrush="#45617D" BorderThickness="1" CornerRadius="14">
-                    <Grid KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                        <DockPanel Margin="0,0,0,18">
-                            <Button x:Name="FriendsDialogClose" DockPanel.Dock="Right" Style="{StaticResource TitleButton}" Width="28" Height="28" Padding="0" Click="FriendsCancelAdd_Click"><local:LauncherIcon Kind="Close" Width="17" Height="17"/></Button>
-                            <TextBlock x:Name="FriendsDialogTitle" FontSize="21" FontWeight="Bold" VerticalAlignment="Center"/>
-                        </DockPanel>
-                        <Border x:Name="FriendsAddPanel" Grid.Row="1" Visibility="Collapsed">
-                            <Grid>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="38"/></Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="48"/></Grid.ColumnDefinitions>
-                                <TextBlock x:Name="FriendsNicknameLabel" Grid.ColumnSpan="2" Style="{StaticResource SmallMetadataText}" Margin="0,0,0,8"/>
-                                <TextBox x:Name="FriendsNicknameInput" Grid.Row="1" Style="{StaticResource ConfigurationInput}" Margin="0" MaxLength="24" Height="38" VerticalContentAlignment="Center" PreviewKeyDown="FriendsNickname_KeyDown"/>
-                                <Button x:Name="FriendsAddButton" Grid.Row="1" Grid.Column="1" Style="{StaticResource GoldButton}" Width="38" Height="38" Padding="0" Margin="10,0,0,0" Click="FriendsAdd_Click"><local:LauncherIcon Kind="Send" Width="18" Height="18"/></Button>
-                            </Grid>
-                        </Border>
-                        <StackPanel Grid.Row="1" x:Name="FriendsRequestTabs" Visibility="Collapsed" Orientation="Horizontal" Margin="0,0,0,12">
-                            <Button x:Name="FriendsIncomingTab" Style="{StaticResource GhostButton}" Padding="12,7" Margin="0,0,8,0" Click="FriendsIncoming_Click"/>
-                            <Button x:Name="FriendsOutgoingTab" Style="{StaticResource GhostButton}" Padding="12,7" Click="FriendsOutgoing_Click"/>
-                        </StackPanel>
-                        <ScrollViewer x:Name="FriendsDialogScroll" Grid.Row="2" MaxHeight="430" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,2,0,0">
-                            <StackPanel><TextBlock x:Name="FriendsDialogEmpty" Foreground="#9EB5CE" Margin="0,12" TextWrapping="Wrap"/><StackPanel x:Name="FriendsDialogRows"/></StackPanel>
-                        </ScrollViewer>
-                    </Grid>
-                </Border>
-            </Border>
-            <Border x:Name="BroadcastOverlay" Grid.RowSpan="2" Panel.ZIndex="150" Visibility="Collapsed" Background="#D907101F"
-                    PreviewMouseDown="BroadcastOverlay_MouseDown" PreviewKeyDown="BroadcastOverlay_KeyDown">
-                <Border x:Name="BroadcastCard" Width="580"
-                        Margin="32" VerticalAlignment="Center" Background="#11243C" BorderBrush="#526A88" BorderThickness="1" CornerRadius="14"
-                        Padding="22" KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="32"/></Grid.ColumnDefinitions>
-                            <TextBlock x:Name="BroadcastTitle" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Style="{StaticResource TitleButton}" Width="30" Height="30" Click="BroadcastClose_Click"><local:LauncherIcon Kind="Close"/></Button>
-                        </Grid>
-                        <StackPanel Grid.Row="1" Margin="0,18,0,0">
-                            <UniformGrid Columns="2">
-                                <Button x:Name="BroadcastSaveTab" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Save" Margin="0,0,6,0" Tag="save" Click="BroadcastKind_Click"/>
-                                <Button x:Name="BroadcastConfigTab" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Copy" Margin="6,0,0,0" Tag="config" Click="BroadcastKind_Click"/>
-                            </UniformGrid>
-                            <Button x:Name="BroadcastChooseFile" Style="{StaticResource GhostButton}" local:LauncherIcon.Kind="Folder" Margin="0,12,0,0" HorizontalAlignment="Left" Click="BroadcastChooseFile_Click"/>
-                            <TextBlock x:Name="BroadcastPayloadText" Foreground="#BDCEE0" TextWrapping="Wrap" Margin="0,12,0,0"/>
-                        </StackPanel>
-                        <TextBlock x:Name="BroadcastHint" Grid.Row="2" Foreground="#91AAC3" FontSize="12" TextWrapping="Wrap" Margin="0,16,0,10"/>
-                        <ScrollViewer Grid.Row="3" MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <StackPanel x:Name="BroadcastRows"/>
-                        </ScrollViewer>
-                        <Grid Grid.Row="4" Margin="0,18,0,0">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <TextBlock x:Name="BroadcastSummary" FontSize="12" Foreground="#BDCEE0" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                            <Button x:Name="BroadcastSendButton" Grid.Column="1" Style="{StaticResource GoldButton}" local:LauncherIcon.Kind="Send" Click="BroadcastSend_Click"/>
-                        </Grid>
-                    </Grid>
-                </Border>
             </Border>
             <ScrollViewer x:Name="ToastHost" Grid.RowSpan="2" Panel.ZIndex="1000" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                           MaxWidth="600" MaxHeight="420" Margin="24,0,24,76" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

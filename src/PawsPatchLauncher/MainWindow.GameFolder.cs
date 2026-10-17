@@ -22,10 +22,6 @@ public partial class MainWindow
         OpenSavesFolderButton.Content = T("Открыть папку сейвов", "Open saves folder");
         OpenSavesFolderButton.IsEnabled = !_openingSavesFolder;
         OpenSavesFolderButton.ToolTip = SavesDirectory;
-        SendSaveBroadcastButton.Content = T("Отправить сейв", "Send save");
-        SendSaveBroadcastButton.ToolTip = T("Выбрать сейв и друзей", "Choose a save and friends");
-        SendSaveBroadcastButton.IsEnabled = _account is not null && _account.State == AccountState.SignedIn
-            && !_account.Restricted && !_accountBusy && !_socialBusy && !_offerSending && !_busy;
     }
 
     private bool _openingSavesFolder;

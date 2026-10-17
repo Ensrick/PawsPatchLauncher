@@ -92,7 +92,7 @@ internal static class PopupScrollChecks
                 var before=scroll.VerticalOffset;Wheel(paper,-120);await Settle();
                 Check(scroll.VerticalOffset>before,"reopened dropdown left scrolling locked");
             }
-            foreach(var menuStyle in new Style?[]{null,(Style)main.FindResource("SocialContextMenu")})
+            foreach(var menuStyle in new Style?[]{null})
             {
                 var menu=new ContextMenu { PlacementTarget=combo, Opacity=0 };
                 if(menuStyle is not null)menu.Style=menuStyle;
