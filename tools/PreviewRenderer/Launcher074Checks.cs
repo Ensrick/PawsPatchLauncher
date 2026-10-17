@@ -25,8 +25,6 @@ internal static class Launcher074Checks
         void Set(string name,object value)=>typeof(MainWindow).GetField(name,flags)!.SetValue(w,value);
         T C<T>(string name)=>(T)w.FindName(name);
         var n=0;void Check(bool ok,string why){if(!ok)throw new Exception("Launcher 0.7.4: "+why);n++;}
-        // Arcane Wars (siege, powers and shards) is not offered in this launcher; its toggles are not checked.
-        var toggleNames=new[]{"ColorsToggle","IndependentHostilityToggle","IgnoreDesyncToggle","AdditionalRoamingToggle"};
         void Capture(string name)
         {
             w.UpdateLayout();var view=(FrameworkElement)w.Content;
@@ -37,30 +35,8 @@ internal static class Launcher074Checks
         async Task Scenario()
         {
             var settings=Field<UserSettings>("_settings");
-            Check(!settings.CustomPlayerColors&&!settings.SiegeBalance&&settings.DesyncMode=="official"&&settings.RoamingSpawnMode=="standard","Saved legacy profile retained enabled components");
-            var feed=new ChannelManifest { ColorDesyncContinue=true,IndependentColorHostility=true,Packages=new[]{"pawpatch-core","player-colors","roaming-profile-x2-with-new","roaming-profile-x2-no-new"}.Select(id=>new PackageRelease{Id=id,Required=id=="pawpatch-core"}).ToList() };
-            Set("_channel",feed);Set("_offeredModChannel",feed);GameMod.SetPawPatch(settings,true);
-            settings.CustomPlayerColors=settings.IndependentHostility=settings.AdditionalRoamingCompanies=true;
-            settings.DesyncMode="continue";settings.RoamingSpawnMode="x4";
-            Call("RefreshModuleAvailability");Call("SetActivePage","modules");Call("RefreshStatus");
-            Check(toggleNames.All(name=>C<CheckBox>(name).IsChecked==true),"Enabled fixture did not display selected options");
-            C<CheckBox>("PawPatchToggle").IsChecked=false;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Check(toggleNames.All(name=>C<CheckBox>(name).IsChecked==false&&!C<CheckBox>(name).IsEnabled),"Master off left a checked/clickable component");
-            Check(new[]{"StandardSpawnRadio","X2SpawnRadio","X4SpawnRadio"}.All(name=>!C<RadioButton>(name).IsEnabled)&&C<RadioButton>("StandardSpawnRadio").IsChecked==true,"Roaming frequency stayed enabled");
-            Check(C<Border>("ColorsModuleCard").Opacity<.5,"Disabled components are not dimmed");
-            Check(settings.RussianLocalization&&GameLanguages.Voice(settings)=="en","Master switch changed languages");
-            Check(!new SettingsStore().Load().CustomPlayerColors,"Disabled dependent options were not saved");
-            await Task.Delay(260);Capture("disabled-components");
-            C<CheckBox>("PawPatchToggle").IsChecked=true;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Check(toggleNames.All(name=>C<CheckBox>(name).IsEnabled&&C<CheckBox>(name).IsChecked==true),"Re-enable did not restore dependent choices");
-            C<CheckBox>("PawPatchToggle").IsChecked=false;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            var restarted=new SettingsStore().Load();
-            var installed=EffectiveSettings.ForChannel(restarted);
-            Check(installed.SuspendedArcaneComponents is null&&!installed.CustomPlayerColors,"Applied snapshot leaked remembered choices");
-            new SettingsStore().Save(restarted);restarted=new SettingsStore().Load();
-            GameMod.SetPawPatch(restarted,true);
-            Check(restarted.CustomPlayerColors&&restarted.IndependentHostility&&restarted.AdditionalRoamingCompanies&&restarted.DesyncMode=="continue"&&restarted.RoamingSpawnMode=="x4","Restart after applying disabled configuration lost selection");
-            C<CheckBox>("PawPatchToggle").IsChecked=true;C<CheckBox>("PawPatchToggle").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            // The Paw's Patch master switch over the legacy top-level component fields served Arcane Wars only, which this
+            // launcher does not offer; the installed-version footer and the notices below still apply.
             foreach(var mod in new[]{GameMod.Vanilla,GameMod.Immortals})
             foreach(var channel in new[]{"stable","beta"})
             {
@@ -102,7 +78,7 @@ internal static class Launcher074Checks
             Notify(message);Check(C<Border>("ToastCountBadge").Visibility==Visibility.Collapsed,"Counter did not reset after expiry");
             await Task.Delay(250);Call("ToastCloseButton_Click",panel,new RoutedEventArgs());await Task.Delay(260);Notify(message);
             Check(C<Border>("ToastCountBadge").Visibility==Visibility.Collapsed,"Counter did not reset after dismissal");
-            Console.WriteLine($"LAUNCHER 074 UI PASS {n} {language}: migrated dependency, master toggles, persisted options, six installed labels, stable profile tooltip owner, stationary repeated toasts and count lifecycle.");
+            Console.WriteLine($"LAUNCHER 074 UI PASS {n} {language}: four installed labels, stable profile tooltip owner, stationary repeated toasts and count lifecycle.");
         }
         try
         {
