@@ -22,13 +22,14 @@ internal static class GameLobbyPreferencesTests
         writer.Write((ushort)value.Length); writer.Write(Encoding.Unicode.GetBytes(value));
         return data.ToArray();
     }
-    private static byte[] Fixture(bool single, bool multi)
-    {
-        var chunks = new Dictionary<string, byte[]> {
+    private static bool Has(byte[] data, string text) => data.AsSpan().IndexOf(Encoding.Unicode.GetBytes(text)) >= 0;
+    private static byte[] Fixture(bool single, bool multi) => Build(new Dictionary<string, byte[]> {
             ["HeaderInfo"] = BitConverter.GetBytes(19), ["SimplePreferences"] = Encoding.UTF8.GetBytes("private name and general preferences must survive"),
             ["SingleLaunchSettings"] = String(single ? "kingdom16" : "kingdom01"),
             ["MultiLaunchSettings"] = String(multi ? "paws_war_barbarian" : "kingdom08"),
-            ["RMCPreferences"] = [1,2,3,4], ["UnknownExtension"] = [7,6,5,4,3] };
+            ["RMCPreferences"] = [1,2,3,4], ["UnknownExtension"] = [7,6,5,4,3] });
+    private static byte[] Build(Dictionary<string, byte[]> chunks)
+    {
         using var stream = new MemoryStream(); using var writer = new BinaryWriter(stream);
         writer.Write("TGCK"u8); writer.Write(2); writer.Write(chunks.Count);
         var entries = new List<byte[]>();
@@ -81,7 +82,42 @@ internal static class GameLobbyPreferencesTests
         Check(File.ReadAllBytes(backup).SequenceEqual(original),"Backup differs");
         Check(!await GameLobbyPreferences.PrepareAsync(path,vanilla),"Disk repair is not idempotent");
         Check(Directory.GetFiles(Path.Combine(root,"PawsLauncherBackups")).Length==1,"Duplicate backups");
-        Console.WriteLine($"LOBBY PREFERENCES PASS {checks}: mode/component transitions, both launch caches, general preferences, unknown chunks/formats, backup and repeated launch.");
+
+        // Each game build gets the defaults its own executable serialized (they carry its version stamp).
+        var v72 = GameLobbyPreferences.Vanilla1372; var v68 = GameLobbyPreferences.Vanilla1368;
+        Check(GameLobbyPreferences.DefaultsFor(SteamVanillaBaseline.ExecutableSha256) == v72, "1.3.72 executable did not select its defaults");
+        Check(GameLobbyPreferences.DefaultsFor(GameLobbyPreferences.Steam1368ExecutableSha256.ToLowerInvariant()) == v68, "1.3.68 executable did not select its defaults");
+        Check(GameLobbyPreferences.DefaultsFor(new string('0', 64)) is null, "Unknown executable selected defaults");
+        var single72 = GameLobbyPreferences.Default("SingleLaunchSettings", v72); var multi72 = GameLobbyPreferences.Default("MultiLaunchSettings", v72);
+        var single68 = GameLobbyPreferences.Default("SingleLaunchSettings", v68); var multi68 = GameLobbyPreferences.Default("MultiLaunchSettings", v68);
+        Check(Has(single68, "1.3.68") && Has(multi68, "1.3.68"), "1.3.68 defaults lack their version stamp");
+        Check(Has(single72, "1.3.72") && Has(multi72, "1.3.72"), "1.3.72 defaults lack their version stamp");
+        Check(!single68.SequenceEqual(single72) && !multi68.SequenceEqual(multi72), "Builds share one default");
+        // A 1.3.68 lobby left by a 16-kingdom game: its own defaults plus kingdom09..16 in single player, multiplayer clean.
+        var leftover = single68.Concat(Enumerable.Range(9, 8).SelectMany(i => String($"kingdom{i:00}"))).ToArray();
+        var simple = Encoding.UTF8.GetBytes("general preferences of a 1.3.68 player must survive");
+        var lobby68 = Build(new Dictionary<string, byte[]> {
+            ["HeaderInfo"] = BitConverter.GetBytes(19), ["SimplePreferences"] = simple, ["SingleLaunchSettings"] = leftover,
+            ["MultiLaunchSettings"] = multi68, ["RMCPreferences"] = [1,2,3,4] });
+        var repaired68 = GameLobbyPreferences.Repair(lobby68, new UserSettings { Mod = GameMod.Vanilla }, v68);
+        Check(repaired68 is not null, "1.3.68 lobby with kingdom09..16 not repaired");
+        var after68 = Chunks(repaired68!);
+        Check(after68["SingleLaunchSettings"].SequenceEqual(single68), "1.3.68 lobby did not get the 1.3.68 single-player defaults");
+        Check(after68["MultiLaunchSettings"].SequenceEqual(multi68), "Clean 1.3.68 multiplayer lobby changed");
+        Check(after68["SimplePreferences"].SequenceEqual(simple) && after68["HeaderInfo"].SequenceEqual(BitConverter.GetBytes(19)), "1.3.68 general preferences changed");
+        Check(after68["RMCPreferences"].SequenceEqual(new byte[4]), "1.3.68 map cache not cleared");
+        Check(GameLobbyPreferences.Repair(repaired68!, new UserSettings { Mod = GameMod.Vanilla }, v68) is null, "Repaired 1.3.68 lobby repaired again");
+        Check(Chunks(GameLobbyPreferences.Repair(lobby68, new UserSettings { Mod = GameMod.Vanilla })!)["SingleLaunchSettings"].SequenceEqual(single72), "Default repair no longer uses the 1.3.72 defaults");
+        var path68 = Path.Combine(root, "Preferences-1368.rup"); File.WriteAllBytes(path68, lobby68);
+        Check(await GameLobbyPreferences.PrepareAsync(path68, vanilla, v68), "1.3.68 disk repair skipped");
+        Check(File.ReadAllBytes(path68).SequenceEqual(repaired68!), "1.3.68 disk repair differs from the in-memory repair");
+        Check(Directory.GetFiles(Path.Combine(root, "PawsLauncherBackups")).Any(f => File.ReadAllBytes(f).SequenceEqual(lobby68)), "1.3.68 backup missing");
+        // Game folders: no executable or an unknown one never selects defaults (its preferences stay untouched).
+        var unknownGame = Path.Combine(root, "unknown-game"); Directory.CreateDirectory(unknownGame);
+        Check(await GameLobbyPreferences.DefaultsForGameAsync(unknownGame, default) is null, "Game without k2.exe selected defaults");
+        File.WriteAllBytes(Path.Combine(unknownGame, "k2.exe"), [0x4d, 0x5a, 1, 2, 3]);
+        Check(await GameLobbyPreferences.DefaultsForGameAsync(unknownGame, default) is null, "Unknown k2.exe selected defaults");
+        Console.WriteLine($"LOBBY PREFERENCES PASS {checks}: mode/component transitions, both launch caches, general preferences, unknown chunks/formats, backup and repeated launch, per-build defaults (1.3.72, 1.3.68, unknown).");
         return checks;
     }
     internal static async Task RepairFixtureAsync(string input, string output)

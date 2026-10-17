@@ -27,6 +27,7 @@
     <EmbeddedResource Include="Assets\Vanilla1372\autoexec.txt" />
     <EmbeddedResource Include="Assets\Vanilla1372\options_dialog.tgi" />
     <EmbeddedResource Include="Assets\Vanilla1372\*LaunchSettings.bin" />
+    <EmbeddedResource Include="Assets\Vanilla1368\*LaunchSettings.bin" />
     <EmbeddedResource Include="Assets\Sandbox\shfolder.dll" />
     <None Update="launcher.config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

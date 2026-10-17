@@ -21,11 +21,14 @@ internal static class SteamVanillaBaseline
     internal static bool IsOriginal(string relative, string hash)
         => Files.TryGetValue(relative, out var expected) && hash.Equals(expected, StringComparison.OrdinalIgnoreCase);
 
+    // Steam build 25068126 (1.3.72).
+    internal const string ExecutableSha256 = "1EB79BBB678668BE5A05F8C98103CD9988048490CE7C53C74C9A1D0813E9CD45";
+
     internal static async Task<bool> MatchesGameAsync(string root, CancellationToken cancellationToken)
     {
         var executable = PatchRecovery.GamePath(root, "k2.exe");
         return File.Exists(executable) && (await CryptoAndIO.Sha256Async(executable, cancellationToken))
-            .Equals("1EB79BBB678668BE5A05F8C98103CD9988048490CE7C53C74C9A1D0813E9CD45", StringComparison.OrdinalIgnoreCase);
+            .Equals(ExecutableSha256, StringComparison.OrdinalIgnoreCase);
     }
 
     internal static byte[] Read(string relative)
