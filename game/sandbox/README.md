@@ -38,6 +38,7 @@ every place it changes, then:
 | `mov ecx, [esi+0x234]` in the terrain fog builder | `2D5318` | same, for the fog drawn on the map |
 | d3d9's own `CreateDevice`, `Present` and `Reset` code | (d3d9.dll) | Windows' hot-patch jump (the 5 spare bytes before each function and its 2-byte `mov edi, edi`): the game's device is found (test screenshots) |
 | EconomicImpact vtable slots `48BBEC` tick, `48BB08` resource widget tick, `48BC2C` / `48BBE4` resets | `BFB73`, `BF8BC`, `BEF93`, `C04F8` | assembler stubs as in Paw's build (flags, registers, FPU/SSE kept); the tick stubs return to the caller, the reset stubs jump into the native function with the caller's stack untouched |
+| `call 0x42a446` in the build-menu tooltip | `E8326` | stub: when no buildable variant of a recruit's required structure exists, the tooltip names the structure itself (the game's other caller, `EC596`, already does this); without it Battleborn 0.2.5's Council recruits crashed the game when a Council kingdom's build menu opened |
 | application-state setter entry | `13BD34` | closes the row before the world and its kingdoms are destroyed on quit |
 
 Why d3d9's code and not its function tables: the 1.3.68 renderer creates its device through an `IDirect3D9` it looks

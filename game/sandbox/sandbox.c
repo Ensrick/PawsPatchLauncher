@@ -730,9 +730,122 @@ static int save_shot(void *dev, void *swap, int t) {
     ((Method0)VT(surface, 2))(surface);
     return hr >= 0;
 }
+/* ---- test driver (K2SB_DRIVE=<file>, unattended test runs only) ----
+ * Plays mouse input into the hidden window so a test can do what a player does: the game polls the cursor with
+ * GetCursorPos (0x69bf33, import slot 0x44d2a4) and takes buttons and keys as window messages (0x6f43a2). While a
+ * script is loaded the cursor import returns the scripted point; messages are posted to the game window. Script lines,
+ * in game seconds and 1280x720 client pixels: "<t> move x y", "<t> click x y", "<t> rclick x y", "<t> key <vk>",
+ * "<t> shot <n>", "<t> probe" (log the selection and the kingdom you control), "<t> control <list entry>". */
+#define RVA_CURSOR_IAT 0x44d2a4
+static const char *def_name(U def, char *out);
+typedef struct { float t; char verb[8]; int a, b; } DriveStep;
+static DriveStep drive[128];
+static int driveCount, driveNext, driveX = 640, driveY = 360, drivePhase, driveWait;
+static HWND gameWindow;
+static BOOL(WINAPI *realGetCursorPos)(POINT *);
+static BOOL WINAPI drive_cursor(POINT *pt) {
+    if (!pt) return FALSE;
+    pt->x = driveX;
+    pt->y = driveY;
+    return ClientToScreen(gameWindow, pt);
+}
+/* While driving, the game must never move or confine the real cursor: with the scripted point inside its window it
+ * took the player's cursor on 2026-10-17 (the first driven run). Both imports become no-ops for test runs. */
+#define RVA_SETCURSORPOS_IAT 0x44d290
+#define RVA_CLIPCURSOR_IAT 0x44d2b0
+static BOOL WINAPI no_set_cursor(int x, int y) { return TRUE; }
+static BOOL WINAPI no_clip_cursor(const RECT *r) { return TRUE; }
+static void load_drive(void) {
+    wchar_t path[MAX_PATH];
+    char text[8192], *line;
+    HANDLE h;
+    DWORD got = 0;
+    if (!GetEnvironmentVariableW(L"K2SB_DRIVE", path, MAX_PATH)) return;
+    h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+    if (h == INVALID_HANDLE_VALUE) return;
+    ReadFile(h, text, sizeof text - 1, &got, 0);
+    CloseHandle(h);
+    text[got] = 0;
+    for (line = strtok(text, "\r\n"); line && driveCount < 128; line = strtok(0, "\r\n")) {
+        DriveStep *s = &drive[driveCount];
+        if (line[0] == '#' || sscanf(line, "%f %7s %d %d", &s->t, s->verb, &s->a, &s->b) < 2) continue;
+        driveCount++;
+    }
+    if (!driveCount) return;
+    {
+        HMODULE user = GetModuleHandleW(L"user32.dll");
+        if (P(image, RVA_SETCURSORPOS_IAT) != (U)GetProcAddress(user, "SetCursorPos") ||
+            P(image, RVA_CLIPCURSOR_IAT) != (U)GetProcAddress(user, "ClipCursor") ||
+            P(image, RVA_CURSOR_IAT) != (U)GetProcAddress(user, "GetCursorPos")) {
+            sblog("drive: cursor imports differ, script ignored");
+            driveCount = 0;
+            return;
+        }
+        patch_ptr((void **)(image + RVA_SETCURSORPOS_IAT), (void *)no_set_cursor, 0);
+        patch_ptr((void **)(image + RVA_CLIPCURSOR_IAT), (void *)no_clip_cursor, 0);
+        realGetCursorPos = (void *)P(image, RVA_CURSOR_IAT);
+        patch_ptr((void **)(image + RVA_CURSOR_IAT), (void *)drive_cursor, 0);
+    }
+    sblog("drive: %d steps, cursor scripted; SetCursorPos and ClipCursor are no-ops", driveCount);
+}
+static void probe(const char *why) {
+    U ui = P(image, RVA_UI), m, node, e, actor = 0, owner = 0;
+    char name[48];
+    if (ui && (m = P(ui, 0x13c)) && (node = P(m, 8)) && (e = P(node, 0))) {
+        actor = P(e, 0x14);
+        owner = ((Get)(image + RVA_SEL_OWNER))(e, 0);
+    }
+    sblog("probe%s: selected %s (actor %08x, kingdom #%u); you control #%u", why, actor && readable(actor, 8) ? def_name(P(actor, 4), name) : "nothing",
+          actor, knum(owner), knum(((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0)));
+}
+static void drive_step(void *dev, void *swap, float time) {
+    DriveStep *s;
+    UINT down = WM_LBUTTONDOWN, up = WM_LBUTTONUP;
+    if (driveNext >= driveCount || !gameWindow) return;
+    s = &drive[driveNext];
+    if (time < s->t) return;
+    if (driveWait > 0) {
+        driveWait--;
+        return;
+    }
+    if (!strcmp(s->verb, "rclick")) down = WM_RBUTTONDOWN, up = WM_RBUTTONUP;
+    if (!strcmp(s->verb, "click") || !strcmp(s->verb, "rclick") || !strcmp(s->verb, "move")) {
+        if (drivePhase == 0) {
+            driveX = s->a;
+            driveY = s->b;
+            PostMessageW(gameWindow, WM_MOUSEMOVE, 0, MAKELPARAM(driveX, driveY));
+            drivePhase = s->verb[0] == 'm' ? 3 : 1;
+            driveWait = 4;
+            return;
+        }
+        if (drivePhase == 1) {
+            PostMessageW(gameWindow, down, down == WM_LBUTTONDOWN ? MK_LBUTTON : MK_RBUTTON, MAKELPARAM(driveX, driveY));
+            drivePhase = 2;
+            driveWait = 4;
+            return;
+        }
+        if (drivePhase == 2) PostMessageW(gameWindow, up, 0, MAKELPARAM(driveX, driveY));
+        sblog("drive %.1f: %s %d %d", time, s->verb, s->a, s->b);
+    } else if (!strcmp(s->verb, "key")) {
+        PostMessageW(gameWindow, WM_KEYDOWN, s->a, 1);
+        PostMessageW(gameWindow, WM_KEYUP, s->a, 0xc0000001);
+        sblog("drive %.1f: key %d", time, s->a);
+    } else if (!strcmp(s->verb, "shot"))
+        sblog("drive %.1f: shot %d %s", time, s->a, save_shot(dev, swap, s->a) ? "saved" : "failed");
+    else if (!strcmp(s->verb, "probe"))
+        probe("");
+    else if (!strcmp(s->verb, "control") && s->a >= 1 && s->a <= kingdomCount)
+        take_control(kingdoms[s->a - 1].k, "drive");
+    drivePhase = 0;
+    driveWait = 2;
+    driveNext++;
+    if (driveNext == driveCount) sblog("drive: done at game time %.1f", time);
+}
+
 static U lastSelected;
 static int dumped, testDone;
 static void dump(void);
+static void audit_tooltips(void);
 static void frame(void *dev, void *swap) {
     U world = P(image, RVA_WORLD), lp = local_player();
     float time;
@@ -776,6 +889,7 @@ static void frame(void *dev, void *swap) {
     if (diag && !dumped && time > 5.0f) {
         dumped = 1;
         dump();
+        audit_tooltips();
     }
     if (testSwitch && !testDone && time > 20.0f) {
         testDone = 1;
@@ -793,6 +907,7 @@ static void frame(void *dev, void *swap) {
             sblog("shot at game time %.1f: %s", time, save_shot(dev, swap, shots[i]) ? "saved" : "failed");
             shots[i] = 0;
         }
+    drive_step(dev, swap, time);
 }
 static void overlay(void *dev, void *swap, const char *path) {
     if (!presentThread) {
@@ -998,6 +1113,7 @@ static void found_device(void *dev, HWND focus, void *pp) {
     }
     backW = ((U *)pp)[0];
     backH = ((U *)pp)[1];
+    gameWindow = w;
     device = dev;
     hook_table(dev);
     CreateThread(0, 0, watch, 0, 0, 0);
@@ -1098,6 +1214,114 @@ static void dump(void) {
     sblog("diag: thinks skipped %ld, ran %ld", thinkSkipped, thinkPassed);
 }
 
+/* ---- build-menu tooltip guard ----
+ * A structure's tooltip lists the recruits it unlocks and their other required structures (0x4e821d). Each required
+ * structure is mapped to the variant the selected settlement can build (0x42a446: the structure itself or one of its
+ * variants, def +0x4c0, in the settlement def's buildable list +0x45c); the game uses the result's name without a
+ * check, so a requirement no settlement can build (Battleborn 0.2.5's Council swordsmen: bb_base_center_city) crashed
+ * the game when that build menu opened (2026-10-17, access violation at 0x4ebbde). The call at 0x4e8326 goes through
+ * this stub: when nothing maps, the tooltip names the required structure itself. */
+#define RVA_TIP_MAP_CALL 0x0e8326 /* call 0x42a446 in the tooltip builder (VA 0x4e8326) */
+#define RVA_TIP_MAP 0x02a446
+U sb_tip_map_next;
+void sb_tip_map_hook(void);
+__asm__(".globl sb_tip_map_hook\nsb_tip_map_hook:\n"
+        " pushl 4(%esp)\n call *sb_tip_map_next\n" /* thiscall, ret 4: ecx (the settlement def) is untouched */
+        " testl %eax, %eax\n jnz 1f\n movl 4(%esp), %eax\n1: ret $4\n");
+static volatile LONG tipFallbacks;
+static void install_tip_guard(void) {
+    unsigned char *p = (unsigned char *)(image + RVA_TIP_MAP_CALL);
+    DWORD prot, ignored;
+    if (p[0] != 0xe8 || (U)(p + 5) + *(U *)(p + 1) != image + RVA_TIP_MAP || !VirtualProtect(p, 5, PAGE_EXECUTE_READWRITE, &prot)) {
+        sblog("tooltip guard: code differs, off");
+        return;
+    }
+    sb_tip_map_next = image + RVA_TIP_MAP;
+    *(U *)(p + 1) = (U)sb_tip_map_hook - (U)(p + 5);
+    VirtualProtect(p, 5, prot, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), p, 5);
+    sblog("tooltip guard: hooked");
+}
+
+/* K2SB_DIAG=1: the same mapping, checked for every settlement on the map against every structure it can build, every
+ * recruit those structures unlock and every structure those recruits require; each case the game cannot map is logged
+ * (these are the build-menu tooltips that crash without the guard). Reads only. */
+static int node_ok(U n) { return n && readable(n, 8); }
+static int in_list(U head, U x) {
+    int i;
+    for (i = 0; node_ok(head) && i < 512; head = P(head, 4), i++)
+        if (P(head, 0) == x) return 1;
+    return 0;
+}
+static int derived(U a, U s, int depth) { /* 0x42a227: s is a variant of a */
+    U n;
+    int i;
+    if (depth > 8 || !readable(a + 0x4c0, 4)) return 0;
+    for (n = P(a, 0x4c0), i = 0; node_ok(n) && i < 64; n = P(n, 4), i++)
+        if (P(n, 0) == s || derived(P(n, 0), s, depth + 1)) return 1;
+    return 0;
+}
+static U map_variant(U t, U a) { /* 0x42a446 */
+    U n, buildable = P(t, 0x45c);
+    int i;
+    if (in_list(buildable, a)) return a;
+    if (!readable(a + 0x4c0, 4)) return 0;
+    for (n = P(a, 0x4c0), i = 0; node_ok(n) && i < 64; n = P(n, 4), i++)
+        if (in_list(buildable, P(n, 0))) return P(n, 0);
+    return 0;
+}
+static const char *def_name(U def, char *out) {
+    const wchar_t *w = readable(def + 0x10, 4) ? engine_text(P(def, 0x10), L"?") : L"?";
+    int i;
+    for (i = 0; i < 47 && w[i]; i++) out[i] = w[i] < 128 ? (char)w[i] : '?';
+    out[i] = 0;
+    return out;
+}
+static void audit_tooltips(void) {
+    U reg = P(image, RVA_REGISTRY), id, seen[64];
+    int seenCount = 0, settlements = 0, checks = 0, missing = 0;
+    if (!reg) return;
+    for (id = 1; id < 0x10000; id++) {
+        U obj = P(reg, 0x20004 + 4 * id), t, s, sn, u, un, a, an;
+        int j, dup = 0;
+        char tn[48], snm[48], unm[48], anm[48];
+        if (!obj || !readable(obj, 0x18) || (P(obj, 0x14) & 0xffff) != id) continue;
+        t = P(obj, 4);
+        if (!t || !readable(t + 0x45c, 4) || !node_ok(P(t, 0x45c)) || !readable(obj, 0x9c)) continue;
+        for (j = 0; j < seenCount; j++)
+            if (seen[j] == t) dup = 1;
+        if (dup || seenCount >= 64) continue;
+        seen[seenCount++] = t;
+        settlements++;
+        /* The tooltip maps requirements only for a builder whose +0x98 is set (0x4b6e07); others name them as they are. */
+        sblog("diag: builder %s (object %08x, +0x98 %08x, kingdom #%u)", def_name(t, tn), obj, P(obj, 0x98),
+              readable(P(obj, 0x98), 0x194) && live(P(obj, 0x98)) ? knum(P(obj, 0x98)) : 0);
+        for (sn = P(t, 0x45c), j = 0; node_ok(sn) && j < 64; sn = P(sn, 4), j++) {
+            int k;
+            s = P(sn, 0);
+            if (!s || !readable(s + 0x454, 4)) continue;
+            for (un = P(s, 0x454), k = 0; node_ok(un) && k < 128; un = P(un, 4), k++) {
+                U req;
+                int m;
+                u = P(un, 0);
+                if (!u || !readable(u + 0x2c8, 4) || !(req = P(u, 0x2c8)) || !readable(req + 0xc, 4)) continue;
+                for (an = P(req, 0xc), m = 0; node_ok(an) && m < 32; an = P(an, 4), m++) {
+                    a = P(an, 0);
+                    if (!a || a == s || derived(a, s, 0)) continue;
+                    checks++;
+                    if (!map_variant(t, a)) {
+                        missing++;
+                        sblog("diag: tooltip: %s builds %s, recruit %s requires %s: no buildable variant", def_name(t, tn),
+                              def_name(s, snm), def_name(u, unm), def_name(a, anm));
+                    }
+                }
+            }
+        }
+    }
+    sblog("diag: tooltip audit: %d settlement types, %d required structures checked, %d without a buildable variant",
+          settlements, checks, missing);
+}
+
 /* ---- install, on the game's first SHGetFolderPathW call ---- */
 static int expect_push(U rva, U target) {
     return B(image, rva) == 0x68 && P(image, rva + 1) == image + target;
@@ -1145,6 +1369,8 @@ static void install(void) {
     FlushInstructionCache(GetCurrentProcess(), (void *)(image + RVA_GOAL_PUSH), 0x50);
     install_vision();
     install_economy();
+    if (!GetEnvironmentVariableW(L"K2SB_TIP_GUARD", value, 16) || value[0] != L'0') install_tip_guard(); /* test runs: =0 off */
+    load_drive();
     realCreate9 = (Create9)create;
     if (hook_d3d9(create))
         sblog("d3d9: CreateDevice code hooked");
