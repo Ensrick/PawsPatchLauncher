@@ -27,8 +27,8 @@ public partial class MainWindow
         SandboxCard.Visibility = SandboxOffered ? Visibility.Visible : Visibility.Collapsed;
         SandboxTitleText.Text = T("Песочница (одиночная игра)", "Sandbox (single player)");
         SandboxDescriptionText.Text = T(
-            "Компьютерные игроки бездействуют. Щёлкните любой отряд или здание, чтобы управлять его королевством, или нажмите Alt+1-8. Экономика всех королевств показана слева вверху. Ctrl+Shift+A включает компьютерных игроков, Ctrl+Shift+H скрывает список. Запуск идёт из отдельной копии игры: папка игры и сетевая игра не меняются.",
-            "Computer players stay idle. Click any unit or building to control its kingdom, or press Alt+1-8. Every kingdom's economy is listed top left. Ctrl+Shift+A turns computer players back on, Ctrl+Shift+H hides the list. Launch starts a separate copy of the game, so your game folder and multiplayer stay unchanged.");
+            "Компьютерные игроки бездействуют. Щёлкните любой отряд или здание, чтобы управлять его королевством, или нажмите Alt+1-8. Общий обзор: вы видите то же, что видят все королевства игроков, как обзор союзника; дипломатия не меняется. Экономика всех королевств показана слева вверху. Ctrl+Shift+A включает компьютерных игроков, Ctrl+Shift+V переключает общий обзор, Ctrl+Shift+H скрывает список. Запуск идёт из отдельной копии игры: папка игры и сетевая игра не меняются.",
+            "Computer players stay idle. Click any unit or building to control its kingdom, or press Alt+1-8. Shared vision: you see what every player kingdom sees, like an ally's sight; diplomacy is unchanged. Every kingdom's economy is listed top left. Ctrl+Shift+A turns computer players back on, Ctrl+Shift+V toggles shared vision, Ctrl+Shift+H hides the list. Launch starts a separate copy of the game, so your game folder and multiplayer stay unchanged.");
         var available = SandboxAvailable;
         SandboxToggle.IsChecked = available && _settings.SandboxEnabled;
         SandboxToggle.IsEnabled = available && !_busy;

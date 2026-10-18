@@ -8,6 +8,7 @@ Steam public-branch `k2.exe` of 1.3.68 (build 24805354, SHA256 `CB646763...AFB9D
 | Computer players off | Computer kingdoms never build, recruit or attack. Units still guard and fight back. Ctrl+Shift+A turns them back on. |
 | Control any kingdom | Click any unit or building of a player kingdom and that kingdom becomes yours: top bar, heroes, interface skin and orders. Alt+1..8 does the same by list position. |
 | Kingdom list | Top left: colour, team, name and economy (gold, stone, wood, iron, mana, unit limit) of every player kingdom in slot order; the one you control is highlighted. Ctrl+Shift+H hides it. |
+| Shared vision | The view shows what every player kingdom sees and has explored, the way it shows an ally's sight. Places no player kingdom sees stay fogged; diplomacy and every kingdom's own vision are unchanged. Ctrl+Shift+V turns it off and on. |
 
 It acts only with exactly one human player in the session. With more players, or any other executable, the game runs
 as shipped and `sandbox.log` says why.
@@ -33,6 +34,8 @@ every place it changes, then:
 | --- | --- | --- |
 | `push GoalEngineThink` in the strategic AI fiber loop | `1E154A` | wrapper clears the AI player's active byte (`+4`) for the call, so the think takes the game's own skip-and-reschedule path |
 | `push` of the RAI think | `1E1590` | same |
+| `mov eax, [eax+0x234]` in the explored and seen-now checks | `249E05`, `249E2D` | `call` to a stub: for the kingdom you control, on the interface thread, the union of every player kingdom's vision mask (below); otherwise the kingdom's own |
+| `mov ecx, [esi+0x234]` in the terrain fog builder | `2D5318` | same, for the fog drawn on the map |
 | d3d9's own `CreateDevice`, `Present` and `Reset` code | (d3d9.dll) | Windows' hot-patch jump (the 5 spare bytes before each function and its 2-byte `mov edi, edi`): the game's device is found and the kingdom list is drawn (D3DX font) |
 
 Why d3d9's code and not its function tables: the 1.3.68 renderer creates its device through an `IDirect3D9` it looks
@@ -41,6 +44,13 @@ such as Discord's rewrite d3d9's table entries in memory, also after another hoo
 d3d9's code. `CreateDevice`'s original address is read from d3d9.dll's file; the game's device is the one whose window
 k2.exe created (overlays make devices of their own). Code that is not hot-patchable falls back to the import and table
 entries (a watcher re-hooks them every 250 ms, since d3d9 rewrites the `Present` entry after the first frame).
+
+Vision: a kingdom's `+0x234` says whose sight it gets, one bit per kingdom slot (low 16 bits explored, high 16 seen
+now): its own and its allies', which is how allies share vision (2v2 teams: `0x00030003` and `0x000c000c`). Map cells
+and units carry the same bits, and the checks at `249DF4` / `249E1C` AND them with that mask (units through an actor
+virtual). Shared vision changes what those loads return only on the interface thread and only for the kingdom you
+control; the simulation runs on its own thread with every kingdom's real mask, so units, AI and diplomacy see nothing
+new. Hidden 2v2 runs: with it on the minimap shows all four bases, with it off two; unexplored map stays black.
 
 Control switches write the local session player's kingdom (`[5D7FE4]+0xC`, field `+0x28`): the interface getter and the
 order checks both read it. Names and colours are read every 2 s, never per frame: per-frame `VirtualQuery` calls in
