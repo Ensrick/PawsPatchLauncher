@@ -231,6 +231,57 @@ static void take_control(U k, const char *why) {
          knum(((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0)));
 }
 
+/* ---- the simulation's copy of the selection ----
+ * Orders (build, recruit, move) act on the ordering player's own selection (player +0x58, list +4; read by
+ * KKC_TellSelectedCommandOrder::Process 0x4d3629), which the interface fills by sending a KKC_SelectionAddOrder for
+ * the local player whenever something is added to the selection (0x6d7fc9). A click on another kingdom's town is sent
+ * while you still control your own kingdom, before the switch below, so build and recruit orders at that town reached
+ * a selection without it (user report 2026-10-17: the orders went out as kingdom 1 at its own village and did
+ * nothing). After a switch the sandbox sends the current selection again, the way the AI sends its own (0x5f33bc):
+ * KKC_SelectionSetOrder for the first actor, KKC_SelectionAddOrder for the rest, for the local player. */
+#define RVA_LOCAL_PLAYER_GET 0x2bdf12 /* the session's local player, as the interface passes it */
+#define VT_SEL_SET_ORDER 0x4dc1b4
+#define VT_SEL_ADD_ORDER 0x4dc1e0
+#define RVA_SEL_SET_SEND 0x1f45ce     /* thiscall(order {vtable, actor}, player), ret 4 */
+#define RVA_SEL_ADD_SEND 0x1f4544
+typedef void(FAST *SendOrder)(U order, U edx, U player);
+static U sim_player(void) { return ((U(*)(void))(image + RVA_LOCAL_PLAYER_GET))(); }
+static int sim_selection(U *first) {
+    U pl = sim_player(), sel, node;
+    int n = 0;
+    *first = 0;
+    if (!pl || !readable(pl + 0x58, 4) || !(sel = P(pl, 0x58)) || !readable(sel + 4, 4)) return -1;
+    for (node = P(sel, 4); node && readable(node, 8) && n < 256; node = P(node, 4), n++)
+        if (!n) *first = P(node, 0);
+    return n;
+}
+static int resend_selection(U k) {
+    U ui = P(image, RVA_UI), m, node, player = sim_player(), order[2];
+    int n = 0, i;
+    if (!ui || !(m = P(ui, 0x13c)) || !player) return 0;
+    for (node = P(m, 8), i = 0; node && i < 256; node = P(node, 4), i++) {
+        U e = P(node, 0), actor;
+        if (!e || !(actor = P(e, 0x14)) || ((Get)(image + RVA_SEL_OWNER))(e, 0) != k) continue;
+        order[0] = image + (n ? VT_SEL_ADD_ORDER : VT_SEL_SET_ORDER);
+        order[1] = actor;
+        ((SendOrder)(image + (n ? RVA_SEL_ADD_SEND : RVA_SEL_SET_SEND)))((U)order, 0, player);
+        n++;
+    }
+    return n;
+}
+static DWORD selCheckAt;
+static const char *def_name(U def, char *out);
+static void log_sim_selection(const char *when) {
+    U first;
+    char name[48];
+    int n = sim_selection(&first);
+    if (n < 0)
+        sblog("simulation selection %s: not readable", when);
+    else
+        sblog("simulation selection %s: %d actor(s), first %s", when, n,
+              first && readable(first, 8) && readable(P(first, 4) + 0x10, 4) ? def_name(P(first, 4), name) : "none");
+}
+
 /* ---- shared vision ----
  * A kingdom's +0x234 says whose sight it gets: one bit per kingdom slot, low 16 = explored, high 16 = seen now; its own
  * bit and its allies' (that is how allies share vision). Map cells and units carry the same bits; the game's two checks
@@ -883,8 +934,17 @@ static void frame(void *dev, void *swap) {
         for (i = 0; i < 256; i++) keyDown[i] = 0;
     {
         U owner = selected_owner();
-        if (owner && owner != lastSelected && is_player_kingdom(owner)) take_control(owner, "selection");
+        if (owner && owner != lastSelected && is_player_kingdom(owner) && owner != P(local_player(), 0x28)) {
+            take_control(owner, "selection");
+            log_sim_selection("before resend");
+            sblog("selection resent to the simulation: %d actor(s)", resend_selection(owner));
+            selCheckAt = GetTickCount() + 1000;
+        }
         lastSelected = owner;
+    }
+    if (selCheckAt && GetTickCount() >= selCheckAt) {
+        selCheckAt = 0;
+        log_sim_selection("1 s after the switch");
     }
     if (diag && !dumped && time > 5.0f) {
         dumped = 1;
