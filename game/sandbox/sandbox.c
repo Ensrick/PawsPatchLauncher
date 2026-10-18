@@ -269,6 +269,69 @@ static int resend_selection(U k) {
     }
     return n;
 }
+/* Orders from the kingdom's own player. With the selection in place the game still refused a recruit sent by you for
+ * another kingdom (2026-10-17 test: kingdom 1's order went out at its own village, its gold never moved). Each order
+ * names its player (0x55d4d0, called by every order send; the simulation reads it back as the ordering player), and the
+ * AI commands its kingdom as that kingdom's session player (0x5f33bc). So the selection orders and the unit and town
+ * command orders you send while controlling another player kingdom go out as that kingdom's own session player: their
+ * call sites below call a stub that swaps the player. Everything else (pause, speed, saves, chat) stays yours. */
+#define RVA_SET_ORDER_PLAYER 0x15d4d0
+static const U orderPlayerSites[] = {
+    0x0d490a, /* KKC_TellSelectedCommandOrder (build, recruit, move, research ...) */
+    0x0d4883, /* the other actor command order in GameOrders.cpp (type 0x9d6ea0) */
+    0x1f4613, /* KKC_SelectionSetOrder */
+    0x1f4589, /* KKC_SelectionAddOrder */
+    0x2da42c, /* KKC_SelectionRemoveOrder */
+    0x2da32b, /* the interface's selection sends 0x6da2e6 and 0x6da370 */
+    0x2da3b1,
+};
+U sb_order_player_next;
+static U lastOrderOwner;
+U sb_map_player(U player) {
+    U s, node, k, mine = sim_player();
+    int i;
+    if (!player || player != mine || !single_player() || !(k = P(player, 0x28)) || !is_player_kingdom(k)) return player;
+    if (!(s = P(image, RVA_SESSION))) return player;
+    for (node = P(s, 0xc8), i = 0; node && i < 64; node = P(node, 4), i++) {
+        U q = P(node, 0);
+        if (q && q != player && P(q, 0x28) == k) {
+            if (lastOrderOwner != q) {
+                lastOrderOwner = q;
+                sblog("orders: kingdom #%u's orders go out as its own player", knum(k));
+            }
+            return q;
+        }
+    }
+    if (lastOrderOwner) {
+        lastOrderOwner = 0;
+        sblog("orders: kingdom #%u's orders go out as you", knum(k));
+    }
+    return player;
+}
+void sb_order_player_hook(void);
+__asm__(".globl sb_order_player_hook\nsb_order_player_hook:\n"
+        " pushl 4(%esp)\n call sb_map_player\n addl $4, %esp\n movl %eax, 4(%esp)\n jmp *sb_order_player_next\n");
+static void install_order_player(void) {
+    int i, n = sizeof orderPlayerSites / sizeof orderPlayerSites[0];
+    for (i = 0; i < n; i++) {
+        unsigned char *p = (unsigned char *)(image + orderPlayerSites[i]);
+        if (p[0] != 0xe8 || (U)(p + 5) + *(U *)(p + 1) != image + RVA_SET_ORDER_PLAYER) {
+            sblog("orders: call site %06x differs, orders stay yours", orderPlayerSites[i]);
+            return;
+        }
+    }
+    sb_order_player_next = image + RVA_SET_ORDER_PLAYER;
+    for (i = 0; i < n; i++) {
+        unsigned char *p = (unsigned char *)(image + orderPlayerSites[i]);
+        DWORD prot, ignored;
+        if (!VirtualProtect(p, 5, PAGE_EXECUTE_READWRITE, &prot)) continue;
+        *(U *)(p + 1) = (U)sb_order_player_hook - (U)(p + 5);
+        VirtualProtect(p, 5, prot, &ignored);
+        FlushInstructionCache(GetCurrentProcess(), p, 5);
+    }
+    sblog("orders: %d order sends hooked", n);
+}
+
 static DWORD selCheckAt;
 static const char *def_name(U def, char *out);
 static void log_sim_selection(const char *when) {
@@ -811,6 +874,7 @@ static void load_drive(void) {
     char text[8192], *line;
     HANDLE h;
     DWORD got = 0;
+    int i, mouse = 0;
     if (!GetEnvironmentVariableW(L"K2SB_DRIVE", path, MAX_PATH)) return;
     h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
     if (h == INVALID_HANDLE_VALUE) return;
@@ -823,6 +887,12 @@ static void load_drive(void) {
         driveCount++;
     }
     if (!driveCount) return;
+    for (i = 0; i < driveCount; i++)
+        if (strstr(drive[i].verb, "click") || !strcmp(drive[i].verb, "move")) mouse = 1;
+    if (!mouse) { /* control, probe, key and shot steps need no cursor: the cursor imports stay untouched */
+        sblog("drive: %d steps, no mouse steps (cursor untouched)", driveCount);
+        return;
+    }
     {
         HMODULE user = GetModuleHandleW(L"user32.dll");
         if (P(image, RVA_SETCURSORPOS_IAT) != (U)GetProcAddress(user, "SetCursorPos") ||
@@ -848,6 +918,24 @@ static void probe(const char *why) {
     }
     sblog("probe%s: selected %s (actor %08x, kingdom #%u); you control #%u", why, actor && readable(actor, 8) ? def_name(P(actor, 4), name) : "nothing",
           actor, knum(owner), knum(((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0)));
+    {
+        int i;
+        for (i = 0; i < kingdomCount; i++) /* gold: stock, production - consumption (a commission spends stock) */
+            if (live(kingdoms[i].k) && P(kingdoms[i].k, 0x1cc) && P(kingdoms[i].k, 0x1a8) && P(kingdoms[i].k, 0x1c0))
+                sblog("probe%s:   kingdom #%u gold %.1f (%+.1f)", why, knum(kingdoms[i].k), F(P(kingdoms[i].k, 0x1cc), 0),
+                      F(P(kingdoms[i].k, 0x1a8), 0) - F(P(kingdoms[i].k, 0x1c0), 0));
+    }
+    {
+        U first;
+        int n = sim_selection(&first);
+        sblog("probe%s:   simulation selection %d actor(s), first %s", why, n,
+              n > 0 && first && readable(first, 8) && readable(P(first, 4) + 0x10, 4) ? def_name(P(first, 4), name) : "none");
+    }
+    if (lastOrderOwner && readable(lastOrderOwner + 0x58, 4) && P(lastOrderOwner, 0x58)) {
+        U sel = P(lastOrderOwner, 0x58), node = readable(sel + 4, 4) ? P(sel, 4) : 0, first = node && readable(node, 8) ? P(node, 0) : 0;
+        sblog("probe%s:   the kingdom's own player: simulation selection first %s", why,
+              first && readable(first, 8) && readable(P(first, 4) + 0x10, 4) ? def_name(P(first, 4), name) : "none");
+    }
 }
 static void drive_step(void *dev, void *swap, float time) {
     DriveStep *s;
@@ -1429,6 +1517,7 @@ static void install(void) {
     FlushInstructionCache(GetCurrentProcess(), (void *)(image + RVA_GOAL_PUSH), 0x50);
     install_vision();
     install_economy();
+    install_order_player();
     if (!GetEnvironmentVariableW(L"K2SB_TIP_GUARD", value, 16) || value[0] != L'0') install_tip_guard(); /* test runs: =0 off */
     load_drive();
     realCreate9 = (Create9)create;
