@@ -13,9 +13,11 @@
  *    the same by list position.
  *  - A kingdom list at the top left: colour swatch, team, name and economy of every player kingdom, in slot order.
  *    Drawn with D3DX on the game's device (Present hook).
+ *  - Shared vision: the view shows what every player kingdom sees, as it shows an ally's sight (view only).
  *
  * Active only while exactly one human session player exists (single player). Every other case: the game as shipped.
- * Hotkeys: Alt+1..8 take control, Ctrl+Shift+A computer players on/off, Ctrl+Shift+H list on/off.
+ * Hotkeys: Alt+1..8 take control, Ctrl+Shift+A computer players on/off, Ctrl+Shift+V shared vision on/off,
+ * Ctrl+Shift+H list on/off.
  * Log: sandbox.log next to k2.exe. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -229,6 +231,70 @@ static void take_control(U k, const char *why) {
          knum(((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0)));
 }
 
+/* ---- shared vision ----
+ * A kingdom's +0x234 says whose sight it gets: one bit per kingdom slot, low 16 = explored, high 16 = seen now; its own
+ * bit and its allies' (that is how allies share vision). Map cells and units carry the same bits; the game's two checks
+ * (0x249df4 explored, 0x249e1c seen now) AND them with that mask, and the terrain fog builder loads it once (0x2d5318).
+ * On the interface thread, for the kingdom you control, those three loads give the union of every player kingdom's
+ * mask: whatever any player kingdom sees or has explored is shown, the rest stays fogged. The simulation (its own
+ * thread), every kingdom's mask and diplomacy are unchanged. Ctrl+Shift+V turns it off and on. */
+#define RVA_EXPLORED_MASK 0x249e05 /* mov eax, [eax+0x234] in the explored check */
+#define RVA_SEEN_MASK 0x249e2d     /* mov eax, [eax+0x234] in the seen-now check */
+#define RVA_FOG_MASK 0x2d5318      /* mov ecx, [esi+0x234] in the terrain fog builder (esi = interface kingdom) */
+U sb_view_kingdom, sb_shared_mask, sb_view_thread; /* read by the stubs below; view 0 = off */
+static int sharedVision = 1, visionPatched;
+void sb_mask_eax(void);
+void sb_mask_ecx(void);
+/* Stand-ins for the 6-byte loads (call + nop): the mask of eax / esi, or the shared one. Only the target register
+ * changes; flags are not used by the code that follows. %fs:0x24 is the current thread id. */
+__asm__(".globl sb_mask_eax\nsb_mask_eax:\n"
+        " cmpl sb_view_kingdom, %eax\n jne 1f\n"
+        " pushl %edx\n movl %fs:0x24, %edx\n cmpl sb_view_thread, %edx\n popl %edx\n jne 1f\n"
+        " movl sb_shared_mask, %eax\n ret\n"
+        "1: movl 0x234(%eax), %eax\n ret\n"
+        ".globl sb_mask_ecx\nsb_mask_ecx:\n"
+        " cmpl sb_view_kingdom, %esi\n jne 2f\n"
+        " pushl %edx\n movl %fs:0x24, %edx\n cmpl sb_view_thread, %edx\n popl %edx\n jne 2f\n"
+        " movl sb_shared_mask, %ecx\n ret\n"
+        "2: movl 0x234(%esi), %ecx\n ret\n");
+static int patch_load(U rva, void *stub) {
+    unsigned char *p = (unsigned char *)(image + rva);
+    DWORD prot, ignored;
+    if (!VirtualProtect(p, 6, PAGE_EXECUTE_READWRITE, &prot)) return 0;
+    p[0] = 0xe8;
+    *(U *)(p + 1) = (U)stub - (U)(p + 5);
+    p[5] = 0x90;
+    VirtualProtect(p, 6, prot, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), p, 6);
+    return 1;
+}
+static void install_vision(void) {
+    static const unsigned char eaxLoad[] = {0x8b, 0x80, 0x34, 0x02, 0x00, 0x00}, ecxLoad[] = {0x8b, 0x8e, 0x34, 0x02, 0x00, 0x00};
+    if (memcmp((void *)(image + RVA_EXPLORED_MASK), eaxLoad, 6) || memcmp((void *)(image + RVA_SEEN_MASK), eaxLoad, 6) ||
+        memcmp((void *)(image + RVA_FOG_MASK), ecxLoad, 6)) {
+        sblog("shared vision: code differs, off");
+        return;
+    }
+    visionPatched = patch_load(RVA_EXPLORED_MASK, (void *)sb_mask_eax) && patch_load(RVA_SEEN_MASK, (void *)sb_mask_eax) &&
+                    patch_load(RVA_FOG_MASK, (void *)sb_mask_ecx);
+    sblog("shared vision: %s", visionPatched ? "hooked" : "not hooked");
+}
+/* Once per frame on the interface thread. */
+static void update_vision(void) {
+    U view = 0, mask = 0;
+    int i;
+    if (visionPatched && sharedVision && kingdomCount) {
+        view = ((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0);
+        for (i = 0; i < kingdomCount; i++)
+            if (live(kingdoms[i].k)) mask |= P(kingdoms[i].k, 0x234);
+        if (!is_player_kingdom(view)) view = 0;
+    }
+    /* The stubs use these only on this thread, so the three writes need no ordering. */
+    sb_shared_mask = mask;
+    sb_view_thread = GetCurrentThreadId();
+    sb_view_kingdom = view;
+}
+
 /* ---- computer players off ---- */
 static void think(U player, U rva, volatile LONG *count) {
     int cleared = 0;
@@ -385,8 +451,9 @@ static void draw_list(void *dev) {
             _snwprintf(row, 512, L"%d  --  %s%s", i + 1, kingdoms[i].name, eco);
         text(x + sw + 6, yy, row, k == mine ? 0xffffe680u : 0xffffffffu);
     }
-    _snwprintf(row, 512, L"Sandbox: click any unit to control its kingdom (or Alt+1-%d)   computer players %s (Ctrl+Shift+A)   hide: Ctrl+Shift+H",
-               kingdomCount, aiOff ? L"off" : L"ON");
+    _snwprintf(row, 512, L"Sandbox: click any unit to control its kingdom (or Alt+1-%d)   computer players %s (Ctrl+Shift+A)%s%s   hide: Ctrl+Shift+H",
+               kingdomCount, aiOff ? L"off" : L"ON", visionPatched ? L"   shared vision " : L"",
+               visionPatched ? (sharedVision ? L"on (Ctrl+Shift+V)" : L"off (Ctrl+Shift+V)") : L"");
     text(x, y + kingdomCount * line + 2, row, 0xffc8c8c8u);
     ((SetRSFn)VT(dev, 57))(dev, 174, scissor);
     ((ViewportFn)VT(dev, 47))(dev, &saved);
@@ -447,9 +514,11 @@ static void frame(void *dev, void *swap) {
     if (!world || !lp || !P(lp, 0x28) || !single_player()) {
         kingdomCount = 0;
         lastSelected = 0;
+        sb_view_kingdom = 0;
         return;
     }
     collect(world);
+    update_vision();
     time = F(world, 0xe8);
     if (foreground() && (GetAsyncKeyState(VK_MENU) & 0x8000) && !(GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
         for (i = 0; i < 8; i++)
@@ -460,6 +529,10 @@ static void frame(void *dev, void *swap) {
             sblog("computer players %s (skipped %ld, ran %ld thinks so far)", aiOff ? "off" : "on", thinkSkipped, thinkPassed);
         }
         if (pressed('H')) listShown = !listShown;
+        if (pressed('V') && visionPatched) {
+            sharedVision = !sharedVision;
+            sblog("shared vision %s", sharedVision ? "on" : "off");
+        }
     } else
         for (i = 0; i < 256; i++) keyDown[i] = 0;
     {
@@ -672,10 +745,24 @@ static DWORD WINAPI watch(void *unused) {
     }
     return 0;
 }
+/* Test runs (K2SB_STAY_ACTIVE=1, as in the multiplayer rig): a single-player game pauses whenever its window loses
+ * activation, also with RunWhenInactive, so an unattended copy would stall while someone uses the desktop. The game
+ * window's procedure does not get those messages. */
+static int stayActive;
+static WNDPROC gameProc;
+static LRESULT CALLBACK stay_active_proc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
+    if ((m == WM_ACTIVATE && LOWORD(wp) == WA_INACTIVE) || (m == WM_ACTIVATEAPP && !wp) || m == WM_KILLFOCUS) return 0;
+    if (m == WM_NCACTIVATE && !wp) return TRUE;
+    return CallWindowProcW(gameProc, w, m, wp, lp);
+}
 /* The game's device: its window was created by k2.exe (overlays create devices of their own on hidden windows). */
 static void found_device(void *dev, HWND focus, void *pp) {
     HWND w = focus ? focus : (HWND)((U *)pp)[7];
     if ((uintptr_t)GetWindowLongW(w, -6 /* GWL_HINSTANCE */) != image || device) return;
+    if (stayActive && !gameProc && (gameProc = (WNDPROC)GetWindowLongW(w, -4 /* GWL_WNDPROC */)) != 0) {
+        SetWindowLongW(w, -4, (LONG)stay_active_proc);
+        sblog("test: window %p stays active", w);
+    }
     backW = ((U *)pp)[0];
     backH = ((U *)pp)[1];
     device = dev;
@@ -767,6 +854,8 @@ static void dump(void) {
         char tag[32];
         sblog("diag: kingdom %08x vt %08x id %08x #%u team %08x colour %08x rgb %.3f %.3f %.3f", kk, P(kk, 0), P(kk, 0x14),
              P(kk, 0x190), P(kk, 0x1f8), c, c ? F(c, 0x18) : -1, c ? F(c, 0x1c) : -1, c ? F(c, 0x20) : -1);
+        sblog("diag:   vision mask %08x, sees all %08x; shared mask %08x for #%u", P(kk, 0x234), P(kk, 0x198), sb_shared_mask,
+             knum(sb_view_kingdom));
         for (i = 0; i < 6; i++)
             sblog("diag:   r%u prod %.2f cap %.2f cons %.2f stock %.2f", i, F(P(kk, 0x1a8), 4 * i), F(P(kk, 0x1b4), 4 * i),
                  F(P(kk, 0x1c0), 4 * i), F(P(kk, 0x1cc), 4 * i));
@@ -796,6 +885,8 @@ static void install(void) {
     if (GetEnvironmentVariableW(L"K2SB_DIAG", value, 16)) diag = _wtoi(value);
     if (GetEnvironmentVariableW(L"K2SB_TEST_SWITCH", value, 16)) testSwitch = _wtoi(value);
     if (GetEnvironmentVariableW(L"K2SB_BISECT", value, 16)) bisect = _wtoi(value);
+    if (GetEnvironmentVariableW(L"K2SB_SHARED_VISION", value, 16)) sharedVision = _wtoi(value) != 0;
+    if (GetEnvironmentVariableW(L"K2SB_STAY_ACTIVE", value, 16)) stayActive = _wtoi(value) != 0;
     {
         wchar_t list[64], *at = list;
         if (GetEnvironmentVariableW(L"K2SB_SHOTS", list, 64))
@@ -819,6 +910,7 @@ static void install(void) {
     P(image, RVA_RAI_PUSH + 1) = (U)rai_think;
     VirtualProtect((void *)(image + RVA_GOAL_PUSH), 0x50, prot, &ignored);
     FlushInstructionCache(GetCurrentProcess(), (void *)(image + RVA_GOAL_PUSH), 0x50);
+    install_vision();
     realCreate9 = (Create9)create;
     if (hook_d3d9(create))
         sblog("d3d9: CreateDevice code hooked");
