@@ -7,8 +7,9 @@ Steam public-branch `k2.exe` of 1.3.68 (build 24805354, SHA256 `CB646763...AFB9D
 | --- | --- |
 | Computer players off | Computer kingdoms never build, recruit or attack. Units still guard and fight back. Ctrl+Shift+A turns them back on. |
 | Control follows selection | Click any unit or building of a player kingdom and that kingdom becomes yours: top bar, heroes, interface skin, build and recruit menus and orders. No hotkeys or manual switch. |
-| Second resource row | The other player kingdom's economy shows in the game's own slide-out row under the resource bar (the one that previews a hovered action's cost), with the game's widgets. A hovered build or recruit button still shows its cost there. 1.3.68 port of Paw's `game/ally-economy`; the panel holds one kingdom, so a 2v2 shows one extra row. |
+| Fixed resource rows | The resource bar always shows the first player kingdom in slot order. The game's own slide-out row under it (the one that previews a hovered action's cost) shows the kingdom you control when that is another one, else the last other kingdom you controlled. Switching never swaps the rows. Game widgets throughout; a hovered build or recruit button still shows its cost in the row. The row is a 1.3.68 port of Paw's `game/ally-economy`; it holds one kingdom, so a 2v2 shows two rows. |
 | Shared vision | Always on. The view shows what every player kingdom sees and has explored, the way it shows an ally's sight. Places no player kingdom sees stay fogged; diplomacy and every kingdom's own vision are unchanged. |
+| Minimap colours by kingdom | Every object on the minimap has its kingdom's colour instead of yours / allied / enemy, so switching kingdoms does not recolour the map. This is the game's own "Color by kingdom" minimap option, forced on in the sandbox; the saved option is not changed. Selected objects of the kingdom you control keep the selection colour. |
 
 It acts only with exactly one human player in the session. With more players, or any other executable, the game runs
 as shipped and `sandbox.log` says why.
@@ -41,7 +42,9 @@ every place it changes, then:
 | `call 0x42a446` in the build-menu tooltip | `E8326` | stub: when no buildable variant of a recruit's required structure exists, the tooltip names the structure itself (the game's other caller, `EC596`, already does this); without it Battleborn 0.2.5's Council recruits crashed the game when a Council kingdom's build menu opened |
 | (no patch) after a selection switch | `1F45CE` / `1F4544` | the current selection is sent again for the local player with the game's KKC_SelectionSetOrder / KKC_SelectionAddOrder, as its AI does: build and recruit orders act on that simulation-side selection, which the click on another kingdom's town had filled before the switch |
 | `call 0x55d4d0` (set the order's player) in the selection sends and actor command sends | `1F4613`, `1F4589`, `2DA42C`, `2DA32B`, `2DA3B1`, `D490A`, `D4883` | stub: while you control another player kingdom, those orders go out as that kingdom's own session player, as its AI sends them; without it the simulation refused your recruit for that kingdom. Pause, speed, saves and chat stay yours |
-| application-state setter entry | `13BD34` | closes the row before the world and its kingdoms are destroyed on quit |
+| application-state setter entry | `13BD34` | closes the row and puts the top bar back before the world and its kingdoms are destroyed on quit |
+| (no patch) the top resource bar's kingdom id `+0xA0` | `C7619` creates the bar, `BF76C` reads the id | set to the first player kingdom while you control another one; the bar is the EconomicImpact's base class (vtable `48BA14`, the EconomicImpact's `+0xCC`) and a stale id falls back to the kingdom you control |
+| `mov eax, [settings vars]` in the minimap's kingdom-colour override | `2D776D` | `jmp` to a stub that takes the game's `MinimapColorByKingdom` (settings slot `0xE0`) "on" branch while the sandbox is active, so the colour picker `2D6F5C`'s yours / allied / enemy colours give way to each kingdom's colour |
 
 Why d3d9's code and not its function tables: the 1.3.68 renderer creates its device through an `IDirect3D9` it looks
 up by name (the `d3d9.dll` / `Direct3DCreate9` strings at RVA `5B2484`), not through the import, and in-game overlays

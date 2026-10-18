@@ -6,9 +6,9 @@ namespace PawsPatchLauncher;
 
 /// <summary>
 /// Single-player sandbox for the Kohan II 1.3.68 Steam executable (source: game/sandbox): computer players stay idle,
-/// clicking any unit takes control of its kingdom, every player kingdom's sight is shared, and the other kingdom's
-/// economy shows as a second row under the native resource bar. The game folder is
-/// never changed. The launcher keeps its own copy of it, adds the sandbox's stand-in <c>shfolder.dll</c> to that copy
+/// clicking any unit takes control of its kingdom, every player kingdom's sight is shared, two kingdoms' economies stay
+/// in a fixed order on the native resource bar and the row under it, and the minimap colours objects by kingdom. The
+/// game folder is never changed. The launcher keeps its own copy of it, adds the sandbox's stand-in <c>shfolder.dll</c> to that copy
 /// only, and starts the copy, so the game folder, its file check and multiplayer stay as they are.
 /// </summary>
 public sealed class GameSandbox

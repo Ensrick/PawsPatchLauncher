@@ -8,16 +8,16 @@
  *    (GoalEngineThink, RAI think). With the sandbox active the wrapper clears the AI player's active byte for the
  *    call, so the game takes its own "skip" path (the one it uses for defeated kingdoms) and only reschedules.
  *    Company/unit AI (guarding, auto-engage) is untouched.
- *  - Control any kingdom: selecting any unit or building of a player kingdom makes that kingdom yours by pointing the
- *    local session player at it (+0x28, the field both the interface and the order checks read). Alt+1..8 does
- *    the same by list position.
- *  - A kingdom list at the top left: colour swatch, team, name and economy of every player kingdom, in slot order.
- *    Drawn with D3DX on the game's device (Present hook).
+ *  - Control follows the selection: selecting any unit or building of a player kingdom makes that kingdom yours by
+ *    pointing the local session player at it (+0x28, the field both the interface and the order checks read); its
+ *    orders then go out as that kingdom's own session player.
+ *  - Two kingdoms' economies in a fixed order: the native resource bar keeps the first player kingdom, the native
+ *    EconomicImpact row under it shows a second one.
  *  - Shared vision: the view shows what every player kingdom sees, as it shows an ally's sight (view only).
+ *  - Minimap colours by kingdom (the game's own option, forced on), so a switch does not recolour the map.
  *
  * Active only while exactly one human session player exists (single player). Every other case: the game as shipped.
- * Hotkeys: Alt+1..8 take control, Ctrl+Shift+A computer players on/off, Ctrl+Shift+V shared vision on/off,
- * Ctrl+Shift+H list on/off.
+ * Hotkey: Ctrl+Shift+A computer players on/off. The old top-left list (D3DX, Present hook) is still built but off.
  * Log: sandbox.log next to k2.exe. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -413,8 +413,8 @@ static void update_vision(void) {
  * Ported from Paw's game/ally-economy (MIT, VasiliyPaw; 1.3.72) to 1.3.68. The EconomicImpact bar, the slide-out under
  * the resource bar that previews a hovered action's cost, can show another kingdom's economy (+0xa0 its id, +0x80 on)
  * with the game's own resource widgets, formatters and slide animation. Paw shows the selected ally; the sandbox shows
- * the first player kingdom in slot order that you are not controlling. A hovered build or recruit button keeps its
- * native cost preview. Presentation only: no simulation, order, resource or save writes. */
+ * a second player kingdom (see the fixed rows below). A hovered build or recruit button keeps its native cost
+ * preview. Presentation only: no simulation, order, resource or save writes. */
 #define RVA_GAME_STATE 0x5dd210   /* 2 = in a match (1.3.72 0x5f9218) */
 #define RVA_APP_STATE 0x5dd2ec    /* application +0x10c ("changing app_state"): 4 = playing; 4 -> 1 on quit, before the
                                    * world and its kingdoms go away, so nothing here reads a kingdom after that */
@@ -442,17 +442,28 @@ typedef U (*Call5)(U, U, U, U, U);
 typedef U (*Call6)(U, U, U, U, U, U);
 static struct { U bar, world, mode, owner, shown; U rgb[3]; } eco;
 static int ecoHooked;
-static U eco_other(void) {
+/* Fixed rows (user, 2026-10-18: the two rows swapped places on every switch). The resource bar on top is the
+ * EconomicImpact's base class (vtable 0x48ba14, created in 0x0c7619; the EconomicImpact keeps it at +0xcc) and reads
+ * the same kingdom id at +0xa0 (0x0bf76c: a live id's kingdom, else the kingdom you control). The top bar always shows
+ * the first player kingdom in slot order; the row under it shows the kingdom you control when that is another one,
+ * else the last other kingdom you controlled (at first the second in slot order). */
+#define VT_ECONOMY_BAR 0x48ba14
+#define RVA_BAR_KINGDOM 0x0bf76c /* thiscall(bar) -> the kingdom it shows */
+static U ecoSecond, topForced;
+static U eco_kingdoms(U *top) {
     U local;
-    int i;
+    *top = 0;
     if (P(image, RVA_APP_STATE) != 4 || P(image, RVA_GAME_STATE) != 2 || !P(image, RVA_WORLD) || !P(image, RVA_MANAGER) ||
-        !P(image, RVA_UI) || !kingdomCount)
+        !P(image, RVA_UI) || kingdomCount < 2)
         return 0;
     local = ((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0);
-    if (!live(local) || !is_player_kingdom(local)) return 0;
-    for (i = 0; i < kingdomCount; i++)
-        if (kingdoms[i].k != local && live(kingdoms[i].k)) return kingdoms[i].k;
-    return 0;
+    if (!live(local) || !is_player_kingdom(local) || !live(kingdoms[0].k)) return 0;
+    if (local != kingdoms[0].k) {
+        *top = kingdoms[0].k;
+        ecoSecond = local;
+    } else if (ecoSecond == kingdoms[0].k || !is_player_kingdom(ecoSecond) || !live(ecoSecond))
+        ecoSecond = kingdoms[1].k;
+    return live(ecoSecond) ? ecoSecond : 0;
 }
 static void eco_dirty(U bar) {
     U n = P(bar, 0x78), list = P(bar, 0x74), i;
@@ -471,21 +482,39 @@ static void eco_off(U bar) {
     eco.mode = 0;
     eco.owner = 0;
 }
+/* The top bar shows kingdom k (0: its native choice, the kingdom you control). */
+static void top_bar(U bar, U k) {
+    U top = P(bar, 0xcc), id = k ? P(k, 0x14) : 0;
+    static U wrongClass;
+    if (!top) return;
+    if (P(top, 0) != image + VT_ECONOMY_BAR) {
+        if (wrongClass != top) sblog("resource bar: %08x is not the economy bar (vtable %08x), left as it is", top, P(top, 0));
+        wrongClass = top;
+        return;
+    }
+    if (P(top, 0xa0) == id) return;
+    P(top, 0xa0) = id;
+    topForced = id;
+    eco_dirty(top);
+    if (k) sblog("resource bar: kingdom #%u on top", knum(k));
+}
 void sb_bar_tick(U bar) {
-    U k, world = P(image, RVA_WORLD);
+    U k, top, world = P(image, RVA_WORLD);
     if (eco.bar != bar || eco.world != world) {
         if (eco.bar == bar && eco.mode) eco_off(bar);
         eco.bar = bar;
         eco.world = world;
         eco.mode = 0;
         eco.owner = 0;
+        ecoSecond = 0;
     }
+    k = eco_kingdoms(&top);
+    top_bar(bar, top);
     if (eco_forecast(bar)) { /* a hovered action's cost preview has priority */
         if (eco.mode) eco_off(bar);
         ((Get)(image + RVA_BAR_TICK))(bar, 0);
         return;
     }
-    k = eco_other();
     if (k) {
         if (eco.mode != 1 || eco.owner != P(k, 0x14)) {
             ((Get)(image + RVA_BAR_CLEAR1))(bar, 0);
@@ -569,6 +598,10 @@ void sb_resource_tick(U w) {
 U sb_app_state_back;
 void sb_app_state_hook(void);
 void sb_on_app_state(U state) {
+    if (state != 4 && eco.bar && topForced) {
+        top_bar(eco.bar, 0);
+        sblog("resource bar: back to the kingdom you control for app state %u", state);
+    }
     if (state != 4 && eco.bar && eco.mode) {
         ((Get1)(image + RVA_BAR_SLIDE))(eco.bar, 0, 0); /* closed and hidden now, as after Paw's slide-away */
         ((Get1)(image + RVA_WIDGET_SHOW))(eco.bar, 0, 0);
@@ -647,6 +680,44 @@ static void install_economy(void) {
                 (off[0] == L'1' || patch_ptr((void **)(image + VT_RES_TICK), (void *)sb_resource_tick_hook, 0)) &&
                 patch_ptr((void **)(image + VT_BAR_TICK), (void *)sb_bar_tick_hook, 0);
     sblog("economy row: %s", ecoHooked ? "hooked" : "not hooked");
+}
+
+/* ---- minimap colours by kingdom ----
+ * The minimap colours an object by its relation to the kingdom you control (0x2d6f5c: yours, allied, enemy, neutral;
+ * color_owned_static and the rest in its data), so every switch recoloured the map (user, 2026-10-18). The game's own
+ * option MinimapColorByKingdom (Options, Minimap; settings slot 0xe0, registered at 0x147adb) makes 0x2d776d replace
+ * that colour with the object's kingdom colour (+0x1f4, rgb +0x18). Selected objects of the kingdom you control keep the
+ * native selection colour. While the sandbox is active the stub at 0x2d776d takes the option's "on" branch whatever the
+ * option says; the option itself and the saved settings are never written. */
+#define RVA_MM_KINGDOM_COLOR 0x2d776d /* mov eax, [settings vars]; mov eax, [eax+0x380]; cmp byte [eax], 0; je ret */
+#define RVA_SETTINGS_VARS 0x5dd478    /* TGC_Settings (0x5dd470) +8: the vars by slot */
+U sb_kingdom_colors, sb_settings_vars, sb_mm_color_next;
+static int kingdomColors = 1;
+void sb_mm_color_hook(void);
+__asm__(".globl sb_mm_color_hook\nsb_mm_color_hook:\n"
+        " cmpl $0, sb_kingdom_colors\n jne 1f\n"
+        " movl sb_settings_vars, %eax\n movl (%eax), %eax\n movl 0x380(%eax), %eax\n cmpb $0, (%eax)\n jne 1f\n ret\n"
+        "1: jmp *sb_mm_color_next\n");
+static void install_kingdom_colors(void) {
+    static const unsigned char rest[] = {0x8b, 0x80, 0x80, 0x03, 0x00, 0x00, 0x80, 0x38, 0x00, 0x74, 0x21};
+    unsigned char *p = (unsigned char *)(image + RVA_MM_KINGDOM_COLOR);
+    DWORD prot, ignored;
+    if (!kingdomColors) {
+        sblog("minimap colours: off (K2SB_KINGDOM_COLORS=0)");
+        return;
+    }
+    if (p[0] != 0xa1 || P(p, 1) != image + RVA_SETTINGS_VARS || memcmp(p + 5, rest, sizeof rest)) {
+        sblog("minimap colours: code differs, left as shipped");
+        return;
+    }
+    sb_settings_vars = image + RVA_SETTINGS_VARS;
+    sb_mm_color_next = (U)p + 0x10;
+    if (!VirtualProtect(p, 5, PAGE_EXECUTE_READWRITE, &prot)) return;
+    p[0] = 0xe9;
+    *(U *)(p + 1) = (U)sb_mm_color_hook - (U)(p + 5);
+    VirtualProtect(p, 5, prot, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), p, 5);
+    sblog("minimap colours: hooked (kingdom colours while the sandbox is active)");
 }
 
 /* ---- computer players off ---- */
@@ -925,6 +996,10 @@ static void probe(const char *why) {
                 sblog("probe%s:   kingdom #%u gold %.1f (%+.1f)", why, knum(kingdoms[i].k), F(P(kingdoms[i].k, 0x1cc), 0),
                       F(P(kingdoms[i].k, 0x1a8), 0) - F(P(kingdoms[i].k, 0x1c0), 0));
     }
+    if (eco.bar && P(eco.bar, 0xcc)) /* the kingdoms the two rows show, as the game's own getter reads them */
+        sblog("probe%s:   resource bar shows #%u, the row under it #%u (%s)", why,
+              knum(((Get)(image + RVA_BAR_KINGDOM))(P(eco.bar, 0xcc), 0)), knum(((Get)(image + RVA_BAR_KINGDOM))(eco.bar, 0)),
+              eco.mode == 1 ? "open" : "closed");
     {
         U first;
         int n = sim_selection(&first);
@@ -1007,8 +1082,10 @@ static void frame(void *dev, void *swap) {
         kingdomCount = 0;
         lastSelected = 0;
         sb_view_kingdom = 0;
+        sb_kingdom_colors = 0;
         return;
     }
+    sb_kingdom_colors = 1;
     collect(world);
     update_vision();
     time = F(world, 0xe8);
@@ -1492,6 +1569,7 @@ static void install(void) {
     if (GetEnvironmentVariableW(L"K2SB_BISECT", value, 16)) bisect = _wtoi(value);
     if (GetEnvironmentVariableW(L"K2SB_SHARED_VISION", value, 16)) sharedVision = _wtoi(value) != 0;
     if (GetEnvironmentVariableW(L"K2SB_STAY_ACTIVE", value, 16)) stayActive = _wtoi(value) != 0;
+    if (GetEnvironmentVariableW(L"K2SB_KINGDOM_COLORS", value, 16)) kingdomColors = _wtoi(value) != 0; /* test runs */
     {
         wchar_t list[64], *at = list;
         if (GetEnvironmentVariableW(L"K2SB_SHOTS", list, 64))
@@ -1518,6 +1596,7 @@ static void install(void) {
     install_vision();
     install_economy();
     install_order_player();
+    install_kingdom_colors();
     if (!GetEnvironmentVariableW(L"K2SB_TIP_GUARD", value, 16) || value[0] != L'0') install_tip_guard(); /* test runs: =0 off */
     load_drive();
     realCreate9 = (Create9)create;
