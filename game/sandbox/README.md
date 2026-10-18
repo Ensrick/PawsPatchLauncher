@@ -6,9 +6,9 @@ Steam public-branch `k2.exe` of 1.3.68 (build 24805354, SHA256 `CB646763...AFB9D
 | Feature | What a player sees |
 | --- | --- |
 | Computer players off | Computer kingdoms never build, recruit or attack. Units still guard and fight back. Ctrl+Shift+A turns them back on. |
-| Control any kingdom | Click any unit or building of a player kingdom and that kingdom becomes yours: top bar, heroes, interface skin and orders. Alt+1..8 does the same by list position. |
-| Kingdom list | Top left: colour, team, name and economy (gold, stone, wood, iron, mana, unit limit) of every player kingdom in slot order; the one you control is highlighted. Ctrl+Shift+H hides it. |
-| Shared vision | The view shows what every player kingdom sees and has explored, the way it shows an ally's sight. Places no player kingdom sees stay fogged; diplomacy and every kingdom's own vision are unchanged. Ctrl+Shift+V turns it off and on. |
+| Control follows selection | Click any unit or building of a player kingdom and that kingdom becomes yours: top bar, heroes, interface skin, build and recruit menus and orders. No hotkeys or manual switch. |
+| Second resource row | The other player kingdom's economy shows in the game's own slide-out row under the resource bar (the one that previews a hovered action's cost), with the game's widgets. A hovered build or recruit button still shows its cost there. 1.3.68 port of Paw's `game/ally-economy`; the panel holds one kingdom, so a 2v2 shows one extra row. |
+| Shared vision | Always on. The view shows what every player kingdom sees and has explored, the way it shows an ally's sight. Places no player kingdom sees stay fogged; diplomacy and every kingdom's own vision are unchanged. |
 
 It acts only with exactly one human player in the session. With more players, or any other executable, the game runs
 as shipped and `sandbox.log` says why.
@@ -36,7 +36,9 @@ every place it changes, then:
 | `push` of the RAI think | `1E1590` | same |
 | `mov eax, [eax+0x234]` in the explored and seen-now checks | `249E05`, `249E2D` | `call` to a stub: for the kingdom you control, on the interface thread, the union of every player kingdom's vision mask (below); otherwise the kingdom's own |
 | `mov ecx, [esi+0x234]` in the terrain fog builder | `2D5318` | same, for the fog drawn on the map |
-| d3d9's own `CreateDevice`, `Present` and `Reset` code | (d3d9.dll) | Windows' hot-patch jump (the 5 spare bytes before each function and its 2-byte `mov edi, edi`): the game's device is found and the kingdom list is drawn (D3DX font) |
+| d3d9's own `CreateDevice`, `Present` and `Reset` code | (d3d9.dll) | Windows' hot-patch jump (the 5 spare bytes before each function and its 2-byte `mov edi, edi`): the game's device is found (test screenshots) |
+| EconomicImpact vtable slots `48BBEC` tick, `48BB08` resource widget tick, `48BC2C` / `48BBE4` resets | `BFB73`, `BF8BC`, `BEF93`, `C04F8` | assembler stubs as in Paw's build (flags, registers, FPU/SSE kept); the tick stubs return to the caller, the reset stubs jump into the native function with the caller's stack untouched |
+| application-state setter entry | `13BD34` | closes the row before the world and its kingdoms are destroyed on quit |
 
 Why d3d9's code and not its function tables: the 1.3.68 renderer creates its device through an `IDirect3D9` it looks
 up by name (the `d3d9.dll` / `Direct3DCreate9` strings at RVA `5B2484`), not through the import, and in-game overlays

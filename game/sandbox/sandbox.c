@@ -58,7 +58,7 @@ static HMODULE real;
 static volatile LONG installTried;
 static int installed;
 static volatile LONG aiOff = 1;  /* computer players off (Ctrl+Shift+A) */
-static int listShown = 1;        /* Ctrl+Shift+H */
+static int listShown;            /* old top-left list: off (the economy row sits under the native bar) */
 static volatile LONG thinkSkipped, thinkPassed;
 static int diag;                 /* K2SB_DIAG=1: one-time dump of kingdoms and resources */
 static int bisect;               /* K2SB_BISECT: 1 no drawing, 2 no per-frame work at all (test runs) */
@@ -295,6 +295,246 @@ static void update_vision(void) {
     sb_view_kingdom = view;
 }
 
+/* ---- the other kingdom's economy under the native resource bar ----
+ * Ported from Paw's game/ally-economy (MIT, VasiliyPaw; 1.3.72) to 1.3.68. The EconomicImpact bar, the slide-out under
+ * the resource bar that previews a hovered action's cost, can show another kingdom's economy (+0xa0 its id, +0x80 on)
+ * with the game's own resource widgets, formatters and slide animation. Paw shows the selected ally; the sandbox shows
+ * the first player kingdom in slot order that you are not controlling. A hovered build or recruit button keeps its
+ * native cost preview. Presentation only: no simulation, order, resource or save writes. */
+#define RVA_GAME_STATE 0x5dd210   /* 2 = in a match (1.3.72 0x5f9218) */
+#define RVA_APP_STATE 0x5dd2ec    /* application +0x10c ("changing app_state"): 4 = playing; 4 -> 1 on quit, before the
+                                   * world and its kingdoms go away, so nothing here reads a kingdom after that */
+#define VT_BAR_TICK 0x48bbec      /* EconomicImpact vtable slots and their 1.3.68 functions (1.3.72 RVA in brackets) */
+#define VT_RES_TICK 0x48bb08
+#define VT_BAR_RESET1 0x48bc2c
+#define VT_BAR_RESET2 0x48bbe4
+#define RVA_BAR_TICK 0x0bfb73     /* [0xbfbf0] */
+#define RVA_RES_TICK 0x0bf8bc     /* [0xbf939] resource widget tick */
+#define RVA_BAR_RESET1 0x0bef93   /* [0xbf010] */
+#define RVA_BAR_RESET2 0x0c04f8   /* [0xc0575] */
+#define RVA_BAR_CLEAR1 0x0bf66d   /* [0xbf6ea] */
+#define RVA_BAR_CLEAR2 0x0bf752   /* [0xbf7cf] */
+#define RVA_BAR_UPDATE 0x0befa2   /* [0xbf01f] */
+#define RVA_BAR_SLIDE 0x0bfcb4    /* [0xbfd31] (bar, open) */
+#define RVA_WIDGET_TICK 0x2b5d38  /* [0x2b61c8] */
+#define RVA_WIDGET_SHOW 0x2b6de1  /* [0x2b7271] (widget, show) */
+#define RVA_FMT_LIMIT 0x2bc69e    /* [0x2bcd9f] */
+#define RVA_FMT_STOCK 0x2bc662    /* [0x2bcd63] */
+#define RVA_STR_COLOR 0x1ad4ea    /* [0x1ada8c] */
+#define RVA_STR_RELEASE 0x021375  /* [0x021375] */
+static int patch_ptr(void **slot, void *value, void **old);
+typedef U(FAST *Get1)(U self, U edx, U a);
+typedef U (*Call5)(U, U, U, U, U);
+typedef U (*Call6)(U, U, U, U, U, U);
+static struct { U bar, world, mode, owner, shown; U rgb[3]; } eco;
+static int ecoHooked;
+static U eco_other(void) {
+    U local;
+    int i;
+    if (P(image, RVA_APP_STATE) != 4 || P(image, RVA_GAME_STATE) != 2 || !P(image, RVA_WORLD) || !P(image, RVA_MANAGER) ||
+        !P(image, RVA_UI) || !kingdomCount)
+        return 0;
+    local = ((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0);
+    if (!live(local) || !is_player_kingdom(local)) return 0;
+    for (i = 0; i < kingdomCount; i++)
+        if (kingdoms[i].k != local && live(kingdoms[i].k)) return kingdoms[i].k;
+    return 0;
+}
+static void eco_dirty(U bar) {
+    U n = P(bar, 0x78), list = P(bar, 0x74), i;
+    if (!list || n > 64) return;
+    for (i = 0; i < n; i++)
+        if (P(list, 4 * i)) B(P(list, 4 * i), 0x89) = 1;
+}
+static int eco_forecast(U bar) {
+    U source = P(bar, 0xd0);
+    return B(bar, 0xd8) && (B(bar, 0xd9) || (source && (P(source, 0x24) & 8) && !B(bar, 0xda)));
+}
+static void eco_off(U bar) {
+    P(bar, 0xa0) = 0;
+    B(bar, 0x80) = 0;
+    eco_dirty(bar);
+    eco.mode = 0;
+    eco.owner = 0;
+}
+void sb_bar_tick(U bar) {
+    U k, world = P(image, RVA_WORLD);
+    if (eco.bar != bar || eco.world != world) {
+        if (eco.bar == bar && eco.mode) eco_off(bar);
+        eco.bar = bar;
+        eco.world = world;
+        eco.mode = 0;
+        eco.owner = 0;
+    }
+    if (eco_forecast(bar)) { /* a hovered action's cost preview has priority */
+        if (eco.mode) eco_off(bar);
+        ((Get)(image + RVA_BAR_TICK))(bar, 0);
+        return;
+    }
+    k = eco_other();
+    if (k) {
+        if (eco.mode != 1 || eco.owner != P(k, 0x14)) {
+            ((Get)(image + RVA_BAR_CLEAR1))(bar, 0);
+            ((Get)(image + RVA_BAR_CLEAR2))(bar, 0);
+            B(bar, 0xd8) = 0;
+            P(bar, 0xd0) = 0;
+            eco.rgb[0] = eco.rgb[1] = eco.rgb[2] = 0x3f800000; /* white numbers */
+            eco_dirty(bar);
+            if (eco.shown != k) sblog("economy row: kingdom #%u under the resource bar", knum(k));
+            eco.shown = k;
+        }
+        eco.mode = 1;
+        eco.owner = P(k, 0x14);
+        P(bar, 0xa0) = eco.owner;
+        B(bar, 0x80) = 1;
+        ((Get)(image + RVA_BAR_UPDATE))(bar, 0);
+        ((Get1)(image + RVA_BAR_SLIDE))(bar, 0, 1);
+        return;
+    }
+    if (eco.mode) { /* slide away with the values already shown; never read a kingdom that may be gone */
+        eco.mode = 2;
+        ((Get1)(image + RVA_BAR_SLIDE))(bar, 0, 0);
+        ((Get)(image + RVA_WIDGET_TICK))(bar, 0);
+        if (!(P(bar, 0x24) & 0x20000)) {
+            ((Get1)(image + RVA_WIDGET_SHOW))(bar, 0, 0);
+            B(bar, 0xd8) = 0;
+            eco_off(bar);
+        }
+        return;
+    }
+    ((Get)(image + RVA_BAR_TICK))(bar, 0);
+}
+static int eco_widget(U w) {
+    U i, n, list;
+    if (!eco.mode || !eco.bar) return 0;
+    n = P(eco.bar, 0x78);
+    list = P(eco.bar, 0x74);
+    if (!list || n > 64) return 0;
+    for (i = 0; i < n; i++)
+        if (P(list, 4 * i) == w) return 1;
+    return 0;
+}
+void sb_resource_tick(U w) {
+    U text = 0, colored = 0, def, net, cap, len, label, start;
+    unsigned short *chars;
+    if (!eco_widget(w)) {
+        ((Get)(image + RVA_RES_TICK))(w, 0);
+        return;
+    }
+    ((Get)(image + RVA_WIDGET_TICK))(w, 0);
+    if (!B(w, 0x89)) return;
+    def = P(w, 0x78);
+    label = P(w, 0x74);
+    if (!def || !label) return;
+    net = P(w, 0x7c);
+    if ((net & 0x7fffffff) == 0) net = 0;
+    if (P(def, 0x18) == 2) {
+        cap = P(w, 0x84);
+        if ((cap & 0x7fffffff) == 0) cap = 0;
+        ((Call5)(image + RVA_FMT_LIMIT))((U)&text, def, net, cap, 0);
+    } else
+        ((Call6)(image + RVA_FMT_STOCK))((U)&text, def, net, 0, B(w, 0x88) && P(def, 0x18) == 0, P(w, 0x80));
+    /* The native formatters give the same icon + numbers as the top row; colour only the numbers. */
+    if (text) {
+        len = P(text, -12);
+        chars = (unsigned short *)text;
+        start = 0;
+        while (start < len && chars[start] != '+' && chars[start] != '-' && (chars[start] < '0' || chars[start] > '9')) start++;
+        if (start < len) ((Call5)(image + RVA_STR_COLOR))((U)&colored, (U)&text, start, len - start, (U)eco.rgb);
+        ((Get1)P(P(label, 0), 0xc8))(label, 0, colored ? (U)&colored : (U)&text);
+        if (colored) ((Get)(image + RVA_STR_RELEASE))(colored - 16, 0);
+        ((Get)(image + RVA_STR_RELEASE))(text - 16, 0);
+    }
+    B(w, 0x89) = 0;
+}
+/* Leaving the match: the application state changes from 4 (playing) before the world and its kingdoms are destroyed,
+ * and the bar may get no further tick before the interface goes. Put it back to the local kingdom right there, or the
+ * bar's next native update reads a destroyed kingdom (seen as an access violation on quit). The setter is entered
+ * through a hot jump at its first 6 bytes (push esi; push edi; mov edi, [esp+0xc]), replayed in the stub below. */
+#define RVA_SET_APP_STATE 0x13bd34
+U sb_app_state_back;
+void sb_app_state_hook(void);
+void sb_on_app_state(U state) {
+    if (state != 4 && eco.bar && eco.mode) {
+        ((Get1)(image + RVA_BAR_SLIDE))(eco.bar, 0, 0); /* closed and hidden now, as after Paw's slide-away */
+        ((Get1)(image + RVA_WIDGET_SHOW))(eco.bar, 0, 0);
+        P(eco.bar, 0xa0) = 0;
+        B(eco.bar, 0x80) = 0;
+        B(eco.bar, 0xd8) = 0;
+        eco_dirty(eco.bar);
+        eco.mode = 0;
+        eco.owner = 0;
+        sblog("economy row: closed for app state %u", state);
+    }
+}
+__asm__(".globl sb_app_state_hook\nsb_app_state_hook:\n"
+        " pusha\n pushl 36(%esp)\n call sb_on_app_state\n addl $4, %esp\n popa\n"
+        " pushl %esi\n pushl %edi\n movl 12(%esp), %edi\n jmp *sb_app_state_back\n");
+static int hook_app_state(void) {
+    static const unsigned char entry[] = {0x56, 0x57, 0x8b, 0x7c, 0x24, 0x0c};
+    unsigned char *p = (unsigned char *)(image + RVA_SET_APP_STATE);
+    DWORD prot, ignored;
+    if (memcmp(p, entry, 6) || !VirtualProtect(p, 6, PAGE_EXECUTE_READWRITE, &prot)) return 0;
+    sb_app_state_back = (U)p + 6;
+    p[0] = 0xe9;
+    *(U *)(p + 1) = (U)sb_app_state_hook - (U)(p + 5);
+    p[5] = 0x90;
+    VirtualProtect(p, 6, prot, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), p, 6);
+    return 1;
+}
+void sb_eco_reset(U bar) {
+    if (eco.bar == bar) {
+        if (eco.mode) { /* the native reset never sees another kingdom's id; widgets may already be gone */
+            P(bar, 0xa0) = 0;
+            B(bar, 0x80) = 0;
+        }
+        eco.bar = 0;
+        eco.mode = 0;
+        eco.owner = 0;
+        eco.world = 0;
+    }
+}
+/* Entry stubs, as Paw's build makes them: flags, registers and the FPU/SSE state are kept around the C function
+ * (cdecl, the bar or widget from ecx as its argument). The two tick slots return to the caller; the two reset slots
+ * then enter the native function with the caller's stack and registers untouched, so their arguments never need to
+ * be known. Calling them from C with a guessed argument count crashed the game on quit (2026-10-17 test runs). */
+U sb_reset1_next, sb_reset2_next;
+void sb_bar_tick_hook(void);
+void sb_resource_tick_hook(void);
+void sb_reset1_hook(void);
+void sb_reset2_hook(void);
+#define SB_STUB(name, fn, leave)                                                                                         \
+    ".globl " name "\n" name ":\n pushf\n pusha\n subl $528, %esp\n leal 15(%esp), %eax\n andl $-16, %eax\n"         \
+    " fxsave (%eax)\n pushl %eax\n pushl %ecx\n call " fn "\n addl $4, %esp\n popl %eax\n fxrstor (%eax)\n"            \
+    " addl $528, %esp\n popa\n popf\n " leave "\n"
+__asm__(SB_STUB("sb_bar_tick_hook", "sb_bar_tick", "ret") SB_STUB("sb_resource_tick_hook", "sb_resource_tick", "ret")
+            SB_STUB("sb_reset1_hook", "sb_eco_reset", "jmp *sb_reset1_next")
+                SB_STUB("sb_reset2_hook", "sb_eco_reset", "jmp *sb_reset2_next"));
+static void install_economy(void) {
+    wchar_t off[8] = {0};
+    if (GetEnvironmentVariableW(L"K2SB_ECONOMY", off, 8) && off[0] == L'0') { /* test runs: bisecting */
+        sblog("economy row: off (K2SB_ECONOMY=0)");
+        return;
+    }
+    if (P(image, VT_BAR_TICK) != image + RVA_BAR_TICK || P(image, VT_RES_TICK) != image + RVA_RES_TICK ||
+        P(image, VT_BAR_RESET1) != image + RVA_BAR_RESET1 || P(image, VT_BAR_RESET2) != image + RVA_BAR_RESET2) {
+        sblog("economy row: native bar differs, off");
+        return;
+    }
+    if (!hook_app_state()) { /* without the quit guard the row would crash the game on leaving a match */
+        sblog("economy row: application state setter differs, off");
+        return;
+    }
+    sb_reset1_next = image + RVA_BAR_RESET1;
+    sb_reset2_next = image + RVA_BAR_RESET2;
+    ecoHooked = patch_ptr((void **)(image + VT_BAR_RESET1), (void *)sb_reset1_hook, 0) &&
+                patch_ptr((void **)(image + VT_BAR_RESET2), (void *)sb_reset2_hook, 0) &&
+                (off[0] == L'1' || patch_ptr((void **)(image + VT_RES_TICK), (void *)sb_resource_tick_hook, 0)) &&
+                patch_ptr((void **)(image + VT_BAR_TICK), (void *)sb_bar_tick_hook, 0);
+    sblog("economy row: %s", ecoHooked ? "hooked" : "not hooked");
+}
+
 /* ---- computer players off ---- */
 static void think(U player, U rva, volatile LONG *count) {
     int cleared = 0;
@@ -511,7 +751,7 @@ static void frame(void *dev, void *swap) {
         }
     }
     if (bisect == 2) return;
-    if (!world || !lp || !P(lp, 0x28) || !single_player()) {
+    if (P(image, RVA_APP_STATE) != 4 || !world || !lp || !P(lp, 0x28) || !single_player()) {
         kingdomCount = 0;
         lastSelected = 0;
         sb_view_kingdom = 0;
@@ -520,18 +760,11 @@ static void frame(void *dev, void *swap) {
     collect(world);
     update_vision();
     time = F(world, 0xe8);
-    if (foreground() && (GetAsyncKeyState(VK_MENU) & 0x8000) && !(GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
-        for (i = 0; i < 8; i++)
-            if (pressed('1' + i) && i < kingdomCount) take_control(kingdoms[i].k, "hotkey");
-    } else if (foreground() && (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
+    /* No manual switching: control follows the selection (below). Ctrl+Shift+A remains for testing computer players. */
+    if (foreground() && (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
         if (pressed('A')) {
             aiOff = !aiOff;
             sblog("computer players %s (skipped %ld, ran %ld thinks so far)", aiOff ? "off" : "on", thinkSkipped, thinkPassed);
-        }
-        if (pressed('H')) listShown = !listShown;
-        if (pressed('V') && visionPatched) {
-            sharedVision = !sharedVision;
-            sblog("shared vision %s", sharedVision ? "on" : "off");
         }
     } else
         for (i = 0; i < 256; i++) keyDown[i] = 0;
@@ -911,6 +1144,7 @@ static void install(void) {
     VirtualProtect((void *)(image + RVA_GOAL_PUSH), 0x50, prot, &ignored);
     FlushInstructionCache(GetCurrentProcess(), (void *)(image + RVA_GOAL_PUSH), 0x50);
     install_vision();
+    install_economy();
     realCreate9 = (Create9)create;
     if (hook_d3d9(create))
         sblog("d3d9: CreateDevice code hooked");
