@@ -11,6 +11,12 @@ Steam public-branch `k2.exe` of 1.3.68 (build 24805354, SHA256 `CB646763...AFB9D
 | Shared vision | Always on. The view shows what every player kingdom sees and has explored, the way it shows an ally's sight. Places no player kingdom sees stay fogged; diplomacy and every kingdom's own vision are unchanged. |
 | Minimap colours by kingdom | Every object on the minimap has its kingdom's colour instead of yours / allied / enemy, so switching kingdoms does not recolour the map. This is the game's own "Color by kingdom" minimap option, forced on in the sandbox; the saved option is not changed. Selected objects of the kingdom you control keep the selection colour. |
 
+`sandbox.log` next to the copy's `k2.exe` records what the sandbox did; the four logs before it are kept as
+`sandbox.1.log` (the previous game) to `sandbox.4.log`. Its `economy:` lines follow every player kingdom's gold and
+other stocked resources: each spend (a stock that falls while its income is not negative), each income change, any
+stock below zero (with every resource of that kingdom) and one line per kingdom every 30 game seconds, with the
+game's own `[time n]` so they match its log. Reads only; the sandbox never writes resource values.
+
 It acts only with exactly one human player in the session. With more players, or any other executable, the game runs
 as shipped and `sandbox.log` says why.
 

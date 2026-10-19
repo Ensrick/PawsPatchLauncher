@@ -18,7 +18,8 @@
  *
  * Active only while exactly one human session player exists (single player). Every other case: the game as shipped.
  * Hotkey: Ctrl+Shift+A computer players on/off. The old top-left list (D3DX, Present hook) is still built but off.
- * Log: sandbox.log next to k2.exe. */
+ * Log: sandbox.log next to k2.exe (sandbox.1.log, the previous run, to sandbox.4.log are kept), with every player
+ * kingdom's economy each 30 game seconds and every spend (the economy log below). */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdint.h>
@@ -851,6 +852,96 @@ static void economy(U k, wchar_t *out, int n) {
         }
     }
 }
+/* ---- economy log ----
+ * User, 2026-10-18: "I ended up with negative gold", though the gold income never went negative. Reads only, once a
+ * second on the interface thread: every player kingdom's stocked resources (kind 0). A stock that falls while its
+ * income (production - consumption) is not negative was spent, and is logged with the kingdom you control and the
+ * player its orders go out as; a stock that drops below zero logs every resource of that kingdom; any income change
+ * (a recruit's upkeep, a finished building) is logged with its production and consumption; every 30 game seconds one
+ * line per kingdom. "app" is seconds since the game started, the "[time n]" of the game's own log, so the
+ * lines can be matched with its order lines (KKC_TellSelectedCommandOrder::Send ... Order(commission)). */
+static float app_time(void) {
+    FILETIME created, exited, kernel, user, now;
+    if (!GetProcessTimes(GetCurrentProcess(), &created, &exited, &kernel, &user)) return 0;
+    GetSystemTimeAsFileTime(&now);
+    return (float)((((ULONGLONG)now.dwHighDateTime << 32 | now.dwLowDateTime) -
+                    ((ULONGLONG)created.dwHighDateTime << 32 | created.dwLowDateTime)) / 1e7);
+}
+static void economy_line(U k, char *out, int n) {
+    U table = P(image, RVA_RESOURCES), defs, count, i, prod = P(k, 0x1a8), cons = P(k, 0x1c0), stock = P(k, 0x1cc);
+    int len = 0;
+    out[0] = 0;
+    if (!table || !(defs = P(table, 0x34)) || (count = P(table, 0x38)) == 0 || count > 16 || !prod || !cons || !stock)
+        return;
+    for (i = 0; i < count && len < n - 96; i++) {
+        U def = P(defs, 4 * i);
+        if (!def) continue;
+        len += _snprintf(out + len, n - len, " %ls %.1f-%.1f", labels[i], F(prod, 4 * i), F(cons, 4 * i));
+        if (P(def, 0x18) == 0) len += _snprintf(out + len, n - len, " stock %.1f", F(stock, 4 * i));
+        len += _snprintf(out + len, n - len, ";");
+    }
+}
+static void economy_log(U world) {
+    static DWORD next;
+    static U lastWorld;
+    static float lastSummary;
+    static struct { U k; float time; float stock[16], net[16]; } was[16];
+    U table = P(image, RVA_RESOURCES), defs, count, i, you = P(local_player(), 0x28);
+    float time = F(world, 0xe8);
+    DWORD now = GetTickCount();
+    char line[700];
+    int k, summary;
+    if (now < next) return;
+    next = now + 1000;
+    if (!table || !(defs = P(table, 0x34)) || (count = P(table, 0x38)) == 0 || count > 16) return;
+    if (world != lastWorld) {
+        lastWorld = world;
+        memset(was, 0, sizeof was);
+        lastSummary = -1000;
+    }
+    summary = time >= lastSummary + 30.0f;
+    if (summary) lastSummary = time;
+    for (k = 0; k < kingdomCount && k < 16; k++) {
+        U kk = kingdoms[k].k, prod = P(kk, 0x1a8), cons = P(kk, 0x1c0), stock = P(kk, 0x1cc);
+        if (!live(kk) || !prod || !cons || !stock) continue;
+        if (summary) {
+            economy_line(kk, line, sizeof line);
+            sblog("economy: game %.1f app %.1f kingdom #%u%s:%s", time, app_time(), knum(kk), kk == you ? " (you control)" : "", line);
+        }
+        if (was[k].k == kk && time > was[k].time)
+            for (i = 0; i < count; i++) {
+                U def = P(defs, 4 * i);
+                float s = F(stock, 4 * i), before = was[k].stock[i], net = F(prod, 4 * i) - F(cons, 4 * i);
+                if (!def || P(def, 0x18) != 0) continue;
+                if (s < before - 0.5f && net >= 0)
+                    sblog("economy: game %.1f app %.1f kingdom #%u %ls %.1f -> %.1f (%+.1f) with income %+.1f; you control #%u, "
+                          "orders go out as %s", time, app_time(), knum(kk), labels[i], before, s, s - before, net, knum(you),
+                          lastOrderOwner ? "the kingdom's own player" : "you");
+                if (s < 0 && before >= 0) {
+                    economy_line(kk, line, sizeof line);
+                    sblog("economy: game %.1f app %.1f kingdom #%u %ls below zero (%.1f -> %.1f), income %+.1f:%s", time, app_time(),
+                          knum(kk), labels[i], before, s, net, line);
+                }
+            }
+        if (was[k].k == kk) { /* income changes: a recruit's upkeep, a finished building, a lost one */
+            int len = 0;
+            for (i = 0; i < count && len < (int)sizeof line - 96; i++) {
+                U def = P(defs, 4 * i);
+                float net = F(prod, 4 * i) - F(cons, 4 * i), d = net - was[k].net[i];
+                if (def && !B(def, 0x2c) && P(def, 0x18) != 2 && (d > 0.05f || d < -0.05f))
+                    len += _snprintf(line + len, sizeof line - len, " %ls %+.1f -> %+.1f (%.1f-%.1f);", labels[i], was[k].net[i], net,
+                                     F(prod, 4 * i), F(cons, 4 * i));
+            }
+            if (len) sblog("economy: game %.1f app %.1f kingdom #%u income:%s", time, app_time(), knum(kk), line);
+        }
+        was[k].k = kk;
+        was[k].time = time;
+        for (i = 0; i < count; i++) {
+            was[k].stock[i] = F(stock, 4 * i);
+            was[k].net[i] = F(prod, 4 * i) - F(cons, 4 * i);
+        }
+    }
+}
 static void draw_list(void *dev) {
     VIEWPORT saved, full;
     DWORD scissor = 0;
@@ -1050,6 +1141,11 @@ static void drive_step(void *dev, void *swap, float time) {
         probe("");
     else if (!strcmp(s->verb, "control") && s->a >= 1 && s->a <= kingdomCount)
         take_control(kingdoms[s->a - 1].k, "drive");
+    else if (!strcmp(s->verb, "gold") && s->a >= 1 && s->a <= kingdomCount && P(kingdoms[s->a - 1].k, 0x1cc)) {
+        /* test runs only (K2SB_DRIVE): a low stock, to see whether an order can spend past it */
+        F(P(kingdoms[s->a - 1].k, 0x1cc), 0) = (float)s->b;
+        sblog("drive %.1f: kingdom #%u gold set to %d", time, knum(kingdoms[s->a - 1].k), s->b);
+    }
     drivePhase = 0;
     driveWait = 2;
     driveNext++;
@@ -1088,6 +1184,7 @@ static void frame(void *dev, void *swap) {
     sb_kingdom_colors = 1;
     collect(world);
     update_vision();
+    economy_log(world);
     time = F(world, 0xe8);
     /* No manual switching: control follows the selection (below). Ctrl+Shift+A remains for testing computer players. */
     if (foreground() && (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
@@ -1563,6 +1660,17 @@ static void install(void) {
     GetModuleHandleExW(0x1 | 0x4, (LPCWSTR)(void *)install, &self);
     GetModuleFileNameW(GetModuleHandleW(0), logPath, MAX_PATH);
     wcscpy(wcsrchr(logPath, L'\\') + 1, L"sandbox.log");
+    { /* keep the last four logs: sandbox.1.log (the previous run) to sandbox.4.log */
+        wchar_t from[MAX_PATH], to[MAX_PATH];
+        int i;
+        for (i = 4; i >= 1; i--) {
+            wcscpy(from, logPath);
+            if (i > 1) _snwprintf(wcsrchr(from, L'\\') + 1, 16, L"sandbox.%d.log", i - 1);
+            wcscpy(to, logPath);
+            _snwprintf(wcsrchr(to, L'\\') + 1, 16, L"sandbox.%d.log", i);
+            MoveFileExW(from, to, MOVEFILE_REPLACE_EXISTING);
+        }
+    }
     image = (uintptr_t)GetModuleHandleW(0);
     if (GetEnvironmentVariableW(L"K2SB_DIAG", value, 16)) diag = _wtoi(value);
     if (GetEnvironmentVariableW(L"K2SB_TEST_SWITCH", value, 16)) testSwitch = _wtoi(value);
