@@ -15,11 +15,14 @@
  *    EconomicImpact row under it shows a second one.
  *  - Shared vision: the view shows what every player kingdom sees, as it shows an ally's sight (view only).
  *  - Minimap colours by kingdom (the game's own option, forced on), so a switch does not recolour the map.
+ *  - Settlements upgrade with open structure slots when the data asks for it (Battleborn's SVar
+ *    BattlebornUpgradeWithOpenSlots); without that SVar the game's rule stays.
  *
  * Active only while exactly one human session player exists (single player). Every other case: the game as shipped.
  * Hotkey: Ctrl+Shift+A computer players on/off. The old top-left list (D3DX, Present hook) is still built but off.
- * Log: sandbox.log next to k2.exe (sandbox.1.log, the previous run, to sandbox.4.log are kept), with every player
- * kingdom's economy each 30 game seconds and every spend (the economy log below). */
+ * Log: sandbox.log next to k2.exe (sandbox.1.log, the previous run, to sandbox.4.log are kept): every payment any
+ * kingdom makes, with what it bought and its cost (the purchase log), every player kingdom's economy each 30 game
+ * seconds, each income change and any stock change that income and the logged purchases do not explain. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdint.h>
@@ -429,6 +432,7 @@ static void update_vision(void) {
 #define RVA_BAR_RESET2 0x0c04f8   /* [0xc0575] */
 #define RVA_BAR_CLEAR1 0x0bf66d   /* [0xbf6ea] */
 #define RVA_BAR_CLEAR2 0x0bf752   /* [0xbf7cf] */
+#define RVA_VEC_ZERO 0x02eace     /* thiscall(float vector, count): zero it */
 #define RVA_BAR_UPDATE 0x0befa2   /* [0xbf01f] */
 #define RVA_BAR_SLIDE 0x0bfcb4    /* [0xbfd31] (bar, open) */
 #define RVA_WIDGET_TICK 0x2b5d38  /* [0x2b61c8] */
@@ -526,6 +530,24 @@ void sb_bar_tick(U bar) {
             eco_dirty(bar);
             if (eco.shown != k) sblog("economy row: kingdom #%u under the resource bar", knum(k));
             eco.shown = k;
+        }
+        if (B(bar, 0xd8) || B(bar, 0x9c) || B(bar, 0x9d) || B(bar, 0xf4)) {
+            /* A cost preview the game ended without this code seeing it (user, 2026-10-18: "negative numbers stuck after
+             * mousing over to preview cost"). The preview's income changes (+0x84, flag +0x9c) and costs (+0x90, flag
+             * +0x9d) stay in the row until cleared, and the row's update keeps applying them; clear them as the game's
+             * own tick does when a preview ends (0x4bfb73), with the placement preview it saved (+0xdc, +0xe8, +0xf4). */
+            P(bar, 0xd0) = 0;
+            B(bar, 0xda) = 0;
+            B(bar, 0xd8) = 0;
+            if (B(bar, 0xf4)) {
+                ((Get1)(image + RVA_VEC_ZERO))(bar + 0xdc, 0, P(bar, 0xe4));
+                ((Get1)(image + RVA_VEC_ZERO))(bar + 0xe8, 0, P(bar, 0xf0));
+                B(bar, 0xf4) = 0;
+            }
+            ((Get)(image + RVA_BAR_CLEAR1))(bar, 0);
+            ((Get)(image + RVA_BAR_CLEAR2))(bar, 0);
+            eco_dirty(bar);
+            sblog("economy row: a cost preview had ended unseen, cleared (showing #%u)", knum(k));
         }
         eco.mode = 1;
         eco.owner = P(k, 0x14);
@@ -881,6 +903,95 @@ static void economy_line(U k, char *out, int n) {
         len += _snprintf(out + len, n - len, ";");
     }
 }
+/* ---- purchase log ----
+ * Every payment out of a kingdom's stockpile goes through 0x635418 (thiscall kingdom, cost list: one float per
+ * resource; stock[i] -= cost[i], no check: the callers check first with 0x634c17, stock < cost refuses). Its ten callers
+ * are hooked at the call: each payment is logged with the kingdom, what it paid for (read from the caller's registers,
+ * names through the game's own strings), the whole cost and the stock before and after. 0x63544b (one resource) is
+ * only the steal-resources ability. The amounts also go to paidCenti, so the economy check below can tell income,
+ * purchases and anything else apart. Reads only: the payment itself is the game's. Runs on the simulation thread. */
+#define RVA_PAY 0x235418
+#define RVA_PAY_ONE 0x23544b
+enum { WHAT_NONE, WHAT_EBX_ACTOR, WHAT_EBX_DEF, WHAT_EDI_DEF, WHAT_ESI_DEF };
+static const struct { U site; const char *what; int reg; } paySites[] = {
+    {0x2035ec, "construction by a builder:", WHAT_EBX_ACTOR}, /* KKC_BuilderComponent::BuildActor 0x60332f: ebx = the new site */
+    {0x220633, "structure in a settlement:", WHAT_EBX_DEF},    /* 0x6204bc: ebx = the structure */
+    {0x205806, "upgrade:", WHAT_EBX_DEF},                      /* 0x6057be: ebx = what it becomes, edi = construction component */
+    {0x21d988, "company:", WHAT_EDI_DEF},                      /* settlement recruit 0x61d8a6: edi = the company */
+    {0x21e2a9, "research:", WHAT_ESI_DEF},                     /* 0x61e1b2: esi = the research */
+    {0x210617, "unit or hero for a company:", WHAT_EDI_DEF},   /* organization 0x6105b9: edi = its argument */
+    {0x2368ce, "kingdom purchase:", WHAT_EDI_DEF},             /* 0x63687f: edi = the item */
+    {0x20925d, "settlement defenders", WHAT_NONE},             /* denizen purchases 0x60912d, 0x6092a1, 0x60942c */
+    {0x2093d0, "settlement defenders", WHAT_NONE},
+    {0x20955f, "settlement defenders", WHAT_NONE},
+};
+#define PAY_ONE_SITE 0x1fdc0a /* KKC_AbilityEffectStealResources::Use 0x5fdb64 */
+static volatile LONG paidCenti[16][16]; /* kingdom number, resource: paid since the economy check last looked */
+static volatile LONG paidLogged;
+U sb_pay_next, sb_pay_one_next;
+static void pay_logged(U k, U i, float amount, const char *what, const char *name, const char *name2) {
+    U you = P(local_player(), 0x28), stock = P(k, 0x1cc), world = P(image, RVA_WORLD);
+    if (!stock || i > 15) return;
+    InterlockedExchangeAdd(&paidCenti[knum(k) & 15][i], (LONG)(amount * 100.0f));
+    sblog("purchase: game %.1f app %.1f kingdom #%u%s %s%s%s%s%s: %ls %.1f (stock %.1f -> %.1f); you control #%u", world ? F(world, 0xe8) : -1.0f,
+          app_time(), knum(k), k == you ? " (you control)" : "", what, name ? " " : "", name ? name : "", name2 ? " -> " : "",
+          name2 ? name2 : "", labels[i][0] ? labels[i] : L"?", amount, F(stock, 4 * i), F(stock, 4 * i) - amount, knum(you));
+}
+void sb_pay_log(U *r) { /* r: pusha (edi esi ebp esp ebx edx ecx eax), flags, return address, cost list */
+    U k = r[6], site = r[9] - 5 - image, list = r[10], cost, n, i, def = 0;
+    char name[48], name2[48];
+    const char *what = "payment at", *a = 0, *b = 0;
+    int j, reg = WHAT_NONE;
+    InterlockedIncrement(&paidLogged);
+    for (j = 0; j < (int)(sizeof paySites / sizeof paySites[0]); j++)
+        if (paySites[j].site == site) what = paySites[j].what, reg = paySites[j].reg;
+    if (!live(k) || !readable(list, 4) || !(cost = P(list, 0)) || (n = P(k, 0x1d0)) > 16 || !readable(cost, 4 * n)) return;
+    if (reg == WHAT_EBX_ACTOR && readable(r[4], 8)) def = P(r[4], 4);
+    if (reg == WHAT_EBX_DEF) def = r[4];
+    if (reg == WHAT_EDI_DEF) def = r[0];
+    if (reg == WHAT_ESI_DEF) def = r[1];
+    if (def) a = def_name(def, name);
+    if (site == 0x205806 && readable(r[0] + 4, 4) && readable(P(r[0], 4) + 4, 4)) { /* upgrade: from what */
+        b = a;
+        a = def_name(P(P(r[0], 4), 4), name2);
+    }
+    if (reg == WHAT_NONE && !strcmp(what, "payment at")) {
+        _snprintf(name, sizeof name, "call %06x", site);
+        a = name;
+    }
+    for (i = 0; i < n; i++) /* resources that cost nothing are not logged (0x63687f pays empty lists often) */
+        if (F(cost, 4 * i) != 0.0f) pay_logged(k, i, F(cost, 4 * i), what, a, b);
+}
+void sb_pay_one_log(U *r) { /* the same, for 0x63544b (kingdom, resource, amount) */
+    U k = r[6], i = r[10];
+    float amount = *(float *)&r[11];
+    if (live(k) && i < 16 && amount != 0.0f) pay_logged(k, i, amount, "taken by a steal-resources ability", 0, 0);
+}
+void sb_pay_hook(void);
+void sb_pay_one_hook(void);
+__asm__(".globl sb_pay_hook\nsb_pay_hook:\n"
+        " pushf\n pusha\n pushl %esp\n call sb_pay_log\n addl $4, %esp\n popa\n popf\n jmp *sb_pay_next\n"
+        ".globl sb_pay_one_hook\nsb_pay_one_hook:\n"
+        " pushf\n pusha\n pushl %esp\n call sb_pay_one_log\n addl $4, %esp\n popa\n popf\n jmp *sb_pay_one_next\n");
+static int hook_call(U site, U target, void *stub) {
+    unsigned char *p = (unsigned char *)(image + site);
+    DWORD prot, ignored;
+    if (p[0] != 0xe8 || (U)(p + 5) + *(U *)(p + 1) != image + target || !VirtualProtect(p, 5, PAGE_EXECUTE_READWRITE, &prot)) return 0;
+    *(U *)(p + 1) = (U)stub - (U)(p + 5);
+    VirtualProtect(p, 5, prot, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), p, 5);
+    return 1;
+}
+static void install_purchases(void) {
+    int i, n = 0, all = sizeof paySites / sizeof paySites[0];
+    sb_pay_next = image + RVA_PAY;
+    sb_pay_one_next = image + RVA_PAY_ONE;
+    for (i = 0; i < all; i++)
+        if (hook_call(paySites[i].site, RVA_PAY, (void *)sb_pay_hook)) n++;
+        else sblog("purchases: call %06x differs, not logged", paySites[i].site);
+    if (hook_call(PAY_ONE_SITE, RVA_PAY_ONE, (void *)sb_pay_one_hook)) n++;
+    sblog("purchases: %d of %d payment calls logged", n, all + 1);
+}
 static void economy_log(U world) {
     static DWORD next;
     static U lastWorld;
@@ -897,6 +1008,7 @@ static void economy_log(U world) {
     if (world != lastWorld) {
         lastWorld = world;
         memset(was, 0, sizeof was);
+        memset((void *)paidCenti, 0, sizeof paidCenti);
         lastSummary = -1000;
     }
     summary = time >= lastSummary + 30.0f;
@@ -912,11 +1024,17 @@ static void economy_log(U world) {
             for (i = 0; i < count; i++) {
                 U def = P(defs, 4 * i);
                 float s = F(stock, 4 * i), before = was[k].stock[i], net = F(prod, 4 * i) - F(cons, 4 * i);
+                float paid = InterlockedExchange(&paidCenti[knum(kk) & 15][i], 0) / 100.0f;
+                /* income is per game minute; take the lower of the two rates the interval may have used */
+                float lowNet = net < was[k].net[i] ? net : was[k].net[i], highNet = net < was[k].net[i] ? was[k].net[i] : net;
+                float dt = (time - was[k].time) / 60.0f, low = before + lowNet * dt - paid, high = before + highNet * dt - paid;
                 if (!def || P(def, 0x18) != 0) continue;
-                if (s < before - 0.5f && net >= 0)
-                    sblog("economy: game %.1f app %.1f kingdom #%u %ls %.1f -> %.1f (%+.1f) with income %+.1f; you control #%u, "
-                          "orders go out as %s", time, app_time(), knum(kk), labels[i], before, s, s - before, net, knum(you),
-                          lastOrderOwner ? "the kingdom's own player" : "you");
+                /* Anything income and the logged purchases do not explain: refunds, tribute, a payment the hooks miss.
+                 * A stock the game holds at zero while upkeep exceeds income is not reported each second. */
+                if ((s < low - 2.0f || s > high + 2.0f) && !(s >= -0.5f && s <= 0.5f && high < 0.5f))
+                    sblog("economy: game %.1f app %.1f kingdom #%u %ls %.1f -> %.1f: %+.1f beyond income (%+.1f/min) and logged "
+                          "purchases (%.1f); you control #%u, orders go out as %s", time, app_time(), knum(kk), labels[i], before, s,
+                          s < low ? s - low : s - high, net, paid, knum(you), lastOrderOwner ? "the kingdom's own player" : "you");
                 if (s < 0 && before >= 0) {
                     economy_line(kk, line, sizeof line);
                     sblog("economy: game %.1f app %.1f kingdom #%u %ls below zero (%.1f -> %.1f), income %+.1f:%s", time, app_time(),
@@ -1080,6 +1198,8 @@ static void probe(const char *why) {
     }
     sblog("probe%s: selected %s (actor %08x, kingdom #%u); you control #%u", why, actor && readable(actor, 8) ? def_name(P(actor, 4), name) : "nothing",
           actor, knum(owner), knum(((Get)(image + RVA_LOCAL_KINGDOM))(P(image, RVA_MANAGER), 0)));
+    if (actor && readable(actor + 0xf0, 8)) /* the actor's command mask (+0xf0, 64 bits; 0x20521b sets bit 0x15 = Upgrade) */
+        sblog("probe%s:   its Upgrade command is %s", why, P(actor, 0xf0) & 0x200000 ? "enabled" : "disabled");
     {
         int i;
         for (i = 0; i < kingdomCount; i++) /* gold: stock, production - consumption (a commission spends stock) */
@@ -1088,9 +1208,9 @@ static void probe(const char *why) {
                       F(P(kingdoms[i].k, 0x1a8), 0) - F(P(kingdoms[i].k, 0x1c0), 0));
     }
     if (eco.bar && P(eco.bar, 0xcc)) /* the kingdoms the two rows show, as the game's own getter reads them */
-        sblog("probe%s:   resource bar shows #%u, the row under it #%u (%s)", why,
+        sblog("probe%s:   resource bar shows #%u, the row under it #%u (%s%s)", why,
               knum(((Get)(image + RVA_BAR_KINGDOM))(P(eco.bar, 0xcc), 0)), knum(((Get)(image + RVA_BAR_KINGDOM))(eco.bar, 0)),
-              eco.mode == 1 ? "open" : "closed");
+              eco.mode == 1 ? "open" : "closed", eco_forecast(eco.bar) ? ", a cost preview" : "");
     {
         U first;
         int n = sim_selection(&first);
@@ -1156,6 +1276,9 @@ static U lastSelected;
 static int dumped, testDone;
 static void dump(void);
 static void audit_tooltips(void);
+static U rulesWorld; /* the match the settlement rule was set for (open slots, below) */
+static void open_slots(int on);
+static void match_rules(U world);
 static void frame(void *dev, void *swap) {
     U world = P(image, RVA_WORLD), lp = local_player();
     float time;
@@ -1179,9 +1302,12 @@ static void frame(void *dev, void *swap) {
         lastSelected = 0;
         sb_view_kingdom = 0;
         sb_kingdom_colors = 0;
+        rulesWorld = 0;
+        open_slots(0);
         return;
     }
     sb_kingdom_colors = 1;
+    match_rules(world);
     collect(world);
     update_vision();
     economy_log(world);
@@ -1565,6 +1691,45 @@ static void install_tip_guard(void) {
     sblog("tooltip guard: hooked");
 }
 
+/* ---- settlements upgrade with open structure slots (Battleborn) ----
+ * A settlement center's Upgrade command is enabled only when the settlement has built exactly as many structures as
+ * its level allows and none of them is under construction (0x61ec53, from the command check 0x604d0b; the game's
+ * text: "All structure slots must be filled before upgrading."). The level's max_structures also caps building, so
+ * data cannot allow one without the other; Battleborn gives every level 7 slots. When the loaded data declares the
+ * SVar BattlebornUpgradeWithOpenSlots = true, single-player matches get a zero displacement on the jump after that
+ * count comparison: the upgrade then waits only for structures under construction (cost, siege and the other checks
+ * are unchanged). One byte, so the code is whole at every moment; other data and other matches keep the game's rule. */
+#define RVA_SVARS 0x5dd5e0       /* SVars: thiscall find 0x659e7(name, type 0 = any) -> var: value +0, type +0x24 (1 bool) */
+#define RVA_VAR_FIND 0x0659e7
+#define RVA_SLOTS_JUMP 0x21ec62  /* jne (75 2d) after cmp ebx, [eax]: structures built vs the level's max_structures */
+typedef U(FAST *Get2)(U self, U edx, U a, U b);
+static int slotsCode, openSlots, openSlotsOff; /* K2SB_OPEN_SLOTS=0: game rule (test runs) */
+static void install_open_slots(void) {
+    static const unsigned char code[] = {0x8b, 0x5f, 0x1c, 0x3b, 0x18, 0x75, 0x2d, 0x33, 0xf6};
+    slotsCode = !memcmp((void *)(image + RVA_SLOTS_JUMP - 5), code, sizeof code);
+    if (!slotsCode) sblog("settlement upgrades: code differs, the game's rule stays");
+}
+static void open_slots(int on) {
+    unsigned char *p = (unsigned char *)(image + RVA_SLOTS_JUMP + 1);
+    DWORD prot, ignored;
+    if (!slotsCode || on == openSlots || !VirtualProtect(p, 1, PAGE_EXECUTE_READWRITE, &prot)) return;
+    *p = on ? 0x00 : 0x2d;
+    VirtualProtect(p, 1, prot, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), p, 1);
+    openSlots = on;
+    sblog("settlement upgrades: %s", on ? "allowed with open structure slots" : "all structure slots must be built (game rule)");
+}
+/* Once per match, single player only (frame). */
+static void match_rules(U world) {
+    U var;
+    if (world == rulesWorld) return;
+    rulesWorld = world;
+    var = ((Get2)(image + RVA_VAR_FIND))(image + RVA_SVARS, 0, (U)L"BattlebornUpgradeWithOpenSlots", 0);
+    sblog("settlement upgrades: SVar BattlebornUpgradeWithOpenSlots %s", !var ? "not declared" : P(var, 0x24) != 1 ? "not a bool"
+                                                                        : B(var, 0) ? "true" : "false");
+    open_slots(!openSlotsOff && var && P(var, 0x24) == 1 && B(var, 0));
+}
+
 /* K2SB_DIAG=1: the same mapping, checked for every settlement on the map against every structure it can build, every
  * recruit those structures unlock and every structure those recruits require; each case the game cannot map is logged
  * (these are the build-menu tooltips that crash without the guard). Reads only. */
@@ -1705,7 +1870,10 @@ static void install(void) {
     install_economy();
     install_order_player();
     install_kingdom_colors();
+    install_purchases();
     if (!GetEnvironmentVariableW(L"K2SB_TIP_GUARD", value, 16) || value[0] != L'0') install_tip_guard(); /* test runs: =0 off */
+    if (GetEnvironmentVariableW(L"K2SB_OPEN_SLOTS", value, 16)) openSlotsOff = value[0] == L'0';
+    install_open_slots();
     load_drive();
     realCreate9 = (Create9)create;
     if (hook_d3d9(create))
