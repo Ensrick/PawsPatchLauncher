@@ -128,7 +128,8 @@ public static class Program
         if (motionChecks) SmoothExperienceChecks.Run(language);
         if (appearanceChecks) AppearanceChecks.Run(language, args[0]);
         if (changelogChecks) ChangelogChecks.Run(language);
-        if (launcherUpdateChecks) LauncherUpdateChecks.Run();
+        if (launcherUpdateChecks && !SelfUpdater.Enabled) Console.WriteLine("Launcher update checks skipped: self-update is off in this personal build.");
+        else if (launcherUpdateChecks) LauncherUpdateChecks.Run();
         if (gameSettingsChecks) { GameSettingsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (customModsChecks) { CustomModsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (languageReliabilityConfig is not null) { LanguageReliabilityChecks.Run(languageReliabilityConfig, language); app.Shutdown(); return; }

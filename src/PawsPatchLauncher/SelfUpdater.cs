@@ -10,8 +10,11 @@ public static class SelfUpdater
     public static Version CurrentVersion
         => Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
 
+    /// <summary>Off in this personal build: Paw's releases reach it by merging into the branch, never by replacing the exe.</summary>
+    public static bool Enabled => false;
+
     public static bool IsNewer(string candidate)
-        => Version.TryParse(candidate, out var parsed) && parsed > CurrentVersion;
+        => Enabled && Version.TryParse(candidate, out var parsed) && parsed > CurrentVersion;
 
     public static bool IsBlocked(string hash) => File.Exists(BlockedPath) && File.ReadAllText(BlockedPath).Trim().Equals(hash, StringComparison.OrdinalIgnoreCase);
     public static string BlockedPath => Path.Combine(ActivityStore.Root, "failed-launcher-sha256.txt");
