@@ -92,7 +92,7 @@ public partial class MainWindow : Window
         Closing += (_, e) =>
         {
             if (ConfirmationActive) { e.Cancel = true; _ = CompleteConfirmationAsync(false); }
-            else if (_busy) { e.Cancel = true; ShowToast(() => T("Дождитесь окончания операции или приостановите загрузку.", "Wait for the operation or pause the download.")); }
+            else if (_busy || _customModsBusy) { e.Cancel = true; ShowToast(() => T("Дождитесь окончания операции или приостановите загрузку.", "Wait for the operation or pause the download.")); }
         };
         _initializing = false;
         Loaded += async (_, _) => await InitializeAsync();
@@ -604,7 +604,7 @@ public partial class MainWindow : Window
 
     private async Task LaunchGameAsync()
     {
-        if (_game is null || _busy || _launchStarting || ArcaneAccessBlocked) return;
+        if (_game is null || _busy || _customModsBusy || _customModsDirty || _launchStarting || ArcaneAccessBlocked) return;
         if (_settingsPending || !_patchInstalled)
         {
             ShowToast(() => T("Сначала установите мод или примените выбранные настройки.", "Install the mod or apply the selected settings first."));
@@ -1156,10 +1156,17 @@ public partial class MainWindow : Window
 
     private void SetActivePage(string page)
     {
+        if (_activePage == "custom-mods" && page != _activePage && (_customModsBusy || _customModsDirty))
+        {
+            if (!_customModsBusy) _customModsError = T("Сначала примените или отмените изменения модов.", "Apply or undo your mod changes first.");
+            RefreshCustomModsState(IsGameRunning());
+            return;
+        }
+        if (page == "custom-mods" && (_busy || _launchStarting || ConfirmationActive || GameSettingsOverlay.IsVisible)) return;
         if (_activePage != page) ActionJournal.Record("navigation", page);
         if(page=="admin"&&_account.AdminLevel<1)page="home";
         AdminPanel.Visibility=page=="admin"?Visibility.Visible:Visibility.Collapsed;
-        MainOptionsHost.Visibility=page=="admin"?Visibility.Collapsed:Visibility.Visible;
+        MainOptionsHost.Visibility=page is "admin" or "custom-mods"?Visibility.Collapsed:Visibility.Visible;
         MainOptionsScroll.Visibility=page=="admin"?Visibility.Collapsed:Visibility.Visible;
         SetNavState(AdminNav,page=="admin");
         if (page == "multiplayer") page = "friends";
@@ -1168,6 +1175,9 @@ public partial class MainWindow : Window
         if (changed && _activePage == "friends") _chatUnreadDivider.End();
         if (changed && page == "account") _accountReturnPage = _activePage;
         _activePage = page;
+        CustomModsPanel.Visibility = page == "custom-mods" ? Visibility.Visible : Visibility.Collapsed;
+        ActionBar.Visibility = page == "custom-mods" ? Visibility.Collapsed : Visibility.Visible;
+        if (changed && page == "custom-mods") OpenCustomMods();
         var home = page == "home";
         var modules = page == "modules";
         RefreshActionLayout();
@@ -1215,6 +1225,7 @@ public partial class MainWindow : Window
 
         SetNavState(HomeNav, home);
         SetNavState(ModulesNav, modules);
+        SetNavState(CustomModsNav, page == "custom-mods");
         SetNavState(SettingsNav, settings);
         SetNavState(AboutNav, page == "about");
         SetNavState(AboutModsNav, page == "mods");
@@ -1229,7 +1240,7 @@ public partial class MainWindow : Window
         if (home) RefreshNews();
         if (changed && !_initializing)
         {
-            Motion.Reveal(page == "admin" ? (FrameworkElement)AdminPanel : MainOptionsScroll);
+            Motion.Reveal(page == "admin" ? (FrameworkElement)AdminPanel : page == "custom-mods" ? CustomModsPanel : MainOptionsScroll);
             // Both Friends columns enter together after their first layout.
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
             {

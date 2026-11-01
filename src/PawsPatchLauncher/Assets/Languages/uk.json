@@ -1252,5 +1252,8 @@
   "Replace archive…": "Замінити архів…",
   "Changes are not applied yet.": "Зміни ще не застосовано.",
   "Archive replaced in the list. Apply or undo the changes.": "Архів замінено у списку. Застосуйте або скасуйте зміни.",
-  "You can add up to 32 mods. Remove one or replace its archive.": "Можна додати до 32 модів. Видаліть один або замініть його архів."
+  "You can add up to 32 mods. Remove one or replace its archive.": "Можна додати до 32 модів. Видаліть один або замініть його архів.",
+  "Mods": "Моди",
+  "Game and components": "Гра та компоненти",
+  "Apply or undo your mod changes first.": "Спочатку застосуйте або скасуйте зміни модів."
 }

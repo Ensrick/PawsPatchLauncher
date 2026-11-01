@@ -1252,5 +1252,8 @@
   "Replace archive…": "Nahradit archiv…",
   "Changes are not applied yet.": "Změny ještě nejsou použity.",
   "Archive replaced in the list. Apply or undo the changes.": "Archiv v seznamu byl nahrazen. Použijte nebo vraťte změny.",
-  "You can add up to 32 mods. Remove one or replace its archive.": "Lze přidat nejvýše 32 modů. Jeden odeberte nebo nahraďte jeho archiv."
+  "You can add up to 32 mods. Remove one or replace its archive.": "Lze přidat nejvýše 32 modů. Jeden odeberte nebo nahraďte jeho archiv.",
+  "Mods": "Mody",
+  "Game and components": "Hra a součásti",
+  "Apply or undo your mod changes first.": "Nejprve použijte nebo zrušte změny modů."
 }

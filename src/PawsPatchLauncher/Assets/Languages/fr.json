@@ -1252,5 +1252,8 @@
   "Replace archive…": "Remplacer l’archive…",
   "Changes are not applied yet.": "Les modifications ne sont pas encore appliquées.",
   "Archive replaced in the list. Apply or undo the changes.": "Archive remplacée dans la liste. Appliquez ou annulez les modifications.",
-  "You can add up to 32 mods. Remove one or replace its archive.": "Vous pouvez ajouter jusqu’à 32 mods. Supprimez-en un ou remplacez son archive."
+  "You can add up to 32 mods. Remove one or replace its archive.": "Vous pouvez ajouter jusqu’à 32 mods. Supprimez-en un ou remplacez son archive.",
+  "Mods": "Mods",
+  "Game and components": "Jeu et composants",
+  "Apply or undo your mod changes first.": "Appliquez ou annulez d’abord les modifications des mods."
 }

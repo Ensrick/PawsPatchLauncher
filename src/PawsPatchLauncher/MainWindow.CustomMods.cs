@@ -22,24 +22,18 @@ public partial class MainWindow
         return dialog.ShowDialog(this) == true ? dialog.FileName : null;
     }
 
-    private void GameSettingsTab_Checked(object sender, RoutedEventArgs e)
-    {
-        if (CustomModsPanel is null) return; // XAML initialization raises Checked before the panel exists.
-        RefreshGameSettingsTab();
-        RefreshGameSettingsState(IsGameRunning());
-    }
+    private void CustomModsNav_Click(object sender, RoutedEventArgs e) => SetActivePage("custom-mods");
+    private async void CustomModsSave_Click(object sender, RoutedEventArgs e) => await SaveCustomModsAsync();
 
-    private void RefreshGameSettingsTab()
+    private void ApplyCustomModsLanguage()
     {
-        var mods = CustomModsTab.IsChecked == true;
-        GameSettingsScroll.Visibility = mods ? Visibility.Collapsed : Visibility.Visible;
-        CustomModsPanel.Visibility = mods ? Visibility.Visible : Visibility.Collapsed;
-        GameSettingsHint.Text = mods
-            ? T("Добавляйте RWD-архивы для выбранной игры. Нижний включённый мод имеет приоритет при совпадении файлов.",
-                "Add RWD archives for the selected game. Enabled mods lower in the list take priority when files overlap.")
-            : T("Общие для всех модов на этом компьютере. Применяются при следующем запуске игры.",
-                "Shared by all mods on this computer. Applied when the game next starts.");
-        GameSettingsSave.Content = mods ? T("Применить моды", "Apply mods") : T("Сохранить", "Save");
+        CustomModsNav.Content = T("Моды", "Mods");
+        CustomModsTitle.Text = T("Пользовательские моды", "Custom mods");
+        CustomModsHint.Text = T("Добавляйте RWD-архивы для выбранной игры. Нижний включённый мод имеет приоритет при совпадении файлов.",
+            "Add RWD archives for the selected game. Enabled mods lower in the list take priority when files overlap.");
+        CustomModsComponents.Content = T("Игра и компоненты", "Game and components");
+        CustomModsSave.Content = T("Применить моды", "Apply mods");
+        if (_activePage == "custom-mods") BuildCustomMods();
     }
 
     private void OpenCustomMods()
@@ -57,6 +51,7 @@ public partial class MainWindow
         }
         catch (Exception ex) { ActivityStore.Log(ex); _customModsError = T("Не удалось прочитать список модов.", "Could not read the mod list."); }
         BuildCustomMods();
+        RefreshCustomModsState(IsGameRunning());
     }
 
     private List<CustomRwdMod> CurrentCustomMods => _customModsDraft.TryGetValue(_customModsGame, out var list) ? list : [];
@@ -82,7 +77,11 @@ public partial class MainWindow
 
     private void BuildCustomMods()
     {
-        CustomModsGameLabel.Text = GameMod.Name(_customModsGame, _text.Language == "ru");
+        CustomModsGameLabel.Text = GameMod.Name(_customModsGame, _text.Language == "ru")
+            + (_customModsState?.AppliedSettings?.DataOnly == true
+                ? " · " + T("Только файловые изменения", "File changes only")
+                    + (_installedGameVersion.Length > 0 ? " · Kohan II " + _installedGameVersion : "")
+                : "");
         CustomModsAdd.Content = T("Добавить RWD…", "Add RWD…");
         CustomModsUndo.Content = T("Отменить изменения", "Undo changes");
         CustomModsBody.Children.Clear();
@@ -164,22 +163,23 @@ public partial class MainWindow
         _customModsError = null;
         if (!keepNotice) _customModsNotice = null;
         _customModsDirty = !CurrentCustomMods.SequenceEqual(_customModsState?.CustomMods.GetValueOrDefault(_customModsGame) ?? []);
-        BuildCustomMods(); RefreshGameSettingsState(IsGameRunning());
+        BuildCustomMods(); RefreshGameLaunchState();
     }
 
     private void RefreshCustomModsState(bool running)
     {
-        CustomModsBody.IsEnabled = CanEditCustomMods && !running && !_customModsBusy;
+        if (CustomModsPanel is null || _activePage != "custom-mods") return;
+        CustomModsBody.IsEnabled = CanEditCustomMods && !running && !_customModsBusy && !_busy && !_launchStarting;
         // At capacity the picker still permits replacing an existing archive.
         CustomModsAdd.IsEnabled = CustomModsBody.IsEnabled;
         CustomModsUndo.IsEnabled = _customModsDirty && !_customModsBusy;
-        GameOptionsTab.IsEnabled = CustomModsTab.IsEnabled = GameSettingsClose.IsEnabled = GameSettingsCancel.IsEnabled = !_customModsBusy;
-        GameSettingsStatus.Text = _customModsError ?? (_customModsBusy ? T("Проверяю и применяю моды…", "Checking and applying mods…")
+        CustomModsComponents.IsEnabled = !_customModsBusy && !_busy && !_launchStarting;
+        CustomModsStatus.Text = _customModsError ?? (_customModsBusy ? T("Проверяю и применяю моды…", "Checking and applying mods…")
             : running ? T("Закройте игру, чтобы сохранить изменения.", "Close the game to save changes.")
             : !CanEditCustomMods ? T("Сначала примените выбранную игру и компоненты на вкладке «Компоненты».", "First apply the selected game and components on the Components page.")
             : _customModsNotice ?? (_customModsDirty ? T("Изменения ещё не применены.", "Changes are not applied yet.") : ""));
-        GameSettingsStatus.Visibility = GameSettingsStatus.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-        GameSettingsSave.IsEnabled = CanEditCustomMods && _customModsDirty && !running && !_customModsBusy && !_busy && !_launchStarting;
+        CustomModsStatus.Visibility = CustomModsStatus.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        CustomModsSave.IsEnabled = CanEditCustomMods && _customModsDirty && !running && !_customModsBusy && !_busy && !_launchStarting;
     }
 
     private async void CustomModsAdd_Click(object sender, RoutedEventArgs e)
@@ -217,7 +217,7 @@ public partial class MainWindow
     private async Task SaveCustomModsAsync()
     {
         RefreshGameSettingsState(IsGameRunning());
-        if (!GameSettingsSave.IsEnabled || _game is null || _customModsState?.AppliedSettings is null) return;
+        if (!CustomModsSave.IsEnabled || _game is null || _customModsState?.AppliedSettings is null) return;
         var state = _customModsState; var game = _game.Directory; var draft = CustomRwdMods.Copy(_customModsDraft);
         _customModsBusy = true; _customModsError = null; RefreshGameSettingsState(IsGameRunning());
         SetBusy(true, T("Проверяю и применяю моды…", "Checking and applying mods…"));
@@ -232,10 +232,10 @@ public partial class MainWindow
             InvalidateReadiness(); _fileCheckFailed = false;
             _customModsBusy = false;
             RefreshCustomModsState(IsGameRunning());
-            if (_gameSettingsEdits.Count > 0) GameOptionsTab.IsChecked = true;
-            else CloseGameSettings();
+            _customModsDraft = CustomRwdMods.Copy(_customModsState.CustomMods);
+            _customModsNotice = T("Пользовательские моды применены.", "Custom mods applied.");
+            BuildCustomMods();
             RefreshStatus();
-            ShowToast(() => T("Пользовательские моды применены.", "Custom mods applied."));
         }
         catch (Exception ex) { ActivityStore.Log(ex); _customModsError = T("Не удалось применить моды. Проверьте файлы и заново откройте это окно.", "Could not apply mods. Check the files and reopen this window."); }
         finally { _customModsBusy = false; SetBusy(false); RefreshGameSettingsState(IsGameRunning()); }

@@ -22,6 +22,7 @@ public static class Program
     {
         if (args.Contains("--icon-checks")) { IconChecks.Run(args[0]); return; }
         var language = args.FirstOrDefault(arg => arg.StartsWith("--language="))?.Split('=')[1] ?? "ru";
+        var idleCpuProbe = args.Contains("--idle-cpu-probe");
         var lobbyLaunchFixture = args.FirstOrDefault(a => a.StartsWith("--lobby-launch-fixture="))?["--lobby-launch-fixture=".Length..];
         var communityChecks = args.Contains("--community-checks");
         var pureOptionsConfig = args.FirstOrDefault(a=>a.StartsWith("--pure-options-config="))?["--pure-options-config=".Length..];
@@ -41,7 +42,8 @@ public static class Program
         var refinementChecks = args.Contains("--refinement-checks");
         var teamChecks = args.Contains("--team-checks");
         var patchVersionChecks = args.Contains("--patch-version-checks");
-        var modLibraryChecks = args.Contains("--mod-library-checks");
+        var legacyModLibraryChecks = args.Contains("--mod-library-1368-checks");
+        var modLibraryChecks = args.Contains("--mod-library-checks") || legacyModLibraryChecks;
         var legacyModMigrationChecks = args.Contains("--legacy-mod-migration-checks");
         var retainedSelectionChecks = args.Contains("--retained-selection-checks");
         var gameExitChecks = args.Contains("--game-exit-checks");
@@ -138,6 +140,7 @@ public static class Program
         // Avoid a second real MainWindow during deferred Application startup. Use an inert invisible fixture.
         app.StartupUri = new Uri("pack://application:,,,/PreviewRenderer;component/PreviewBootstrap.xaml");
         app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        if (idleCpuProbe) { IdleCpuProbe.Run(args[0]); app.Shutdown(); return; }
         if (lobbyLaunchFixture is not null) { LobbyLaunchChecks.Run(lobbyLaunchFixture); app.Shutdown(); return; }
         if (modDbDialogPreview) { ModDbDialogPreview.Run(language, args[0]); app.Shutdown(); return; }
         if (communityChecks) { CommunityChecks.Run(language,Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
@@ -188,7 +191,7 @@ public static class Program
         if (gameExitChecks || modLibraryChecks)
         {
             if (gameExitChecks) GameExitRecoveryChecks.Run(language);
-            if (modLibraryChecks) ModLibraryChecks.Run(language);
+            if (modLibraryChecks) ModLibraryChecks.Run(language, legacyModLibraryChecks);
             app.Shutdown(); return;
         }
         if (modModeChecks) ModModeChecks.Run(language);

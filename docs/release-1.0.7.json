@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "1.0.7",
+  "publishedAt": "2026-11-01",
+  "title": {
+    "ru": "Paw’s Launcher 1.0.7",
+    "en": "Paw’s Launcher 1.0.7",
+    "de": "Paw’s Launcher 1.0.7",
+    "fr": "Paw’s Launcher 1.0.7",
+    "cs": "Paw’s Launcher 1.0.7",
+    "uk": "Paw’s Launcher 1.0.7"
+  },
+  "body": {
+    "ru": "- Отдельная вкладка «Моды» для пользовательских RWD: добавление, порядок загрузки, замена архивов, совпадающие файлы, применение и отмена.\n- Перед выходом со вкладки или запуском игры нужно применить либо отменить изменения модов.\n- Понятное обозначение файлового режима, включая Kohan II 1.3.68. Функции изменения памяти требуют совместимой версии игры.\n- Ошибка публикации дополнительных сведений о конфигурации больше не мешает загрузке списка друзей.",
+    "en": "- Dedicated Mods page for custom RWDs: import, load order, archive replacement, overlapping files, apply and undo.\n- Apply or undo pending mod edits before leaving the page or launching the game.\n- Clear file-only mode labeling, including Kohan II 1.3.68. Memory-patching features require a compatible game version.\n- Rejected optional configuration metadata no longer prevents the friends list from loading.",
+    "de": "- Eigene Mods-Seite für RWD-Dateien: Import, Ladereihenfolge, Archiversatz, Dateiüberschneidungen, Anwenden und Verwerfen.\n- Änderungen vor dem Verlassen der Seite oder dem Spielstart anwenden oder verwerfen.\n- Klare Kennzeichnung des Modus für reine Dateiänderungen, auch für Kohan II 1.3.68. Speicher-Patches benötigen eine kompatible Spielversion.\n- Abgelehnte optionale Konfigurationsdaten verhindern nicht mehr das Laden der Freundesliste.",
+    "fr": "- Page Mods dédiée aux RWD personnalisés : importation, ordre de chargement, remplacement des archives, fichiers communs, application et annulation.\n- Appliquez ou annulez les changements avant de quitter la page ou de lancer le jeu.\n- Indication claire du mode limité aux fichiers, notamment pour Kohan II 1.3.68. Les modifications en mémoire nécessitent une version compatible du jeu.\n- Le rejet de métadonnées facultatives de configuration ne bloque plus le chargement de la liste d’amis.",
+    "cs": "- Samostatná stránka Mody pro vlastní RWD: import, pořadí načítání, nahrazení archivu, shodné soubory, použití a zrušení změn.\n- Před opuštěním stránky nebo spuštěním hry změny použijte nebo zrušte.\n- Jasné označení režimu pouze se změnami souborů, včetně Kohan II 1.3.68. Úpravy paměti vyžadují kompatibilní verzi hry.\n- Odmítnuté volitelné údaje o konfiguraci již nebrání načtení seznamu přátel.",
+    "uk": "- Окрема вкладка «Моди» для власних RWD: додавання, порядок завантаження, заміна архівів, спільні файли, застосування та скасування.\n- Перед виходом із вкладки або запуском гри потрібно застосувати чи скасувати зміни модів.\n- Зрозуміле позначення файлового режиму, зокрема для Kohan II 1.3.68. Зміни пам’яті потребують сумісної версії гри.\n- Відхилення додаткових даних конфігурації більше не заважає завантаженню списку друзів."
+  }
+}

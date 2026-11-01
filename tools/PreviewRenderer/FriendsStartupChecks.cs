@@ -91,6 +91,13 @@ internal static class FriendsStartupChecks
             Check(!Visible("FriendsListEmptyText") && !Visible("FriendsListLoadingIndicator") && !Visible("FriendsListRetryButton"), "loading/empty/error stays over received friends");
             Check(Visible("FriendsSearchPanel") && C<Button>("FriendsRequestsTab").IsEnabled && C<Button>("FriendsShowAddButton").IsEnabled, "received list remains locked");
 
+            Set("_socialPresencePublishOverride", (Func<Guid, Task>)(_ => throw new AccountException("invalid_presence")));
+            await Refresh();
+            Check(f.ListCalls == 2 && C<StackPanel>("FriendsRowsPanel").Children.Count == 1
+                && !Field<bool>("_socialListFailed"), "rejected presence hid the friends list");
+            Check(Field<DateTimeOffset>("_socialPresenceNext") > DateTimeOffset.UtcNow, "rejected presence was not throttled");
+            Set("_socialPresencePublishOverride", null);
+            f.ListCalls = 1;
             var row = C<StackPanel>("FriendsRowsPanel").Children[0];
             var transitions = 0;
             C<Button>("FriendsShowAddButton").IsEnabledChanged += (_, _) => transitions++;

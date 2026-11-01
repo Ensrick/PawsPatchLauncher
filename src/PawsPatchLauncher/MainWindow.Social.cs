@@ -173,11 +173,16 @@ public partial class MainWindow
         "network" or "outcome_unknown"=>T("Нет связи с сервером. Пробуем подключиться…", "Cannot reach the server. Reconnecting…"),
         _=>AccountMessage(code)
     };
+    private Func<Guid, Task>? _socialPresencePublishOverride;
     private async Task RefreshSocialAsync()=>await SocialOperationAsync(async owner=> {
         _socialListLoading = true; _socialListFailed = false;
         RenderSocialListState();
         try {
-        await PublishSocialPresenceAsync(owner);
+        // Publishing optional configuration metadata must not prevent reading friends
+        // when a client and server deployment briefly have different capabilities.
+        try { await (_socialPresencePublishOverride?.Invoke(owner) ?? PublishSocialPresenceAsync(owner)); }
+        catch (AccountException ex) when (ex.Code == "invalid_presence")
+        { _socialPresenceNext = DateTimeOffset.UtcNow.AddSeconds(30); }
         var players=await _account.GetFriendsAsync(_accountLifetime.Token);
         if(_account.UserId!=owner.ToString())return;
         NotifySocialArrival(owner, players);
