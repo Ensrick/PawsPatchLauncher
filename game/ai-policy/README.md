@@ -1,5 +1,33 @@
 # Optional AI improvements
 
+## Local replay compatibility fix (2026-10-29)
+
+Native 1.3.72 film playback creates every participant with `SessionPlayer+0xc`
+cleared, including recorded bots. Using that flag alone made guarded-structure
+avoidance disappear during playback. In the supplied six-player recording,
+after fixing independent-owner reconstruction, this caused the next native
+film checksum failure at index 258627 (simulation time 428.0625 seconds).
+
+`routing.c` now reads the serialized kingdom AI-profile string from the loaded
+WorldCreator only when source kind is 2 and session state is 4 (film). It matches
+the internal kingdom ID, requires one unambiguous bounded setup row and a native
+film participant, and leaves human/observer paths native. It never changes the
+native AI/film flags or starts strategic controllers. Normal matches and saved
+games continue using replicated session player types. No persistent identity
+cache or extra RNG is involved.
+
+Native layout evidence: WorldCreatorLoad vtable RVA `4FDFE4`, kingdom setup
+vector `+14/+18/+1c`, stride `6c`, internal ID `+0`, AI profile `+2c`.
+Native world-to-setup serialization at `294E2C` copies kingdom `+24c` into that
+profile field. Player film construction at `1622CC` intentionally passes AI=0.
+Recorded participant IDs are not kingdom indices or stable bot identifiers.
+
+`test_film_routing.py` compares real compiled route/line-of-sight/cost callbacks
+for recording and playback at three image bases, checks malformed/duplicate
+metadata, observers, human slots, same-process session transitions and write
+bounds. The unchanged source rebuilt byte-identically to both published native
+profiles before applying this change; unrelated AI behavior is not updated.
+
 Build: `beta7/build.ps1 -AiPolicy -ExhaustionRecovery` with the other current Arcane features. Paw's Patch 0.4.0 Beta exposes one launcher option, enabled by default, for both the data changes and native AI/exhaustion fixes. The installed module and applied setting must agree before launch. Turning off Paw's Patch disables the option; bulk host bot setup remains a separate built-in Paw's Patch feature.
 
 The current game helper installs 58 guarded native call-site wrappers. Observation/eligibility wrappers preserve their original callees and the existing guarded precondition exceptions. Decision callbacks run on the native AI thread; routing callbacks run inside the native path-query critical section, without OS calls, additional RNG, health or ownership writes. Revision 30 additionally submits the original Disband command for a persistently surplus civilian builder. Recruit eligibility uses native short-lived ResourceVectors on the same simulation thread; final admission remains native. An unchanged floating-point score retains its original 80-bit return. The native payload retains its bounded observation ring; the normal helper no longer drains it to disk or captures periodic AI snapshots.

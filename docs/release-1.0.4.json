@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "1.0.4",
+  "publishedAt": "2026-10-26",
+  "title": {
+    "ru": "Paw’s Launcher 1.0.4",
+    "en": "Paw’s Launcher 1.0.4",
+    "de": "Paw’s Launcher 1.0.4",
+    "fr": "Paw’s Launcher 1.0.4",
+    "cs": "Paw’s Launcher 1.0.4",
+    "uk": "Paw’s Launcher 1.0.4"
+  },
+  "body": {
+    "ru": "Загрузка, проверка файлов, распаковка, установка и откат теперь выполняются в фоне, чтобы интерфейс оставался отзывчивым. Обновления прогресса объединяются и не перегружают очередь интерфейса. Выбор архива ModDB и отмена сохраняют корректную работу.",
+    "en": "Downloads, file verification, extraction, installation and rollback now run in the background to keep the interface responsive. Progress updates are coalesced to avoid flooding the UI queue. ModDB archive selection and cancellation remain supported.",
+    "de": "Downloads, Dateiprüfung, Entpacken, Installation und Rücksetzung laufen jetzt im Hintergrund, damit die Oberfläche bedienbar bleibt. Fortschrittsmeldungen werden gebündelt, um die Oberfläche nicht zu überlasten. ModDB-Archivauswahl und Abbrechen bleiben verfügbar.",
+    "fr": "Le téléchargement, la vérification des fichiers, l’extraction, l’installation et la restauration s’exécutent désormais en arrière-plan pour garder une interface réactive. Les mises à jour de progression sont regroupées. La sélection des archives ModDB et l’annulation restent disponibles.",
+    "cs": "Stahování, ověřování souborů, rozbalování, instalace a vrácení změn nyní běží na pozadí, aby rozhraní zůstalo plynulé. Aktualizace průběhu se slučují a nepřetěžují rozhraní. Výběr archivu ModDB i zrušení operace zůstávají dostupné.",
+    "uk": "Завантаження, перевірка файлів, розпакування, встановлення та відкат тепер виконуються у фоні, щоб інтерфейс залишався чутливим. Оновлення прогресу об’єднуються й не перевантажують чергу інтерфейсу. Вибір архіву ModDB та скасування працюють коректно."
+  }
+}

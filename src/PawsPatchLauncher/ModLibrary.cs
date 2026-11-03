@@ -48,7 +48,10 @@ public sealed class ModLibrary(string gameRoot)
         // catalog. It is the original game, not an installed component release.
         => Load().Mods.LastOrDefault(item => Key(item.Mod, item.Channel) == Key(mod, channel) && item.Packages.Count > 0);
 
-    public async Task RememberAsync(ChannelManifest channel, string mod)
+    public Task RememberAsync(ChannelManifest channel, string mod)
+        => Task.Run(() => RememberCoreAsync(channel, mod));
+
+    private async Task RememberCoreAsync(ChannelManifest channel, string mod)
     {
         var packages = Packages(channel, mod);
         if (packages.Count == 0) return;
@@ -62,7 +65,10 @@ public sealed class ModLibrary(string gameRoot)
         await CryptoAndIO.AtomicWriteTextAsync(FilePath, JsonSerializer.Serialize(library, LauncherJsonContext.Default.ModLibraryDocument));
     }
 
-    public async Task RememberLanguagesAsync(IEnumerable<PackageRelease> packages)
+    public Task RememberLanguagesAsync(IEnumerable<PackageRelease> packages)
+        => Task.Run(() => RememberLanguagesCoreAsync(packages));
+
+    private async Task RememberLanguagesCoreAsync(IEnumerable<PackageRelease> packages)
     {
         var library = Load();
         foreach (var package in packages.Where(GameLanguages.IsLanguage))

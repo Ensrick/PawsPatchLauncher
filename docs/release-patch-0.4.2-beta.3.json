@@ -1,0 +1,25 @@
+{
+  "category": "patch",
+  "version": "0.4.2-beta.3",
+  "publishedAt": "2026-10-18",
+  "title": {
+    "ru": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+    "en": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+    "de": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+    "fr": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+    "cs": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+    "uk": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars"
+  },
+  "body": {
+    "ru": "- Увеличен запас текстур местности при отдалённой камере, чтобы реже переносить их из видеопамяти в оперативную память.",
+    "en": "- Increased the terrain texture pool for the extended camera, reducing texture offloads from video memory to system memory.",
+    "de": "- Der Texturpool für das Gelände wurde für die erweiterte Kamera vergrößert, damit Texturen seltener vom Grafikspeicher in den Arbeitsspeicher ausgelagert werden.",
+    "fr": "- Augmentation du cache de textures du terrain pour la caméra étendue, afin de réduire les transferts de la mémoire vidéo vers la mémoire système.",
+    "cs": "- Zvětšena zásoba textur terénu pro oddálenou kameru, aby se textury méně často přesouvaly z grafické paměti do operační paměti.",
+    "uk": "- Збільшено запас текстур місцевості для віддаленої камери, щоб рідше переносити їх із відеопам’яті в оперативну пам’ять."
+  },
+  "mods": [
+    "arcane-wars"
+  ],
+  "channel": "beta"
+}

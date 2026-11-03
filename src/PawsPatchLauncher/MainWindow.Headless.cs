@@ -17,7 +17,6 @@ public partial class MainWindow
     private bool _headlessFailed;
     private int? _headlessLaunched;
     private readonly TaskCompletionSource _initialized = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private Func<ProcessStartInfo, Process?> _startProcess = Process.Start;
     private static readonly TimeSpan HeadlessStepTimeout = TimeSpan.FromMinutes(3), HeadlessInstallTimeout = TimeSpan.FromMinutes(30);
 
     private sealed class HeadlessUsageException(string message) : Exception(message);
@@ -191,12 +190,13 @@ public partial class MainWindow
 
     private async Task<int> HeadlessSelectGameAsync(TextWriter o, List<string> args)
     {
-        if (args.Count != 1) throw HeadlessUsage("select-game vanilla|immortals");
+        if (args.Count != 1) throw HeadlessUsage("select-game vanilla|immortals|arcane");
         var mod = args[0].ToLowerInvariant() switch
         {
             "vanilla" => GameMod.Vanilla,
             "immortals" => GameMod.Immortals,
-            _ => throw HeadlessUsage("select-game vanilla|immortals")
+            "arcane" or "arcane-wars" => GameMod.ArcaneWars,
+            _ => throw HeadlessUsage("select-game vanilla|immortals|arcane")
         };
         EnsureHeadlessGameClosed();
         if (_settings.Mod == mod) o.WriteLine("selected-game: " + mod + " (" + T("без изменений", "unchanged") + ")");
@@ -576,7 +576,7 @@ public partial class MainWindow
         o.WriteLine();
         o.WriteLine(T("Команды:", "Commands:"));
         o.WriteLine("  status                          " + T("игра, выбор, компоненты, моды, применённое состояние, готовность", "game, selection, components, mods, applied state, ready or blocked"));
-        o.WriteLine("  select-game vanilla|immortals   " + T("выбрать игру для установки и запуска", "choose the game to install and start"));
+        o.WriteLine("  select-game vanilla|immortals|arcane   " + T("выбрать игру для установки и запуска", "choose the game to install and start"));
         o.WriteLine("  set key=value [key=value ...]   " + T("изменить выбор, как на странице «Компоненты»", "change the selection, like the Components page"));
         o.WriteLine("      channel=release|beta  paw=on|off  colors=on|off  ignore-desync=on|off  hostility=on|off");
         o.WriteLine("      roaming=on|off  spawn=standard|x2|x4  ai=on|off  lair=on|off  sandbox=on|off");

@@ -1,5 +1,11 @@
 # Shared crash guards, revision 2
 
+`TaskStatusPatch.cs` is a separate producer-side repair for the host-departure
+assertion: initialize the native local task status before it can be sent.
+It keeps the shared enum reader and its assertions intact. See the
+[root-cause and verification report](../../docs/verification-task-status-2026-10-23.md)
+and `test_task_status.ps1` for its native-instruction and installer tests.
+
 Opt-in `-EngineCrashFixes` for the full Arcane Wars helper build. This does not
 publish a release or alter game assets. For a helper launched outside the game
 directory, also use the existing `-LairWoundedTest` local-data mode: it resolves

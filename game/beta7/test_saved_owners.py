@@ -10,6 +10,7 @@ import sys
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--helpers', type=Path, required=True)
 p.add_argument('--legacy', type=Path, required=True)
+p.add_argument('--pure', action='store_true', help='Test the four shared Vanilla/Immortals helpers')
 a = p.parse_args()
 sys.path.insert(0, str(a.legacy / 'lobby_colors_1372/deps_r15'))
 from unicorn import Uc, UC_ARCH_X86, UC_MODE_32
@@ -30,6 +31,9 @@ def check(value, label):
     checks += 1
 
 variants = json.loads((root / 'variants.json').read_text())
+if a.pure:
+    variants = {path.name: '' for path in a.helpers.glob('k2_paws_pure*.exe')}
+    assert len(variants) == 4, variants
 tested = 0
 for name, switches in variants.items():
     if 'SYNC_ONLY' in switches:
@@ -64,9 +68,10 @@ for name, switches in variants.items():
                     UC_X86_REG_EDX: 0x34567890, UC_X86_REG_ESI: 0x456789ab,
                     UC_X86_REG_EDI: actor, UC_X86_REG_EBP: 0x32007000, UC_X86_REG_ESP: stack}
 
-            def run(actor_ids, owner, source, expected, count=37):
+            def run(actor_ids, owner, source, expected, count=37, state=2):
                 w(image + 0x5f3fe4, session if source is not None else 0)
                 w(session + 0x64, source or 0)
+                w(session + 0xf0, state)
                 w(world + 0x154, count)
                 w(actor + 0xe8, 0xdeadbeef)
                 u.mem_write(text, (actor_ids + '\0').encode('utf-16le'))
@@ -90,11 +95,24 @@ for name, switches in variants.items():
                     run(actor_ids, owner, 2, owner)
                     if site == 0:
                         run(actor_ids, owner, 0, owner)
-                # Same-process save -> fresh match -> save; no latched flag.
+                # Films share source kind 2 with saves, but state 4 must
+                # reproduce fresh-map families. Serialized owners stay exact.
+                for owner in (kingdoms[3], kingdoms[4], kingdoms[5]):
+                    expected = owner if site == 0 else target_owner
+                    run(actor_ids, owner, 2, expected, state=4)
+                for owner in (0, kingdoms[36], target_owner):
+                    run(actor_ids, owner, 2, owner, state=4)
+                for state in (0, 1, 2, 3, 5, 0xffffffff):
+                    run(actor_ids, kingdoms[4], 2, kingdoms[4], state=state)
+                # Same-process save -> film -> fresh match -> save; no latch.
                 expected = kingdoms[4] if site == 0 else target_owner
+                run(actor_ids, kingdoms[4], 2, expected, state=4)
                 run(actor_ids, kingdoms[4], 0, expected)
                 run(actor_ids, kingdoms[4], 2, kingdoms[4])
                 run(actor_ids, kingdoms[36], 0, kingdoms[36])
                 run(actor_ids, kingdoms[4], None, kingdoms[4])
             run('unmapped_player_building', kingdoms[36], 0, kingdoms[36])
+            run('unmapped_player_building', kingdoms[4], 2, kingdoms[4], state=4)
+            run('rhaksha_settlementcamp', kingdoms[4], 2, kingdoms[4], count=10, state=4)
+            run('rhaksha_settlementcamp', kingdoms[4], None, kingdoms[4], state=4)
 print('SAVED_OWNERS_NATIVE_PASS', checks, 'checks;', tested, 'compiled helpers; 3 image bases; no game launched')

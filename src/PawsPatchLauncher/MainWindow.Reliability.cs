@@ -63,6 +63,8 @@ public partial class MainWindow
         }
 
         var incident = Card(out _incidentCard);
+        ReliabilityPanels.Children.Remove(_incidentCard);
+        RecoveryHost.Children.Add(_incidentCard);
         Text(incident, "Восстановление после ошибки", "Recovery after an error", true);
         _incidentText = Text(incident, "", "");
         Button(incident, "Создать архив диагностики", "Create diagnostic archive", DiagnosticsButton_Click, IconKind.Diagnostics);
@@ -135,7 +137,7 @@ public partial class MainWindow
         _recoveryCard.Visibility = _versionCard.Visibility = _activePage == "settings" ? Visibility.Visible : Visibility.Collapsed;
         _importCard.Visibility = Visibility.Collapsed;
         _multiplayerCard.Visibility = Visibility.Collapsed;
-        _incidentCard.Visibility = _incident is null ? Visibility.Collapsed : Visibility.Visible;
+        _incidentCard.Visibility = _activePage == "settings" && _incident is not null ? Visibility.Visible : Visibility.Collapsed;
         _incidentText.Text = _incident ?? "";
         RefreshEnhancements();
     }
@@ -214,6 +216,7 @@ public partial class MainWindow
             AdditionalRoamingToggle.IsChecked = _settings.AdditionalRoamingCompanies;
             SiegeBalanceToggle.IsChecked = _settings.SiegeBalance;
         ImprovedAiToggle.IsChecked = _settings.ImprovedAi;
+        IgnoreZeroMoraleToggle.IsChecked = GameMod.IsArcaneWars(_settings) && _settings.IgnoreZeroMorale;
             PowersShardsToggle.IsChecked = _settings.DisablePowersAndShards;
             SelectOosMode(_settings.DesyncMode); SelectSpawnMode(_settings.RoamingSpawnMode);
             _settingsStore.Save(_settings);
@@ -473,7 +476,7 @@ public partial class MainWindow
         var watch = Stopwatch.StartNew();
         long? first = null;
         long lastUpdate = -1000;
-        return new Progress<(long Received, long? Total)>(value =>
+        return new CoalescingProgress<(long Received, long? Total)>(value =>
         {
             if (!ReferenceEquals(_activeTransfer, transfer)) return;
             first ??= value.Received;

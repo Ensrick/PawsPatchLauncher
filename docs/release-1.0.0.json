@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "1.0.0",
+  "publishedAt": "2026-10-19",
+  "title": {
+    "ru": "Paw’s Launcher 1.0.0",
+    "en": "Paw’s Launcher 1.0.0",
+    "de": "Paw’s Launcher 1.0.0",
+    "fr": "Paw’s Launcher 1.0.0",
+    "cs": "Paw’s Launcher 1.0.0",
+    "uk": "Paw’s Launcher 1.0.0"
+  },
+  "body": {
+    "ru": "- Arcane Wars доступен всем пользователям, включая гостей.\n- Базовый мод загружается с ModDB, чтобы автор видел интерес к нему по счётчику скачиваний. Патч Даркана 0.82.1.8 fix v2 устанавливается отдельно и автоматически.\n- Если ModDB требует проверку в браузере, лаунчер поможет открыть сайт и выбрать скачанный RAR. Архивы и игровые файлы проверяются перед установкой.\n- Новое окно загрузки в стиле лаунчера. Тестовая кнопка повторной загрузки удалена.\n- Содержимое мода не изменено; сохранена сетевая совместимость с прежним пакетом.",
+    "en": "- Arcane Wars is available to everyone, including guests.\n- The base mod comes from ModDB so the author can see interest through its download count. Darquan’s 0.82.1.8 fix v2 patch is applied separately and automatically.\n- If ModDB requires a browser check, the launcher helps you open the site and select the downloaded RAR. Archives and game files are verified before installation.\n- A download dialog matching the launcher design. The test-only retry button has been removed.\n- Mod contents are unchanged; network compatibility with the previous package is preserved.",
+    "de": "- Arcane Wars ist für alle verfügbar, auch für Gäste.\n- Die Basismod wird von ModDB heruntergeladen, damit der Autor das Interesse am Downloadzähler ablesen kann. Darquans Patch 0.82.1.8 fix v2 wird separat und automatisch installiert.\n- Verlangt ModDB eine Browserprüfung, hilft der Launcher beim Öffnen der Seite und Auswählen des heruntergeladenen RAR-Archivs. Archive und Spieldateien werden vor der Installation geprüft.\n- Neuer Downloaddialog im Launcher-Stil; die Testschaltfläche zum erneuten Herunterladen wurde entfernt.\n- Mod-Inhalte bleiben unverändert; Netzwerkkompatibilität zum bisherigen Paket bleibt erhalten.",
+    "fr": "- Arcane Wars est accessible à tous, y compris aux invités.\n- Le mod de base provient de ModDB pour que l’auteur puisse suivre l’intérêt grâce au compteur de téléchargements. Le correctif 0.82.1.8 fix v2 de Darquan est appliqué séparément et automatiquement.\n- Si ModDB demande une vérification dans le navigateur, le lanceur aide à ouvrir le site et à sélectionner l’archive RAR téléchargée. Les archives et fichiers du jeu sont vérifiés avant installation.\n- Nouvelle fenêtre de téléchargement au style du lanceur ; le bouton de test a été supprimé.\n- Le contenu du mod est inchangé ; la compatibilité réseau avec l’ancien paquet est conservée.",
+    "cs": "- Arcane Wars je dostupný všem, včetně hostů.\n- Základní mod se stahuje z ModDB, aby autor mohl sledovat zájem podle počtu stažení. Darquanova oprava 0.82.1.8 fix v2 se instaluje samostatně a automaticky.\n- Pokud ModDB vyžaduje ověření v prohlížeči, launcher pomůže otevřít web a vybrat stažený archiv RAR. Archivy a herní soubory se před instalací ověřují.\n- Nové okno stahování ve stylu launcheru; testovací tlačítko opakovaného stahování bylo odstraněno.\n- Obsah modu se nezměnil; síťová kompatibilita s předchozím balíčkem je zachována.",
+    "uk": "- Arcane Wars доступний усім користувачам, включно з гостями.\n- Базовий мод завантажується з ModDB, щоб автор бачив інтерес за лічильником завантажень. Патч Даркана 0.82.1.8 fix v2 встановлюється окремо й автоматично.\n- Якщо ModDB потребує перевірки в браузері, лаунчер допоможе відкрити сайт і вибрати завантажений RAR. Архіви та ігрові файли перевіряються перед встановленням.\n- Нове вікно завантаження у стилі лаунчера. Тестову кнопку повторного завантаження прибрано.\n- Вміст моду не змінено; збережено мережеву сумісність із попереднім пакетом."
+  }
+}

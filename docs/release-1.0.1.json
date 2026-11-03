@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "1.0.1",
+  "publishedAt": "2026-10-19",
+  "title": {
+    "ru": "Paw’s Launcher 1.0.1",
+    "en": "Paw’s Launcher 1.0.1",
+    "de": "Paw’s Launcher 1.0.1",
+    "fr": "Paw’s Launcher 1.0.1",
+    "cs": "Paw’s Launcher 1.0.1",
+    "uk": "Paw’s Launcher 1.0.1"
+  },
+  "body": {
+    "ru": "Исправлен вылет при запуске Vanilla на Kohan II 1.3.68 после игры с расширенным числом королевств. Лаунчер восстанавливает несовместимые настройки лобби с учётом версии игры и сохраняет резервную копию. Общие настройки, управление и сохранения не изменяются. Спасибо Ensrick за исправление.",
+    "en": "Fixed a Vanilla startup crash on Kohan II 1.3.68 after playing with extra kingdoms. The launcher repairs incompatible lobby settings using defaults for the detected game version and keeps a backup. General preferences, keybindings and saved games are unchanged. Thanks to Ensrick for the fix.",
+    "de": "Ein Absturz beim Start von Vanilla unter Kohan II 1.3.68 nach Spielen mit zusätzlichen Königreichen wurde behoben. Der Launcher repariert inkompatible Lobby-Einstellungen passend zur Spielversion und erstellt eine Sicherung. Allgemeine Einstellungen, Tastenbelegung und Spielstände bleiben unverändert. Vielen Dank an Ensrick für die Korrektur.",
+    "fr": "Correction d’un plantage au lancement de Vanilla sur Kohan II 1.3.68 après une partie avec des royaumes supplémentaires. Le lanceur répare les paramètres de salon incompatibles selon la version du jeu et conserve une sauvegarde. Les préférences générales, les raccourcis clavier et les parties sauvegardées restent inchangés. Merci à Ensrick pour ce correctif.",
+    "cs": "Opraven pád při spuštění Vanilla v Kohan II 1.3.68 po hraní s rozšířeným počtem království. Launcher opraví nekompatibilní nastavení lobby podle verze hry a uchová zálohu. Obecná nastavení, klávesové zkratky a uložené hry zůstávají beze změny. Děkujeme Ensrickovi za opravu.",
+    "uk": "Виправлено виліт під час запуску Vanilla на Kohan II 1.3.68 після гри з розширеною кількістю королівств. Лаунчер відновлює несумісні налаштування лобі відповідно до версії гри та зберігає резервну копію. Загальні налаштування, керування та збереження не змінюються. Дякуємо Ensrick за виправлення."
+  }
+}

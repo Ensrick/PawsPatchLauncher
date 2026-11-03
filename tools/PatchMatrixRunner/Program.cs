@@ -69,6 +69,17 @@ internal static class Program
         var cases = (options.GetValueOrDefault("pure-stable-smoke") == "true" ? PureStableCases() : options.GetValueOrDefault("pure-beta-smoke") == "true" ? PureBetaCases() : NightmareSmoke ? NightmareCases() : Cases()).Where(c => !options.TryGetValue("channel", out var channel) || c.Settings.Channel == channel)
             .Where(c => !options.TryGetValue("mod", out var mod) || c.Settings.Mod == mod)
             .Where(c => !options.TryGetValue("case", out var id) || c.Id == id).ToArray();
+        // Network QA changes localization independently of gameplay options.
+        if (options.TryGetValue("text-language", out var textLanguage))
+        {
+            if (!new[] { "en", "ru", "de", "fr", "cs", "uk" }.Contains(textLanguage))
+                throw new ArgumentException("Unsupported --text-language.");
+            cases = cases.Select(c =>
+            {
+                GameLanguages.SetText(c.Settings, textLanguage);
+                return c with { Id = c.Id + "-text-" + textLanguage };
+            }).ToArray();
+        }
         if(mode=="apply"&&(!options.ContainsKey("case")||cases.Length!=1))throw new ArgumentException("Apply requires one exact --case.");
         await File.WriteAllTextAsync(Path.Combine(root, "cases.json"), JsonSerializer.Serialize(cases, Json));
         Console.WriteLine($"PLAN {cases.Length}: mod/channel/component/text/voice combinations; {game}");

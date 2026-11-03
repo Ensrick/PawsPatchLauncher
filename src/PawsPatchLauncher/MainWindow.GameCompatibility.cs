@@ -258,7 +258,8 @@ public partial class MainWindow
         DockPanel.SetDock(close, Dock.Right); heading.Children.Add(close);
         heading.Children.Add(new TextBlock { Text = pawDetails ? T("Paw's Patch: доступные функции", "Paw's Patch: available features")
             : _compatiblePatchUpdate is not null ? T("Нужно обновить патч", "Patch update required")
-            : KnownFileOnlyGame ? T("Только файловые изменения", "File changes only") : T("Версия игры не поддерживается", "Unsupported game version"),
+            : DataOnlyMode ? T("Доступны файловые изменения", "File changes available")
+            : T("Версия игры не поддерживается", "Unsupported game version"),
             FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = ColorBrush("#FFD0D0"), TextWrapping = TextWrapping.Wrap });
         body.Children.Add(heading);
         body.Children.Add(new TextBlock { Text = T("Установлена игра: ", "Installed game: ") + (_installedGameVersion.Length > 0 ? _installedGameVersion : T("версия не определена", "unknown version"))

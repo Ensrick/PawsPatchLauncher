@@ -63,7 +63,7 @@ public partial class MainWindow
                 ModManagerGamesBody.Children.Add(CustomModRow(null, true, null, name, active, null, null));
                 continue;
             }
-            var locked = mod == GameMod.ArcaneWars;
+            var locked = false;
             var size = locked ? null : BaseGameDownloadSize(mod);
             var details = locked ? ArcaneAccessReason
                 : size is null ? T("Список выпусков ещё не загружен. Подключитесь к интернету и проверьте обновления.", "The release list is not loaded yet. Connect to the internet and check for updates.")

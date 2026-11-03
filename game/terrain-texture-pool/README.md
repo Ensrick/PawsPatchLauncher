@@ -1,5 +1,11 @@
 # Terrain texture pool for gameplay zoom 2.0
 
+Original proposal and overlay by Ensrick, [PR #16](https://github.com/VasiliyPaw/PawsPatchLauncher/pull/16),
+head `8ee2097752c88034d6307071d37c9bfe43d2f0da`. MIT attribution is retained in
+`LICENSE.Ensrick`. The initial local experiment is integrated into the
+0.4.2-beta.3 Arcane Wars and 0.4.1-beta.5 Vanilla/Immortals release packages.
+It is not an established crash fix.
+
 Data-only overlay: `data/UVars_k2.tgi` is the retail 1.3.72 file plus one line,
 `int TerrainTexturePoolDesiredNumEntries = 1024`. Retail `UVars.tgi` sets 120 with the comment
 "Approximately 20% more than on-screen for max-zoom", sized for the stock gameplay camera
@@ -28,9 +34,9 @@ User/UVars.tgi, then creates its window and right after it the texture pools (ab
 the game log). The helpers attach after the window appears, so a hook at 18B2ED would miss the only pool
 creation. `User/UVars.tgi` does not work either: tested, the variable there is ignored and the game drops
 the line when it rewrites the file on exit. A loose `data/UVars_k2.tgi` is read at startup on every launch
-path. Retail Immortals 2.1 ships `AVars_version.tgi` but no `UVars_k2.tgi`; Arcane Wars was not checked.
+path. Immortals 2.1 and Arcane Wars 0.82.1.8 have no `UVars_k2.tgi`; see the local package audit below.
 
-## Measurements
+## Upstream measurements (Ensrick)
 
 Texture memory, from the game log (`Allocated TexturePool Terrain (mem ...)`, difference to `Allocating`):
 120 entries 8,388,608 bytes, 1024 entries 67,108,864 bytes, allocated once at startup.
@@ -54,15 +60,49 @@ A larger late-game save: retail 80 offloads while loading, 0 still. In real matc
 from moving the camera (the pool keeps recently drawn terrain), which could not be scripted: the game
 reads keyboard and mouse directly, and neither console commands nor window messages moved its camera.
 
-## Not tested
+## Remaining validation
 
-- Real match play with the overlay installed (pending a player session).
+- Long player sessions, large-map stress and low-memory hardware. The local scripted camera
+  comparison below is shorter and uses a 384 x 384 Vanilla save.
 - Whether the retail connection data check covers `UVars_k2.tgi`; every player gets the same file from the
-  same package.
-- A card that needs the resolution fallback.
+same package.
+- A card that needs the resolution fallback; its existence is not proof that every allocation failure is safe.
 
 ## Integration
 
-Install `data/UVars_k2.tgi` with whatever enables CAMERA_ZOOM (the variable is renderer-only and does not
-touch the simulation), with a startup hash guard like foundation-placement's. No release, feed or version
-is changed here.
+The beta packages install `data/UVars_k2.tgi` in Arcane's `pawpatch-core` and
+Pure's `pure-beta-common`, which follow the full patch/camera selection rather
+than file-only mode. Helpers built with `TERRAIN_TEXTURE_POOL` validate its
+exact hash before launching. The reviewed native consumer is the renderer;
+network file-check behavior still needs validation. See
+[release verification](../../docs/verification-terrain-betas-2026-10-18.md).
+
+## Local integration audit (2026-10-17)
+
+The official Immortals 2.1.0 package has neither UVars file; it inherits retail
+120. Arcane Wars 0.82.1.8-clean.1 supplies `data/UVars.tgi` with 360 terrain
+entries, but no `UVars_k2.tgi`. The latter retail layer therefore remains the
+base for this overlay in all three mods. Do not replace Arcane Wars' UVars.tgi:
+its other renderer, texture-pool and camera settings are independent of this
+change. Package hashes and live-run evidence are recorded in
+[the verification report](../../docs/verification-terrain-pool-2026-10-17.md).
+
+The local Vanilla comparison loads the same save twice, applies the unchanged
+production camera patch, reads back zoom 2.0 / far plane 1024, and executes the
+same 12 camera positions. Terrain offloads fell from 1,790 to zero, while the
+reported terrain allocation rose from 8 to 64 MiB. Both runs exited normally.
+This establishes reduced offloading in this scenario, not an FPS improvement
+or a fix for the reported graphics-driver crashes.
+
+Preparation rejects an unknown loose `data/UVars_k2.tgi`, unsupported retail
+bytes and an existing output directory. It only writes a NEW output directory;
+it does not install or edit the game. It cannot discover effective overrides
+inside arbitrary custom RWDs or Documents depots. Such configurations require
+separate load-order review before use.
+
+Run `python validate.py` and `python test_prepare.py` for byte-preservation and
+preparation/parser safety checks. These do not establish runtime performance.
+`StartupGuardTests.cs` exercises the actual guard inside built helpers against
+valid, missing and altered files. Multiplayer with differing localizations and
+keybinds remains a separate validation gate; this change adds no new cosmetic
+compatibility restrictions.

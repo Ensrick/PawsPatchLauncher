@@ -16,10 +16,10 @@ internal static class RigInject
 
     static int Main(string[] args)
     {
-        int id; uint minutes;
-        if (args.Length != 3 || !int.TryParse(args[0], out id) || !uint.TryParse(args[2], out minutes))
+        int id; uint minutes; long started;
+        if (args.Length != 5 || !int.TryParse(args[0], out id) || !uint.TryParse(args[2], out minutes) || minutes < 1 || minutes > 5 || !long.TryParse(args[4], out started))
         {
-            Console.Error.WriteLine("usage: RigInject.exe <process id> <rig folder> <autosave minutes>");
+            Console.Error.WriteLine("usage: RigInject.exe <process id> <rig folder> <autosave minutes> <expected exe> <start ticks>");
             return 2;
         }
         try
@@ -27,6 +27,8 @@ internal static class RigInject
             using (var game = Process.GetProcessById(id))
             {
                 string exe = game.MainModule.FileName;
+                if (!String.Equals(Path.GetFullPath(args[3]), exe, StringComparison.OrdinalIgnoreCase) || game.StartTime.ToUniversalTime().Ticks != started)
+                    throw new InvalidDataException("Test process identity changed");
                 if (!String.Equals(Path.GetFileName(exe), "k2.exe", StringComparison.OrdinalIgnoreCase) || Hash(exe) != GameHash)
                     throw new InvalidDataException("process " + id + " is not Kohan II 1.3.72");
                 var until = DateTime.UtcNow.AddSeconds(60);
@@ -48,6 +50,17 @@ internal static class RigInject
                     Console.WriteLine(line);
                     if (line.StartsWith("MULTIPLAYER_SAVES_READY", StringComparison.Ordinal)) ready = true;
                 }, minutes);
+#if PAW_TASK_STATUS
+                using (var memory = new PawPureFixes.NativeMemory(id, exe, game.StartTime.ToUniversalTime()))
+                {
+                    memory.Suspend();
+                    TaskStatusPatch.Install(memory, unchecked((uint)game.MainModule.BaseAddress.ToInt32()), delegate(string line)
+                    {
+                        Console.WriteLine(line);
+                        File.AppendAllText(Path.Combine(folder, "Logs", "task-status.log"), line + Environment.NewLine);
+                    });
+                }
+#endif
                 return ready ? 0 : 1;
             }
         }

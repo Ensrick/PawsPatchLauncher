@@ -96,7 +96,7 @@ public partial class StartupWindow : Window
             downloadCancellation.CancelAfter(StartupUpdateCheck.OfflineBudget);
             var watch = Stopwatch.StartNew();
             long previous = 0, lastTick = 0, receivedAtLastReport = 0;
-            var progress = new Progress<(long Received, long? Total)>(p =>
+            var progress = new CoalescingProgress<(long Received, long? Total)>(p =>
             {
                 if (_finished || _installing || _cancel.IsCancellationRequested) return;
                 // A slow transfer may continue indefinitely while bytes arrive. A stalled

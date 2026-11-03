@@ -14,6 +14,7 @@ $files=@("$baseline/$name.generated.cs","$registry/ExtendedRegistryPayload.cs","
 $identity=Join-Path $out 'LargeMapsIdentity.cs'
 [IO.File]::WriteAllText($identity,'internal static class LargeMapsLocal { internal const string TemplateHash="339307F847E16C4197986D834526ED946D33062FF13F889EC19B88AF10480D9E"; internal const string PatchVersion="0.4.0"; }')
 $files+=$identity
+$files+="$game/engine-crash-fixes/TaskStatusPatch.cs"
 foreach($f in 'TerrainRuntime','RandomMapPatch','ReleaseStartup','LobbyColorsNative','GamePresentation1372','RandomMapBundle','BuildFeatures','GameText','SyncDiagnostics1372'){$files+="$game/beta7/$f.cs"}
 foreach($f in 'PawAssistantRuntime','PawAssistantParties','CityPartyStore','CityDevelopmentText','CityPlanner','CityMilitiaPlanner','CityPolicy','CityResourceOrder','CitySettingsForm'){$files+="$game/city-assistant/$f.cs"}
 $files+="$game/fast-transfer/FastTransfer.cs","$game/fast-transfer/FastTransferTests.cs","$game/lobby-compatibility/PawLobbyCompatibility.cs"

@@ -50,6 +50,31 @@ static int route_fighting(U image,U actor){
   * members too: a company can still be in Move while its members engage. */
  return vt==0x4f4dc4||vt==0x4f4e20||vt==0x4f4e4c||vt==0x4f4e78||vt==0x4f4ea4||vt==0x4f4fb4;
 }
+/* Film players deliberately have native +c == 0: the recorded commands replace
+ * their strategic controllers. The loaded WorldCreator still retains the
+ * serialized kingdom setup (108-byte rows, internal ID at +0, AI profile +2c).
+ * Use that original profile only for synchronous routing during film playback.
+ * Do not change native player flags, create AI controllers, or guess from names,
+ * races, difficulty/handicap, slot numbers or localized display text. */
+static U route_string_length(U p){
+ U n;if(!p)return 0;n=P(p,-12);
+ return n&&n<=128&&((W*)p)[n]==0?n:0;
+}
+static int route_film_bot(U image,U session,U kingdom){
+ U creator=P(session,0x7c),rows,n,i,id=P(kingdom,0x18),len=route_string_length(id),found=0,profile=0;
+ if(!creator||P(creator,0)!=image+0x4fdfe4||!len)return 0;
+ rows=P(creator,0x14);n=P(creator,0x18);
+ if(!rows||!n||n>96||P(creator,0x1c)<n)return 0;
+ for(i=0;i<n;i++){
+  U row=rows+i*108,key=P(row,0),j;
+  if(route_string_length(key)!=len)continue;
+  for(j=0;j<len&&((W*)id)[j]==((W*)key)[j];j++);
+  if(j!=len)continue;
+  if(found)return 0;
+  found=1;profile=P(row,0x2c);
+ }
+ return found&&route_string_length(profile)!=0;
+}
 /* Session player records exist on every peer. Strategic AI controllers and
  * goals exist only on the host and must never decide a simulation path. The
  * native player type (+c) and assigned live kingdom (+28) are shared slots,
@@ -59,7 +84,13 @@ static U route_bot_player(U image,U kingdom){
  if(!session||!kingdom)return 0;
  for(node=P(session,0xc8),i=0;node&&i++<64;node=P(node,4)){
   U p=P(node,0);if(!p||P(p,0)!=image+0x4bd914)return 0;
-  if(P(p,0x28)==kingdom){if(found||!*(unsigned char*)(p+0xc))return 0;found=p;}
+  if(P(p,0x28)==kingdom){
+   if(found)return 0;
+   if(P(session,0x64)==2&&P(session,0xf0)==4){
+    if(!*(unsigned char*)(p+0xe)||!route_film_bot(image,session,kingdom))return 0;
+   }else if(!*(unsigned char*)(p+0xc))return 0;
+   found=p;
+  }
  }
  return node?0:found;
 }

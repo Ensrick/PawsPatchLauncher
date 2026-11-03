@@ -231,15 +231,21 @@ __declspec(dllexport) DWORD WINAPI PawInstall(void *raw) {
 }
 BOOL WINAPI DllMain(HINSTANCE instance,DWORD reason,LPVOID unused) {return TRUE;}
 
-/* Finish Windows DLL_THREAD_ATTACH before the launcher pauses other threads.
- * The ready/go rendezvous avoids suspending a thread that owns the loader lock. */
+/* Finish DLL thread notifications and recovery preparation before readiness.
+ * After go, only guard checks and memory writes may run: other threads may own
+ * loader/heap/CRT locks until the launcher resumes the game. */
 typedef struct {volatile LONG ready;volatile LONG go;DWORD result;Config config;} InstallRequest;
 __declspec(dllexport) DWORD WINAPI PawInstallQueued(void *raw) {
     InstallRequest *request=raw;
     if(!request)return 50;
+    DWORD result=0;
+#ifdef PAW_RECOVERY_INTEGRATED
+    if(request->config.magic!=MAGIC)result=11;
+    else result=PawRecoveryPrepare(&request->config.recovery);
+#endif
     InterlockedExchange(&request->ready,1);
     while(!request->go)Sleep(1);
-    DWORD result=PawInstall(&request->config);request->result=result;
+    if(!result)result=PawInstall(&request->config);request->result=result;
     InterlockedExchange(&request->ready,2);
     return result;
 }

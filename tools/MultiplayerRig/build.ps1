@@ -7,6 +7,7 @@ param(
     [string]$MappedImage
 )
 $ErrorActionPreference = 'Stop'
+$OutputDirectory=[IO.Path]::GetFullPath($OutputDirectory)
 $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 New-Item -ItemType Directory -Force $OutputDirectory | Out-Null
 & $NativeCompiler -shared -Wall -Werror (Join-Path $PSScriptRoot 'rig_shfolder.c') -o (Join-Path $OutputDirectory 'shfolder.dll') -lkernel32
@@ -20,4 +21,8 @@ $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
     "/resource:$(Join-Path $native 'paws_multiplayer_saves.dll'),PawMultiplayerSavesNative" `
     (Join-Path $repo 'game\multiplayer-saves\MultiplayerSaves.cs') (Join-Path $PSScriptRoot 'RigInject.cs')
 if ($LASTEXITCODE -ne 0) { throw 'RigInject build failed.' }
+& $compiler /nologo /target:exe /platform:x86 "/out:$(Join-Path $OutputDirectory 'FolderTests.exe')" (Join-Path $PSScriptRoot 'FolderTests.cs')
+if ($LASTEXITCODE -ne 0) { throw 'Folder test build failed.' }
+& (Join-Path $OutputDirectory 'FolderTests.exe') (Join-Path $OutputDirectory 'shfolder.dll') (Join-Path $OutputDirectory 'folder-test-profile')
+if ($LASTEXITCODE -ne 0) { throw 'Private folder checks failed.' }
 "rig built in $OutputDirectory"

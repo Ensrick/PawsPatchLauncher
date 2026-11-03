@@ -110,7 +110,7 @@ internal static class HeadlessChecks
 
             Set("_game", new GameInstallation(game, Path.Combine(game, "k2.exe"), "fixture", "stable"));
             Set("_gameRunningProbe", new Func<bool>(() => running));
-            Set("_startProcess", new Func<ProcessStartInfo, Process?>(info => { started.Add(info); return Process.GetCurrentProcess(); }));
+            Set("_startGameProcess", new Func<ProcessStartInfo, Process?>(info => { started.Add(info); return Process.GetCurrentProcess(); }));
             typeof(MainWindow).GetMethod("ApplyLanguage", flags)!.Invoke(window, null);
             Check(await (Task<bool>)typeof(MainWindow).GetMethod("CheckFeedAsync", flags)!.Invoke(window, [false])!, "the signed local feed was not accepted");
 
@@ -125,7 +125,7 @@ internal static class HeadlessChecks
             Check((await Command("set", "colors")).Code == HeadlessMode.Usage && (await Command("set", "bogus=on")).Code == HeadlessMode.Usage
                 && (await Command("set", "paw=maybe")).Code == HeadlessMode.Usage && (await Command("set", "spawn=x9")).Code == HeadlessMode.Usage,
                 "malformed set pairs, unknown keys and invalid values are usage errors");
-            Check((await Command("select-game", "arcane-wars")).Code == HeadlessMode.Usage, "select-game accepts only Vanilla and Immortals");
+            Check((await Command("select-game", "nonsense")).Code == HeadlessMode.Usage, "select-game rejects an unknown game");
 
             // Fresh game: nothing installed.
             var status = await Command("status");

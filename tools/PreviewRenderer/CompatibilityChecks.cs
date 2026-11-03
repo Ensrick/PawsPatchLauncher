@@ -54,6 +54,9 @@ internal static class CompatibilityChecks
             Check(Field<Border?>(w,"_compatibilityPopup") is null,"An uninstalled mod opened an automatic update warning");
             C<Button>("GameCompatibilityButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             var popup=Field<Border>(w,"_compatibilityPopup");
+            Check(((DockPanel)((StackPanel)popup!.Child).Children[0]).Children.OfType<TextBlock>().Single().Text
+                == (string)Call(w,"T","Доступны файловые изменения","File changes available")!,
+                "file-only compatibility heading incorrectly rejects the entire game");
             Check(popup is not null&&!C<Button>("LaunchButton").IsEnabled&&C<TextBlock>("GameCompatibilityHint").Visibility==Visibility.Visible,"warning / launch gate absent");
             foreach(var name in new[]{"ColorsToggle","IndependentHostilityToggle","IgnoreDesyncToggle"})
                 Check(!C<CheckBox>(name).IsEnabled&&C<CheckBox>(name).IsChecked==false,"native option not visibly locked: "+name);

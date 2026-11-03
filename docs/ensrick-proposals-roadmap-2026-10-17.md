@@ -6,6 +6,11 @@ the independently investigated animation Stop crash guard.
 
 ## 1. Establish repeatable multiplayer regression tests
 
+Local integration is now available under `tools/MultiplayerRig` with an isolated
+Vanilla fixture and retained per-run evidence. SaveCopy passed a real two-peer
+run; process cleanup and private-folder tests also passed. The other dedicated
+scenarios, whole-patch recovery and two-machine validation remain separate gates.
+
 [PR #12](https://github.com/VasiliyPaw/PawsPatchLauncher/pull/12) supplies a
 developer-only two-copy LAN rig: save copies, autosaves, hosting a received save
 and original-host departure. Review process ownership, cleanup, isolated user
@@ -18,6 +23,11 @@ already covers the failure described in [issue #10](https://github.com/VasiliyPa
 Retain it as a regression case rather than introducing a duplicate fix.
 
 ## 2. Investigate terrain texture pressure with the extended camera
+
+Local integration and an initial moving-camera A/B comparison are complete in
+`game/terrain-texture-pool`. On the same Vanilla 384 x 384 save at verified zoom
+2.0, offloads fell from 1,790 to zero. This is still experimental and unpublished;
+see [evidence and remaining gates](verification-terrain-pool-2026-10-17.md).
 
 [PR #16](https://github.com/VasiliyPaw/PawsPatchLauncher/pull/16) increases the
 terrain texture pool from 120 to 1024 entries, approximately 8 to 64 MB. The

@@ -30,6 +30,10 @@ def main():
     parser.add_argument('--dotnet',type=Path)
     parser.add_argument('--mapped-image',type=Path)
     parser.add_argument('--recovery-native',type=Path,help='Verified integrated recovery/lobby DLL for Pure beta only')
+    parser.add_argument('--terrain-texture-pool',action='store_true',help='Require the matching 1024-entry terrain overlay')
+    parser.add_argument('--company-behavior',action='store_true')
+    parser.add_argument('--selection-native',type=Path,help='Verified SelectionScrollPayload, GroupFormationPayload and GroupFormationRadiusPayload sources')
+    parser.add_argument('--group-speed-native',type=Path,help='Verified GroupMovementSpeedPayload source')
     parser.add_argument('--uniform-ui',action='store_true',help='Built-in native aspect correction; requires matching stock-frame data')
     parser.add_argument('--saves-native',type=Path,help='Verified multiplayer saves DLL, paired with the recovery beta')
     args=parser.parse_args(); out=args.out.resolve(); out.mkdir(parents=True,exist_ok=False)
@@ -39,7 +43,15 @@ def main():
     source=ROOT/'game/pure-fixes'; shared=ROOT/'game/beta7'
     sources=[source/(name+'.cs') for name in ('Program','NativeMemory','PurePatch','PureChannel','PureBetaRuntime','PureFamilyRelations')]
     sources += [shared/(name+'.cs') for name in ('TerrainRuntime','ReleaseStartup','RandomMapPatch','RandomMapBundle','GamePresentation1372','GameText','BuildFeatures','LobbyColorsNative','SyncDiagnostics1372','k2_paws_family_herd_relations_1372')]
+    if args.company_behavior: sources += [ROOT/'game/company-behavior'/(n+'.cs') for n in ('GroupRetreatPriorityPatch','CompanyExhaustionPatch','PawCompanyOptions')]
+    if args.selection_native:
+        sources += [ROOT/'game/selection-scroll'/(n+'Patch.cs') for n in ('SelectionScroll','GroupFormation','GroupFormationRadius')]
+        sources += [args.selection_native/(n+'Payload.cs') for n in ('SelectionScroll','GroupFormation','GroupFormationRadius')]
+    if args.group_speed_native:
+        sources += [ROOT/'game/group-attack-recovery'/(n+'Patch.cs') for n in ('GroupAttackRecovery','GroupMovementSpeed')]
+        sources += [args.group_speed_native/'GroupMovementSpeedPayload.cs']
     sources += [ROOT/'game/fast-transfer/FastTransfer.cs', ROOT/'game/lobby-compatibility/PawLobbyCompatibility.cs',
+                ROOT/'game/engine-crash-fixes/TaskStatusPatch.cs',
                 ROOT/'game/graphics-diagnostics/GraphicsDiagnostics.cs', ROOT/'game/ai-policy/PawAiOptions.cs',
                 ROOT/'game/ai-policy/AiDiagnosticsSnapshot.cs', args.native/'nightmare-data/NightmareDifficultyData.cs']
     for folder,(generated,patch,payload) in NATIVE.items():
@@ -71,7 +83,11 @@ def main():
         for sync in (False,True):
             name='k2_paws_pure'+('_colors' if colors else '')+('_sync' if sync else '')+('_fixes' if not(colors or sync) else '')+'_1372.exe'
             flags=['PAW_PURE_EXTENDED','PAW_PURE_CHANNEL','PAW_PURE_FAST_TRANSFER','PAW_MENU_PRESENTATION','HERD_RELATIONS_ONLY','PROVOKED_NEUTRAL_ATTACK','RACE_RELATIONS','PRESERVE_NONINDEPENDENT_OWNER']
+            if args.company_behavior: flags.append('COMPANY_BEHAVIOR')
+            if args.selection_native: flags.append('SELECTION_SCROLL')
+            if args.group_speed_native: flags.append('GROUP_ATTACK_RECOVERY')
             if args.uniform_ui: flags.append('PAW_UNIFORM_UI')
+            if args.terrain_texture_pool: flags.append('TERRAIN_TEXTURE_POOL')
             if args.recovery_native: flags.append('PAW_PURE_RECOVERY')
             if args.saves_native: flags.append('PAW_PURE_MULTIPLAYER_SAVES')
             src=list(sources); res=dict(resources)

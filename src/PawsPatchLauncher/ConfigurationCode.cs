@@ -56,6 +56,8 @@ public static class ConfigurationCode
         if (dataOnly) parts = parts[..^1];
         core = parts.LastOrDefault() != "PP0";
         if (!core) parts = parts[..^1];
+        var exhaustion = parts.LastOrDefault() == "ZM1";
+        if (exhaustion) parts = parts[..^1];
         var improvedAi = parts.LastOrDefault() == "AI1";
         if (improvedAi) parts = parts[..^1];
         if (parts.Length is not (10 or 11) || parts[0] != "PAW" || parts[1] is not ("BETA" or "STABLE"))
@@ -69,6 +71,7 @@ public static class ConfigurationCode
         var result = new UserSettings
         {
             PawPatchEnabled = core,
+            IgnoreZeroMorale = exhaustion,
             ImprovedAi = improvedAi,
             DataOnly = dataOnly,
             Channel = parts[1].ToLowerInvariant(), IndependentHostility = Flag(2, "IW"),
@@ -78,6 +81,7 @@ public static class ConfigurationCode
             DisablePowersAndShards = parts.Length == 10 || Flag(10, "PS"),
             RoamingSpawnMode = parts[3] switch { "SP4" => "x4", "SP2" => "x2", "SP1" => "standard", _ => throw new FormatException("Invalid SP field") }
         };
+        if (exhaustion && (!core || dataOnly)) throw new FormatException("Exhaustion requires the enabled Arcane Wars patch.");
         if (improvedAi && (!core || dataOnly))
             throw new FormatException("Improved AI requires the enabled Arcane Wars patch.");
         if (result.LargeMapSizes != core)
@@ -121,6 +125,7 @@ public static class ConfigurationCode
         target.RoamingSpawnMode = source.RoamingSpawnMode;
         target.AdditionalRoamingCompanies = source.AdditionalRoamingCompanies;
         target.SiegeBalance = source.SiegeBalance;
+        target.IgnoreZeroMorale = source.IgnoreZeroMorale;
         target.ImprovedAi = source.ImprovedAi;
         target.DisablePowersAndShards = source.DisablePowersAndShards;
         target.LargeMapSizes = source.PawPatchEnabled;
@@ -150,7 +155,7 @@ public static class ConfigurationCode
         var oos = settings.DesyncMode.Equals("continue", StringComparison.OrdinalIgnoreCase) ? "1" : "0";
         // Legacy codes already mean powers/shards disabled; preserve their fingerprints.
         var powers = settings.DisablePowersAndShards ? "" : "-PS0";
-        return $"PAW-{channel}-IW{Bit(settings.IndependentHostility)}-SP{spawn}-RM{Bit(settings.AdditionalRoamingCompanies)}-SG{Bit(settings.SiegeBalance)}-LM{Bit(settings.PawPatchEnabled)}-RU{Bit(settings.RussianLocalization)}-CL{Bit(settings.CustomPlayerColors)}-OOS{oos}{powers}{(settings.ImprovedAi ? "-AI1" : "")}{(settings.PawPatchEnabled ? "" : "-PP0")}{(settings.DataOnly ? "-DATA" : "")}";
+        return $"PAW-{channel}-IW{Bit(settings.IndependentHostility)}-SP{spawn}-RM{Bit(settings.AdditionalRoamingCompanies)}-SG{Bit(settings.SiegeBalance)}-LM{Bit(settings.PawPatchEnabled)}-RU{Bit(settings.RussianLocalization)}-CL{Bit(settings.CustomPlayerColors)}-OOS{oos}{powers}{(settings.ImprovedAi ? "-AI1" : "")}{(settings.IgnoreZeroMorale ? "-ZM1" : "")}{(settings.PawPatchEnabled ? "" : "-PP0")}{(settings.DataOnly ? "-DATA" : "")}";
     }
 
     private static int Bit(bool value) => value ? 1 : 0;

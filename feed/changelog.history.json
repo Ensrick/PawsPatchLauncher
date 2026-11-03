@@ -2,6 +2,153 @@
   "stable": [
     {
       "category": "launcher",
+      "version": "1.0.7",
+      "publishedAt": "2026-11-01",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.7",
+        "en": "Paw’s Launcher 1.0.7",
+        "de": "Paw’s Launcher 1.0.7",
+        "fr": "Paw’s Launcher 1.0.7",
+        "cs": "Paw’s Launcher 1.0.7",
+        "uk": "Paw’s Launcher 1.0.7"
+      },
+      "body": {
+        "ru": "- Отдельная вкладка «Моды» для пользовательских RWD: добавление, порядок загрузки, замена архивов, совпадающие файлы, применение и отмена.\n- Перед выходом со вкладки или запуском игры нужно применить либо отменить изменения модов.\n- Понятное обозначение файлового режима, включая Kohan II 1.3.68. Функции изменения памяти требуют совместимой версии игры.\n- Ошибка публикации дополнительных сведений о конфигурации больше не мешает загрузке списка друзей.",
+        "en": "- Dedicated Mods page for custom RWDs: import, load order, archive replacement, overlapping files, apply and undo.\n- Apply or undo pending mod edits before leaving the page or launching the game.\n- Clear file-only mode labeling, including Kohan II 1.3.68. Memory-patching features require a compatible game version.\n- Rejected optional configuration metadata no longer prevents the friends list from loading.",
+        "de": "- Eigene Mods-Seite für RWD-Dateien: Import, Ladereihenfolge, Archiversatz, Dateiüberschneidungen, Anwenden und Verwerfen.\n- Änderungen vor dem Verlassen der Seite oder dem Spielstart anwenden oder verwerfen.\n- Klare Kennzeichnung des Modus für reine Dateiänderungen, auch für Kohan II 1.3.68. Speicher-Patches benötigen eine kompatible Spielversion.\n- Abgelehnte optionale Konfigurationsdaten verhindern nicht mehr das Laden der Freundesliste.",
+        "fr": "- Page Mods dédiée aux RWD personnalisés : importation, ordre de chargement, remplacement des archives, fichiers communs, application et annulation.\n- Appliquez ou annulez les changements avant de quitter la page ou de lancer le jeu.\n- Indication claire du mode limité aux fichiers, notamment pour Kohan II 1.3.68. Les modifications en mémoire nécessitent une version compatible du jeu.\n- Le rejet de métadonnées facultatives de configuration ne bloque plus le chargement de la liste d’amis.",
+        "cs": "- Samostatná stránka Mody pro vlastní RWD: import, pořadí načítání, nahrazení archivu, shodné soubory, použití a zrušení změn.\n- Před opuštěním stránky nebo spuštěním hry změny použijte nebo zrušte.\n- Jasné označení režimu pouze se změnami souborů, včetně Kohan II 1.3.68. Úpravy paměti vyžadují kompatibilní verzi hry.\n- Odmítnuté volitelné údaje o konfiguraci již nebrání načtení seznamu přátel.",
+        "uk": "- Окрема вкладка «Моди» для власних RWD: додавання, порядок завантаження, заміна архівів, спільні файли, застосування та скасування.\n- Перед виходом із вкладки або запуском гри потрібно застосувати чи скасувати зміни модів.\n- Зрозуміле позначення файлового режиму, зокрема для Kohan II 1.3.68. Зміни пам’яті потребують сумісної версії гри.\n- Відхилення додаткових даних конфігурації більше не заважає завантаженню списку друзів."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.6",
+      "publishedAt": "2026-10-29",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.6",
+        "en": "Paw’s Launcher 1.0.6",
+        "de": "Paw’s Launcher 1.0.6",
+        "fr": "Paw’s Launcher 1.0.6",
+        "cs": "Paw’s Launcher 1.0.6",
+        "uk": "Paw’s Launcher 1.0.6"
+      },
+      "body": {
+        "ru": "- В общем чате теперь указаны дата и время сообщения.\n- Убрана всплывающая подсказка над полем ввода в общем и личном чате.\n- Предложение создать архив после вылета игры перенесено в настройки.\n- Добавлен переключатель «Игнорировать нулевой боевой дух» для новой беты Arcane Wars. Он требует включённого Paw’s Patch, не зависит от других опций и по умолчанию выключен.",
+        "en": "- Community messages now show their date and time.\n- Removed hover tooltips from community and private message input fields.\n- Moved the post-crash diagnostic archive prompt to Settings.\n- Added “Ignore zero morale” for the new Arcane Wars beta. It requires Paw’s Patch, is independent of other options and is off by default.",
+        "de": "- Nachrichten im allgemeinen Chat zeigen jetzt Datum und Uhrzeit.\n- Hover-Hinweise über den Eingabefeldern im allgemeinen und privaten Chat entfernt.\n- Die Aufforderung zum Diagnosearchiv nach einem Spielabsturz befindet sich jetzt nur in den Einstellungen.\n- Neue Option „Null Kampfmoral ignorieren“ für die Arcane-Wars-Beta. Sie benötigt Paw’s Patch, ist von anderen Optionen unabhängig und standardmäßig ausgeschaltet.",
+        "fr": "- Les messages du chat général affichent désormais la date et l’heure.\n- Suppression des infobulles au-dessus des champs de saisie des chats général et privé.\n- La proposition de créer une archive de diagnostic après un plantage est désormais limitée aux paramètres.\n- Nouvelle option « Ignorer le moral nul » pour la bêta Arcane Wars. Elle nécessite Paw’s Patch, est indépendante des autres options et désactivée par défaut.",
+        "cs": "- Zprávy ve společném chatu nyní zobrazují datum a čas.\n- Odstraněny vyskakovací nápovědy nad poli pro psaní ve společném i soukromém chatu.\n- Nabídka vytvoření diagnostického archivu po pádu hry je nyní pouze v nastavení.\n- Nová volba „Ignorovat nulovou morálku“ pro betu Arcane Wars. Vyžaduje zapnutý Paw’s Patch, je nezávislá na ostatních volbách a ve výchozím stavu vypnutá.",
+        "uk": "- У загальному чаті тепер указано дату й час повідомлення.\n- Прибрано спливні підказки над полем введення в загальному та приватному чаті.\n- Пропозицію створити архів після вильоту гри перенесено до налаштувань.\n- Додано перемикач «Ігнорувати нульовий бойовий дух» для нової бети Arcane Wars. Він потребує ввімкненого Paw’s Patch, не залежить від інших опцій і типово вимкнений."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.4",
+      "publishedAt": "2026-10-26",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.4",
+        "en": "Paw’s Launcher 1.0.4",
+        "de": "Paw’s Launcher 1.0.4",
+        "fr": "Paw’s Launcher 1.0.4",
+        "cs": "Paw’s Launcher 1.0.4",
+        "uk": "Paw’s Launcher 1.0.4"
+      },
+      "body": {
+        "ru": "Загрузка, проверка файлов, распаковка, установка и откат теперь выполняются в фоне, чтобы интерфейс оставался отзывчивым. Обновления прогресса объединяются и не перегружают очередь интерфейса. Выбор архива ModDB и отмена сохраняют корректную работу.",
+        "en": "Downloads, file verification, extraction, installation and rollback now run in the background to keep the interface responsive. Progress updates are coalesced to avoid flooding the UI queue. ModDB archive selection and cancellation remain supported.",
+        "de": "Downloads, Dateiprüfung, Entpacken, Installation und Rücksetzung laufen jetzt im Hintergrund, damit die Oberfläche bedienbar bleibt. Fortschrittsmeldungen werden gebündelt, um die Oberfläche nicht zu überlasten. ModDB-Archivauswahl und Abbrechen bleiben verfügbar.",
+        "fr": "Le téléchargement, la vérification des fichiers, l’extraction, l’installation et la restauration s’exécutent désormais en arrière-plan pour garder une interface réactive. Les mises à jour de progression sont regroupées. La sélection des archives ModDB et l’annulation restent disponibles.",
+        "cs": "Stahování, ověřování souborů, rozbalování, instalace a vrácení změn nyní běží na pozadí, aby rozhraní zůstalo plynulé. Aktualizace průběhu se slučují a nepřetěžují rozhraní. Výběr archivu ModDB i zrušení operace zůstávají dostupné.",
+        "uk": "Завантаження, перевірка файлів, розпакування, встановлення та відкат тепер виконуються у фоні, щоб інтерфейс залишався чутливим. Оновлення прогресу об’єднуються й не перевантажують чергу інтерфейсу. Вибір архіву ModDB та скасування працюють коректно."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.3",
+      "publishedAt": "2026-10-22",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.3",
+        "en": "Paw’s Launcher 1.0.3",
+        "de": "Paw’s Launcher 1.0.3",
+        "fr": "Paw’s Launcher 1.0.3",
+        "cs": "Paw’s Launcher 1.0.3",
+        "uk": "Paw’s Launcher 1.0.3"
+      },
+      "body": {
+        "ru": "Улучшены пользовательские RWD-моды: номера порядка загрузки, совпадения файлов между включёнными модами и список этих файлов в подсказке. Архив можно заменить с сохранением позиции и включения, в том числе при лимите 32 мода. Кнопка «Отменить изменения» возвращает сохранённый список. Изменения устанавливаются только после «Применить моды». Спасибо Ensrick за предложение.",
+        "en": "Improved custom RWD mods: load-order numbers, matching files between enabled mods, and resource paths in tooltips. Replace an archive while retaining its position and enabled state, including at the 32-mod limit. Undo changes restores the saved list. Changes are installed only after Apply mods. Thanks to Ensrick for the proposal.",
+        "de": "Eigene RWD-Mods wurden verbessert: Nummern für die Ladereihenfolge, übereinstimmende Dateien zwischen aktiven Mods und Dateipfade in Tooltips. Archive lassen sich ersetzen, ohne Position und Aktivierungsstatus zu verlieren, auch bei 32 Mods. Änderungen verwerfen stellt die gespeicherte Liste wieder her. Erst Mods anwenden installiert die Änderungen. Vielen Dank an Ensrick für den Vorschlag.",
+        "fr": "Amélioration des mods RWD personnalisés : numéros d’ordre de chargement, fichiers communs entre les mods activés et chemins dans les infobulles. Remplacez une archive en conservant sa position et son activation, même à la limite de 32 mods. Annuler les modifications restaure la liste enregistrée. Les changements sont installés uniquement après Appliquer les mods. Merci à Ensrick pour cette proposition.",
+        "cs": "Vylepšené vlastní RWD mody: čísla pořadí načítání, shodné soubory mezi zapnutými mody a cesty v nápovědě. Archiv lze nahradit se zachováním pozice a zapnutí, i při limitu 32 modů. Vrátit změny obnoví uložený seznam. Změny se instalují až po Použít mody. Děkujeme Ensrickovi za návrh.",
+        "uk": "Покращено користувацькі RWD-моди: номери порядку завантаження, збіги файлів між увімкненими модами та перелік файлів у підказці. Архів можна замінити зі збереженням позиції та стану ввімкнення, навіть за ліміту 32 моди. Кнопка «Скасувати зміни» відновлює збережений список. Зміни встановлюються лише після «Застосувати моди». Дякуємо Ensrick за пропозицію."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.2",
+      "publishedAt": "2026-10-21",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.2",
+        "en": "Paw’s Launcher 1.0.2",
+        "de": "Paw’s Launcher 1.0.2",
+        "fr": "Paw’s Launcher 1.0.2",
+        "cs": "Paw’s Launcher 1.0.2",
+        "uk": "Paw’s Launcher 1.0.2"
+      },
+      "body": {
+        "ru": "Исправлен импорт пользовательских RWD-модов с дисков FAT/exFAT при ошибке проверки атрибутов Windows. Проверки ссылок, типа файла и содержимого архива сохранены. Спасибо Ensrick за исправление.",
+        "en": "Fixed custom RWD mod import from FAT/exFAT drives when Windows rejects the file-attribute query. Link, file-type and archive-content validation remain in place. Thanks to Ensrick for the fix.",
+        "de": "Der Import eigener RWD-Mods von FAT/exFAT-Laufwerken bei einem Fehler der Windows-Dateiattributabfrage wurde korrigiert. Prüfungen von Verknüpfungen, Dateityp und Archivinhalt bleiben erhalten. Vielen Dank an Ensrick für die Korrektur.",
+        "fr": "Correction de l’import des mods RWD personnalisés depuis les lecteurs FAT/exFAT lorsque Windows refuse la requête des attributs du fichier. Les vérifications des liens, du type de fichier et du contenu de l’archive sont conservées. Merci à Ensrick pour ce correctif.",
+        "cs": "Opraven import vlastních RWD modů z disků FAT/exFAT při chybě dotazu na atributy souboru ve Windows. Kontroly odkazů, typu souboru a obsahu archivu zůstávají zachovány. Děkujeme Ensrickovi za opravu.",
+        "uk": "Виправлено імпорт користувацьких RWD-модів із дисків FAT/exFAT у разі помилки перевірки атрибутів Windows. Перевірки посилань, типу файлу та вмісту архіву збережено. Дякуємо Ensrick за виправлення."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.1",
+      "publishedAt": "2026-10-19",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.1",
+        "en": "Paw’s Launcher 1.0.1",
+        "de": "Paw’s Launcher 1.0.1",
+        "fr": "Paw’s Launcher 1.0.1",
+        "cs": "Paw’s Launcher 1.0.1",
+        "uk": "Paw’s Launcher 1.0.1"
+      },
+      "body": {
+        "ru": "Исправлен вылет при запуске Vanilla на Kohan II 1.3.68 после игры с расширенным числом королевств. Лаунчер восстанавливает несовместимые настройки лобби с учётом версии игры и сохраняет резервную копию. Общие настройки, управление и сохранения не изменяются. Спасибо Ensrick за исправление.",
+        "en": "Fixed a Vanilla startup crash on Kohan II 1.3.68 after playing with extra kingdoms. The launcher repairs incompatible lobby settings using defaults for the detected game version and keeps a backup. General preferences, keybindings and saved games are unchanged. Thanks to Ensrick for the fix.",
+        "de": "Ein Absturz beim Start von Vanilla unter Kohan II 1.3.68 nach Spielen mit zusätzlichen Königreichen wurde behoben. Der Launcher repariert inkompatible Lobby-Einstellungen passend zur Spielversion und erstellt eine Sicherung. Allgemeine Einstellungen, Tastenbelegung und Spielstände bleiben unverändert. Vielen Dank an Ensrick für die Korrektur.",
+        "fr": "Correction d’un plantage au lancement de Vanilla sur Kohan II 1.3.68 après une partie avec des royaumes supplémentaires. Le lanceur répare les paramètres de salon incompatibles selon la version du jeu et conserve une sauvegarde. Les préférences générales, les raccourcis clavier et les parties sauvegardées restent inchangés. Merci à Ensrick pour ce correctif.",
+        "cs": "Opraven pád při spuštění Vanilla v Kohan II 1.3.68 po hraní s rozšířeným počtem království. Launcher opraví nekompatibilní nastavení lobby podle verze hry a uchová zálohu. Obecná nastavení, klávesové zkratky a uložené hry zůstávají beze změny. Děkujeme Ensrickovi za opravu.",
+        "uk": "Виправлено виліт під час запуску Vanilla на Kohan II 1.3.68 після гри з розширеною кількістю королівств. Лаунчер відновлює несумісні налаштування лобі відповідно до версії гри та зберігає резервну копію. Загальні налаштування, керування та збереження не змінюються. Дякуємо Ensrick за виправлення."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.0",
+      "publishedAt": "2026-10-19",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.0",
+        "en": "Paw’s Launcher 1.0.0",
+        "de": "Paw’s Launcher 1.0.0",
+        "fr": "Paw’s Launcher 1.0.0",
+        "cs": "Paw’s Launcher 1.0.0",
+        "uk": "Paw’s Launcher 1.0.0"
+      },
+      "body": {
+        "ru": "- Arcane Wars доступен всем пользователям, включая гостей.\n- Базовый мод загружается с ModDB, чтобы автор видел интерес к нему по счётчику скачиваний. Патч Даркана 0.82.1.8 fix v2 устанавливается отдельно и автоматически.\n- Если ModDB требует проверку в браузере, лаунчер поможет открыть сайт и выбрать скачанный RAR. Архивы и игровые файлы проверяются перед установкой.\n- Новое окно загрузки в стиле лаунчера. Тестовая кнопка повторной загрузки удалена.\n- Содержимое мода не изменено; сохранена сетевая совместимость с прежним пакетом.",
+        "en": "- Arcane Wars is available to everyone, including guests.\n- The base mod comes from ModDB so the author can see interest through its download count. Darquan’s 0.82.1.8 fix v2 patch is applied separately and automatically.\n- If ModDB requires a browser check, the launcher helps you open the site and select the downloaded RAR. Archives and game files are verified before installation.\n- A download dialog matching the launcher design. The test-only retry button has been removed.\n- Mod contents are unchanged; network compatibility with the previous package is preserved.",
+        "de": "- Arcane Wars ist für alle verfügbar, auch für Gäste.\n- Die Basismod wird von ModDB heruntergeladen, damit der Autor das Interesse am Downloadzähler ablesen kann. Darquans Patch 0.82.1.8 fix v2 wird separat und automatisch installiert.\n- Verlangt ModDB eine Browserprüfung, hilft der Launcher beim Öffnen der Seite und Auswählen des heruntergeladenen RAR-Archivs. Archive und Spieldateien werden vor der Installation geprüft.\n- Neuer Downloaddialog im Launcher-Stil; die Testschaltfläche zum erneuten Herunterladen wurde entfernt.\n- Mod-Inhalte bleiben unverändert; Netzwerkkompatibilität zum bisherigen Paket bleibt erhalten.",
+        "fr": "- Arcane Wars est accessible à tous, y compris aux invités.\n- Le mod de base provient de ModDB pour que l’auteur puisse suivre l’intérêt grâce au compteur de téléchargements. Le correctif 0.82.1.8 fix v2 de Darquan est appliqué séparément et automatiquement.\n- Si ModDB demande une vérification dans le navigateur, le lanceur aide à ouvrir le site et à sélectionner l’archive RAR téléchargée. Les archives et fichiers du jeu sont vérifiés avant installation.\n- Nouvelle fenêtre de téléchargement au style du lanceur ; le bouton de test a été supprimé.\n- Le contenu du mod est inchangé ; la compatibilité réseau avec l’ancien paquet est conservée.",
+        "cs": "- Arcane Wars je dostupný všem, včetně hostů.\n- Základní mod se stahuje z ModDB, aby autor mohl sledovat zájem podle počtu stažení. Darquanova oprava 0.82.1.8 fix v2 se instaluje samostatně a automaticky.\n- Pokud ModDB vyžaduje ověření v prohlížeči, launcher pomůže otevřít web a vybrat stažený archiv RAR. Archivy a herní soubory se před instalací ověřují.\n- Nové okno stahování ve stylu launcheru; testovací tlačítko opakovaného stahování bylo odstraněno.\n- Obsah modu se nezměnil; síťová kompatibilita s předchozím balíčkem je zachována.",
+        "uk": "- Arcane Wars доступний усім користувачам, включно з гостями.\n- Базовий мод завантажується з ModDB, щоб автор бачив інтерес за лічильником завантажень. Патч Даркана 0.82.1.8 fix v2 встановлюється окремо й автоматично.\n- Якщо ModDB потребує перевірки в браузері, лаунчер допоможе відкрити сайт і вибрати завантажений RAR. Архіви та ігрові файли перевіряються перед встановленням.\n- Нове вікно завантаження у стилі лаунчера. Тестову кнопку повторного завантаження прибрано.\n- Вміст моду не змінено; збережено мережеву сумісність із попереднім пакетом."
+      }
+    },
+    {
+      "category": "launcher",
       "version": "0.9.7",
       "publishedAt": "2026-10-17",
       "title": {
@@ -1171,6 +1318,513 @@
     }
   ],
   "beta": [
+    {
+      "category": "launcher",
+      "version": "1.0.7",
+      "publishedAt": "2026-11-01",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.7",
+        "en": "Paw’s Launcher 1.0.7",
+        "de": "Paw’s Launcher 1.0.7",
+        "fr": "Paw’s Launcher 1.0.7",
+        "cs": "Paw’s Launcher 1.0.7",
+        "uk": "Paw’s Launcher 1.0.7"
+      },
+      "body": {
+        "ru": "- Отдельная вкладка «Моды» для пользовательских RWD: добавление, порядок загрузки, замена архивов, совпадающие файлы, применение и отмена.\n- Перед выходом со вкладки или запуском игры нужно применить либо отменить изменения модов.\n- Понятное обозначение файлового режима, включая Kohan II 1.3.68. Функции изменения памяти требуют совместимой версии игры.\n- Ошибка публикации дополнительных сведений о конфигурации больше не мешает загрузке списка друзей.",
+        "en": "- Dedicated Mods page for custom RWDs: import, load order, archive replacement, overlapping files, apply and undo.\n- Apply or undo pending mod edits before leaving the page or launching the game.\n- Clear file-only mode labeling, including Kohan II 1.3.68. Memory-patching features require a compatible game version.\n- Rejected optional configuration metadata no longer prevents the friends list from loading.",
+        "de": "- Eigene Mods-Seite für RWD-Dateien: Import, Ladereihenfolge, Archiversatz, Dateiüberschneidungen, Anwenden und Verwerfen.\n- Änderungen vor dem Verlassen der Seite oder dem Spielstart anwenden oder verwerfen.\n- Klare Kennzeichnung des Modus für reine Dateiänderungen, auch für Kohan II 1.3.68. Speicher-Patches benötigen eine kompatible Spielversion.\n- Abgelehnte optionale Konfigurationsdaten verhindern nicht mehr das Laden der Freundesliste.",
+        "fr": "- Page Mods dédiée aux RWD personnalisés : importation, ordre de chargement, remplacement des archives, fichiers communs, application et annulation.\n- Appliquez ou annulez les changements avant de quitter la page ou de lancer le jeu.\n- Indication claire du mode limité aux fichiers, notamment pour Kohan II 1.3.68. Les modifications en mémoire nécessitent une version compatible du jeu.\n- Le rejet de métadonnées facultatives de configuration ne bloque plus le chargement de la liste d’amis.",
+        "cs": "- Samostatná stránka Mody pro vlastní RWD: import, pořadí načítání, nahrazení archivu, shodné soubory, použití a zrušení změn.\n- Před opuštěním stránky nebo spuštěním hry změny použijte nebo zrušte.\n- Jasné označení režimu pouze se změnami souborů, včetně Kohan II 1.3.68. Úpravy paměti vyžadují kompatibilní verzi hry.\n- Odmítnuté volitelné údaje o konfiguraci již nebrání načtení seznamu přátel.",
+        "uk": "- Окрема вкладка «Моди» для власних RWD: додавання, порядок завантаження, заміна архівів, спільні файли, застосування та скасування.\n- Перед виходом із вкладки або запуском гри потрібно застосувати чи скасувати зміни модів.\n- Зрозуміле позначення файлового режиму, зокрема для Kohan II 1.3.68. Зміни пам’яті потребують сумісної версії гри.\n- Відхилення додаткових даних конфігурації більше не заважає завантаженню списку друзів."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.6",
+      "publishedAt": "2026-10-29",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.6",
+        "en": "Paw’s Launcher 1.0.6",
+        "de": "Paw’s Launcher 1.0.6",
+        "fr": "Paw’s Launcher 1.0.6",
+        "cs": "Paw’s Launcher 1.0.6",
+        "uk": "Paw’s Launcher 1.0.6"
+      },
+      "body": {
+        "ru": "- В общем чате теперь указаны дата и время сообщения.\n- Убрана всплывающая подсказка над полем ввода в общем и личном чате.\n- Предложение создать архив после вылета игры перенесено в настройки.\n- Добавлен переключатель «Игнорировать нулевой боевой дух» для новой беты Arcane Wars. Он требует включённого Paw’s Patch, не зависит от других опций и по умолчанию выключен.",
+        "en": "- Community messages now show their date and time.\n- Removed hover tooltips from community and private message input fields.\n- Moved the post-crash diagnostic archive prompt to Settings.\n- Added “Ignore zero morale” for the new Arcane Wars beta. It requires Paw’s Patch, is independent of other options and is off by default.",
+        "de": "- Nachrichten im allgemeinen Chat zeigen jetzt Datum und Uhrzeit.\n- Hover-Hinweise über den Eingabefeldern im allgemeinen und privaten Chat entfernt.\n- Die Aufforderung zum Diagnosearchiv nach einem Spielabsturz befindet sich jetzt nur in den Einstellungen.\n- Neue Option „Null Kampfmoral ignorieren“ für die Arcane-Wars-Beta. Sie benötigt Paw’s Patch, ist von anderen Optionen unabhängig und standardmäßig ausgeschaltet.",
+        "fr": "- Les messages du chat général affichent désormais la date et l’heure.\n- Suppression des infobulles au-dessus des champs de saisie des chats général et privé.\n- La proposition de créer une archive de diagnostic après un plantage est désormais limitée aux paramètres.\n- Nouvelle option « Ignorer le moral nul » pour la bêta Arcane Wars. Elle nécessite Paw’s Patch, est indépendante des autres options et désactivée par défaut.",
+        "cs": "- Zprávy ve společném chatu nyní zobrazují datum a čas.\n- Odstraněny vyskakovací nápovědy nad poli pro psaní ve společném i soukromém chatu.\n- Nabídka vytvoření diagnostického archivu po pádu hry je nyní pouze v nastavení.\n- Nová volba „Ignorovat nulovou morálku“ pro betu Arcane Wars. Vyžaduje zapnutý Paw’s Patch, je nezávislá na ostatních volbách a ve výchozím stavu vypnutá.",
+        "uk": "- У загальному чаті тепер указано дату й час повідомлення.\n- Прибрано спливні підказки над полем введення в загальному та приватному чаті.\n- Пропозицію створити архів після вильоту гри перенесено до налаштувань.\n- Додано перемикач «Ігнорувати нульовий бойовий дух» для нової бети Arcane Wars. Він потребує ввімкненого Paw’s Patch, не залежить від інших опцій і типово вимкнений."
+      }
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.10",
+      "publishedAt": "2026-10-29",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.10 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.10 — Arcane Wars"
+      },
+      "body": {
+        "ru": "Исправлены пропорции портретов героев, значков найма и квадратных кнопок широкоформатного интерфейса. Кнопка Paw’s Patch уменьшена. Снято ограничение выделения шести рот: карточки используют доступную ширину панели и прокручиваются колёсиком; флажки назначения видны у всех выбранных рот. Строй расширен для групп больше шести рот, исправлено смещение крайних мест. Исправлено ожидание рот при групповом движении и атаке общей цели. Приказ отступления больше не заменяется защитой другой роты. Добавлена отдельная настройка «Игнорировать нулевой боевой дух»: при включении рота сохраняет текущий приказ вместо остановки от истощения. По умолчанию выключена; требует включённого Paw’s Patch. Все игроки должны использовать одинаковую настройку.",
+        "en": "Corrected the aspect ratio of hero portraits, recruitment icons and square widescreen HUD buttons. Reduced the Paw’s Patch button. Removed the six-company selection limit: cards use the available panel width and support mouse-wheel scrolling; destination flags are shown for all selected companies. Extended formations beyond six companies and corrected displaced outer slots. Fixed group movement waits and shared-target attacks. Explicit Run orders no longer switch to defending another company. Added an independent “Ignore zero morale” option: enabled companies retain their current order instead of stopping from exhaustion. Off by default; requires Paw’s Patch. Multiplayer peers must use the same setting."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.12",
+      "publishedAt": "2026-10-29",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.12 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.12 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "Исправлены пропорции портретов героев, значков найма и квадратных кнопок широкоформатного интерфейса. Кнопка Paw’s Patch уменьшена. Снято ограничение выделения шести рот: карточки используют доступную ширину панели и прокручиваются колёсиком; флажки назначения видны у всех выбранных рот. Строй расширен для групп больше шести рот, исправлено смещение крайних мест. Исправлено ожидание рот при групповом движении и атаке общей цели. Приказ отступления больше не заменяется защитой другой роты.",
+        "en": "Corrected the aspect ratio of hero portraits, recruitment icons and square widescreen HUD buttons. Reduced the Paw’s Patch button. Removed the six-company selection limit: cards use the available panel width and support mouse-wheel scrolling; destination flags are shown for all selected companies. Extended formations beyond six companies and corrected displaced outer slots. Fixed group movement waits and shared-target attacks. Explicit Run orders no longer switch to defending another company."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.9",
+      "publishedAt": "2026-10-29",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.9 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.9 — Arcane Wars"
+      },
+      "body": {
+        "ru": "Исправлено воспроизведение повторов: владельцы нейтральных объектов и обработка маршрутов ботов теперь восстанавливаются согласованно с записью. Проверки синхронизации повторов сохранены. Восстановлен видимый значок Гробницы теней и других особых объектов Arcane Wars на миникарте вместо полностью прозрачного изображения.",
+        "en": "Fixed replay playback: independent object ownership and bot path handling now reproduce the recorded state. Replay synchronization checks remain enabled. Restored the minimap marker for Shadow Sepulcher and other Arcane Wars special sites whose shared icon was fully transparent."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.11",
+      "publishedAt": "2026-10-29",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.11 — Vanilla and Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.11 — Vanilla and Immortals"
+      },
+      "body": {
+        "ru": "Исправлено воспроизведение повторов: владельцы нейтральных объектов и обработка маршрутов ботов теперь восстанавливаются согласованно с записью. Проверки синхронизации повторов сохранены.",
+        "en": "Fixed replay playback: independent object ownership and bot path handling now reproduce the recorded state. Replay synchronization checks remain enabled."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.8",
+      "publishedAt": "2026-10-27",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.8 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.8 — Arcane Wars"
+      },
+      "body": {
+        "ru": "Исправлено размещение элементов интерфейса на широком экране: знамя выбранной роты и кнопки строя находятся справа, карточки нескольких рот сохраняют компактные интервалы слева. Убраны лишняя полоса и искажение верхней рамки нижней панели. Исправлены положение таймера, подсказок, предпросмотра экономики, сохранённых наборов найма и окна соединения. Окно найма размещается по центру.",
+        "en": "Fixed widescreen HUD layout: the selected company banner and formation buttons sit on the right, while multiple company cards keep compact spacing on the left. Removed the extra vertical stripe and distorted upper HUD border. Corrected the timer, tooltips, economy preview, recruitment presets and connection dialog positions. The recruitment editor is centered."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.10",
+      "publishedAt": "2026-10-27",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.10 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.10 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "Исправлено размещение элементов интерфейса на широком экране: знамя выбранной роты и кнопки строя находятся справа, карточки нескольких рот сохраняют компактные интервалы слева. Убраны лишняя полоса и искажение верхней рамки нижней панели. Исправлены положение таймера, подсказок, предпросмотра экономики, сохранённых наборов найма и окна соединения. Окно найма размещается по центру.",
+        "en": "Fixed widescreen HUD layout: the selected company banner and formation buttons sit on the right, while multiple company cards keep compact spacing on the left. Removed the extra vertical stripe and distorted upper HUD border. Corrected the timer, tooltips, economy preview, recruitment presets and connection dialog positions. The recruitment editor is centered."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.4",
+      "publishedAt": "2026-10-26",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.4",
+        "en": "Paw’s Launcher 1.0.4",
+        "de": "Paw’s Launcher 1.0.4",
+        "fr": "Paw’s Launcher 1.0.4",
+        "cs": "Paw’s Launcher 1.0.4",
+        "uk": "Paw’s Launcher 1.0.4"
+      },
+      "body": {
+        "ru": "Загрузка, проверка файлов, распаковка, установка и откат теперь выполняются в фоне, чтобы интерфейс оставался отзывчивым. Обновления прогресса объединяются и не перегружают очередь интерфейса. Выбор архива ModDB и отмена сохраняют корректную работу.",
+        "en": "Downloads, file verification, extraction, installation and rollback now run in the background to keep the interface responsive. Progress updates are coalesced to avoid flooding the UI queue. ModDB archive selection and cancellation remain supported.",
+        "de": "Downloads, Dateiprüfung, Entpacken, Installation und Rücksetzung laufen jetzt im Hintergrund, damit die Oberfläche bedienbar bleibt. Fortschrittsmeldungen werden gebündelt, um die Oberfläche nicht zu überlasten. ModDB-Archivauswahl und Abbrechen bleiben verfügbar.",
+        "fr": "Le téléchargement, la vérification des fichiers, l’extraction, l’installation et la restauration s’exécutent désormais en arrière-plan pour garder une interface réactive. Les mises à jour de progression sont regroupées. La sélection des archives ModDB et l’annulation restent disponibles.",
+        "cs": "Stahování, ověřování souborů, rozbalování, instalace a vrácení změn nyní běží na pozadí, aby rozhraní zůstalo plynulé. Aktualizace průběhu se slučují a nepřetěžují rozhraní. Výběr archivu ModDB i zrušení operace zůstávají dostupné.",
+        "uk": "Завантаження, перевірка файлів, розпакування, встановлення та відкат тепер виконуються у фоні, щоб інтерфейс залишався чутливим. Оновлення прогресу об’єднуються й не перевантажують чергу інтерфейсу. Вибір архіву ModDB та скасування працюють коректно."
+      }
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.7",
+      "publishedAt": "2026-10-25",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.7 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.7 — Arcane Wars",
+        "de": "Paw’s Patch 0.4.2-beta.7 — Arcane Wars",
+        "fr": "Paw’s Patch 0.4.2-beta.7 — Arcane Wars",
+        "cs": "Paw’s Patch 0.4.2-beta.7 — Arcane Wars",
+        "uk": "Paw’s Patch 0.4.2-beta.7 — Arcane Wars"
+      },
+      "body": {
+        "ru": "Исправлена возможная блокировка подготовки восстановления матча в Vanilla и Immortals. Подготовка файлов теперь выполняется до приостановки потоков игры, а запись диагностики — после их возобновления. Проверки совместимости и сохранений сохранены. Общий установщик лобби проверен также с Arcane Wars.",
+        "en": "Fixed a possible recovery initialization deadlock in Vanilla and Immortals. File preparation now runs before game threads are paused, and diagnostic logging runs after they resume. Compatibility and save checks remain enabled. The shared lobby installer was also verified with Arcane Wars.",
+        "de": "Eine mögliche Blockierung bei der Initialisierung der Wiederherstellung in Vanilla und Immortals wurde behoben. Dateien werden vor dem Anhalten der Spielthreads vorbereitet, Diagnosemeldungen nach dem Fortsetzen geschrieben. Kompatibilitäts- und Speicherstandprüfungen bleiben aktiv. Der gemeinsame Lobby-Installer wurde auch mit Arcane Wars geprüft.",
+        "fr": "Correction d’un blocage possible lors de l’initialisation de la récupération dans Vanilla et Immortals. Les fichiers sont préparés avant la suspension des threads du jeu et les diagnostics sont écrits après leur reprise. Les vérifications de compatibilité et de sauvegarde restent actives. L’installation commune du lobby a aussi été vérifiée avec Arcane Wars.",
+        "cs": "Opraveno možné zablokování inicializace obnovy ve Vanilla a Immortals. Příprava souborů probíhá před pozastavením herních vláken a zápis diagnostiky po jejich obnovení. Kontroly kompatibility a uložených her zůstávají aktivní. Společná instalace lobby byla ověřena také s Arcane Wars.",
+        "uk": "Виправлено можливе блокування підготовки відновлення матчу у Vanilla та Immortals. Файли готуються до призупинення потоків гри, а діагностика записується після їх відновлення. Перевірки сумісності та збережень залишаються активними. Спільний установник лобі також перевірено з Arcane Wars."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.9",
+      "publishedAt": "2026-10-25",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "Исправлена возможная блокировка подготовки восстановления матча в Vanilla и Immortals. Подготовка файлов теперь выполняется до приостановки потоков игры, а запись диагностики — после их возобновления. Проверки совместимости и сохранений сохранены. Общий установщик лобби проверен также с Arcane Wars.",
+        "en": "Fixed a possible recovery initialization deadlock in Vanilla and Immortals. File preparation now runs before game threads are paused, and diagnostic logging runs after they resume. Compatibility and save checks remain enabled. The shared lobby installer was also verified with Arcane Wars.",
+        "de": "Eine mögliche Blockierung bei der Initialisierung der Wiederherstellung in Vanilla und Immortals wurde behoben. Dateien werden vor dem Anhalten der Spielthreads vorbereitet, Diagnosemeldungen nach dem Fortsetzen geschrieben. Kompatibilitäts- und Speicherstandprüfungen bleiben aktiv. Der gemeinsame Lobby-Installer wurde auch mit Arcane Wars geprüft.",
+        "fr": "Correction d’un blocage possible lors de l’initialisation de la récupération dans Vanilla et Immortals. Les fichiers sont préparés avant la suspension des threads du jeu et les diagnostics sont écrits après leur reprise. Les vérifications de compatibilité et de sauvegarde restent actives. L’installation commune du lobby a aussi été vérifiée avec Arcane Wars.",
+        "cs": "Opraveno možné zablokování inicializace obnovy ve Vanilla a Immortals. Příprava souborů probíhá před pozastavením herních vláken a zápis diagnostiky po jejich obnovení. Kontroly kompatibility a uložených her zůstávají aktivní. Společná instalace lobby byla ověřena také s Arcane Wars.",
+        "uk": "Виправлено можливе блокування підготовки відновлення матчу у Vanilla та Immortals. Файли готуються до призупинення потоків гри, а діагностика записується після їх відновлення. Перевірки сумісності та збережень залишаються активними. Спільний установник лобі також перевірено з Arcane Wars."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.6",
+      "publishedAt": "2026-10-25",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.6 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.6 — Arcane Wars",
+        "de": "Paw’s Patch 0.4.2-beta.6 — Arcane Wars",
+        "fr": "Paw’s Patch 0.4.2-beta.6 — Arcane Wars",
+        "cs": "Paw’s Patch 0.4.2-beta.6 — Arcane Wars",
+        "uk": "Paw’s Patch 0.4.2-beta.6 — Arcane Wars"
+      },
+      "body": {
+        "ru": "- Исправлено зависание сборщика диагностики после закрытия игры: теперь он завершается, даже если уведомление о выходе не пришло.\n- Сбор дампов при ошибках сохранён. Игровая механика не изменена.",
+        "en": "- Fixed the diagnostic recorder remaining in the background after the game closes when an exit notification is missing.\n- Crash dump collection is preserved. Gameplay is unchanged.",
+        "de": "- Der Diagnoserekorder bleibt nach dem Schließen des Spiels nicht mehr im Hintergrund hängen, wenn die Beendigungsbenachrichtigung fehlt.\n- Absturzabbilder werden weiterhin erstellt. Die Spielmechanik bleibt unverändert.",
+        "fr": "- Correction du collecteur de diagnostic qui pouvait rester en arrière-plan après la fermeture du jeu en l’absence de notification de fin.\n- La collecte des dumps de plantage est conservée. Le gameplay reste inchangé.",
+        "cs": "- Opraveno zablokování diagnostického procesu na pozadí po zavření hry, pokud chybělo oznámení o ukončení.\n- Vytváření výpisů paměti při pádu zůstává zachováno. Herní mechaniky se nemění.",
+        "uk": "- Виправлено зависання збирача діагностики після закриття гри: тепер він завершується, навіть якщо сповіщення про вихід не надійшло.\n- Збирання дампів під час помилок збережено. Ігрову механіку не змінено."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.8",
+      "publishedAt": "2026-10-25",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "- Исправлено зависание сборщика диагностики после закрытия игры: теперь он завершается, даже если уведомление о выходе не пришло.\n- Сбор дампов при ошибках сохранён. Игровая механика не изменена.",
+        "en": "- Fixed the diagnostic recorder remaining in the background after the game closes when an exit notification is missing.\n- Crash dump collection is preserved. Gameplay is unchanged.",
+        "de": "- Der Diagnoserekorder bleibt nach dem Schließen des Spiels nicht mehr im Hintergrund hängen, wenn die Beendigungsbenachrichtigung fehlt.\n- Absturzabbilder werden weiterhin erstellt. Die Spielmechanik bleibt unverändert.",
+        "fr": "- Correction du collecteur de diagnostic qui pouvait rester en arrière-plan après la fermeture du jeu en l’absence de notification de fin.\n- La collecte des dumps de plantage est conservée. Le gameplay reste inchangé.",
+        "cs": "- Opraveno zablokování diagnostického procesu na pozadí po zavření hry, pokud chybělo oznámení o ukončení.\n- Vytváření výpisů paměti při pádu zůstává zachováno. Herní mechaniky se nemění.",
+        "uk": "- Виправлено зависання збирача діагностики після закриття гри: тепер він завершується, навіть якщо сповіщення про вихід не надійшло.\n- Збирання дампів під час помилок збережено. Ігрову механіку не змінено."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.5",
+      "publishedAt": "2026-10-23",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+        "de": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+        "fr": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+        "cs": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+        "uk": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars"
+      },
+      "body": {
+        "ru": "- Исправлена найденная причина зависания при уходе хоста: начальное состояние сетевой задачи теперь задаётся до входа в лобби.\n- Проверки сетевых ошибок и защита сохранений сохранены. Прямое подключение к уже идущему матчу в это обновление не входит.",
+        "en": "- Fixed an identified cause of hangs when the host leaves: the initial network task state is now set before entering the lobby.\n- Network error checks and save protections remain enabled. Direct joining of an already running match is not part of this update.",
+        "de": "- Eine Ursache für Hänger beim Verlassen des Hosts wurde behoben: Der anfängliche Netzwerkaufgabenstatus wird jetzt vor dem Betreten der Lobby gesetzt.\n- Netzwerkfehlerprüfungen und Schutzmaßnahmen für Spielstände bleiben aktiv. Der direkte Beitritt zu einer laufenden Partie ist nicht Teil dieses Updates.",
+        "fr": "- Correction d’une cause de blocage lorsque l’hôte quitte la partie : l’état initial de la tâche réseau est désormais défini avant l’entrée dans le salon.\n- Les contrôles des erreurs réseau et les protections des sauvegardes restent actifs. Cet ajout ne permet pas de rejoindre directement une partie en cours.",
+        "cs": "- Opravena zjištěná příčina zamrznutí při odchodu hostitele: počáteční stav síťové úlohy se nyní nastaví před vstupem do lobby.\n- Kontroly síťových chyb a ochrana uložených her zůstávají aktivní. Přímé připojení k probíhající hře není součástí této aktualizace.",
+        "uk": "- Виправлено знайдену причину зависання після виходу хоста: початковий стан мережевого завдання тепер задається до входу в лобі.\n- Перевірки мережевих помилок і захист збережень залишаються активними. Пряме приєднання до матчу, що вже триває, не входить до цього оновлення."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.7",
+      "publishedAt": "2026-10-23",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.7 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.7 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.1-beta.7 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.1-beta.7 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.1-beta.7 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.1-beta.7 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "- Исправлена найденная причина зависания при уходе хоста: начальное состояние сетевой задачи теперь задаётся до входа в лобби.\n- Проверки сетевых ошибок и защита сохранений сохранены. Прямое подключение к уже идущему матчу в это обновление не входит.",
+        "en": "- Fixed an identified cause of hangs when the host leaves: the initial network task state is now set before entering the lobby.\n- Network error checks and save protections remain enabled. Direct joining of an already running match is not part of this update.",
+        "de": "- Eine Ursache für Hänger beim Verlassen des Hosts wurde behoben: Der anfängliche Netzwerkaufgabenstatus wird jetzt vor dem Betreten der Lobby gesetzt.\n- Netzwerkfehlerprüfungen und Schutzmaßnahmen für Spielstände bleiben aktiv. Der direkte Beitritt zu einer laufenden Partie ist nicht Teil dieses Updates.",
+        "fr": "- Correction d’une cause de blocage lorsque l’hôte quitte la partie : l’état initial de la tâche réseau est désormais défini avant l’entrée dans le salon.\n- Les contrôles des erreurs réseau et les protections des sauvegardes restent actifs. Cet ajout ne permet pas de rejoindre directement une partie en cours.",
+        "cs": "- Opravena zjištěná příčina zamrznutí při odchodu hostitele: počáteční stav síťové úlohy se nyní nastaví před vstupem do lobby.\n- Kontroly síťových chyb a ochrana uložených her zůstávají aktivní. Přímé připojení k probíhající hře není součástí této aktualizace.",
+        "uk": "- Виправлено знайдену причину зависання після виходу хоста: початковий стан мережевого завдання тепер задається до входу в лобі.\n- Перевірки мережевих помилок і захист збережень залишаються активними. Пряме приєднання до матчу, що вже триває, не входить до цього оновлення."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.3",
+      "publishedAt": "2026-10-22",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.3",
+        "en": "Paw’s Launcher 1.0.3",
+        "de": "Paw’s Launcher 1.0.3",
+        "fr": "Paw’s Launcher 1.0.3",
+        "cs": "Paw’s Launcher 1.0.3",
+        "uk": "Paw’s Launcher 1.0.3"
+      },
+      "body": {
+        "ru": "Улучшены пользовательские RWD-моды: номера порядка загрузки, совпадения файлов между включёнными модами и список этих файлов в подсказке. Архив можно заменить с сохранением позиции и включения, в том числе при лимите 32 мода. Кнопка «Отменить изменения» возвращает сохранённый список. Изменения устанавливаются только после «Применить моды». Спасибо Ensrick за предложение.",
+        "en": "Improved custom RWD mods: load-order numbers, matching files between enabled mods, and resource paths in tooltips. Replace an archive while retaining its position and enabled state, including at the 32-mod limit. Undo changes restores the saved list. Changes are installed only after Apply mods. Thanks to Ensrick for the proposal.",
+        "de": "Eigene RWD-Mods wurden verbessert: Nummern für die Ladereihenfolge, übereinstimmende Dateien zwischen aktiven Mods und Dateipfade in Tooltips. Archive lassen sich ersetzen, ohne Position und Aktivierungsstatus zu verlieren, auch bei 32 Mods. Änderungen verwerfen stellt die gespeicherte Liste wieder her. Erst Mods anwenden installiert die Änderungen. Vielen Dank an Ensrick für den Vorschlag.",
+        "fr": "Amélioration des mods RWD personnalisés : numéros d’ordre de chargement, fichiers communs entre les mods activés et chemins dans les infobulles. Remplacez une archive en conservant sa position et son activation, même à la limite de 32 mods. Annuler les modifications restaure la liste enregistrée. Les changements sont installés uniquement après Appliquer les mods. Merci à Ensrick pour cette proposition.",
+        "cs": "Vylepšené vlastní RWD mody: čísla pořadí načítání, shodné soubory mezi zapnutými mody a cesty v nápovědě. Archiv lze nahradit se zachováním pozice a zapnutí, i při limitu 32 modů. Vrátit změny obnoví uložený seznam. Změny se instalují až po Použít mody. Děkujeme Ensrickovi za návrh.",
+        "uk": "Покращено користувацькі RWD-моди: номери порядку завантаження, збіги файлів між увімкненими модами та перелік файлів у підказці. Архів можна замінити зі збереженням позиції та стану ввімкнення, навіть за ліміту 32 моди. Кнопка «Скасувати зміни» відновлює збережений список. Зміни встановлюються лише після «Застосувати моди». Дякуємо Ensrick за пропозицію."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.2",
+      "publishedAt": "2026-10-21",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.2",
+        "en": "Paw’s Launcher 1.0.2",
+        "de": "Paw’s Launcher 1.0.2",
+        "fr": "Paw’s Launcher 1.0.2",
+        "cs": "Paw’s Launcher 1.0.2",
+        "uk": "Paw’s Launcher 1.0.2"
+      },
+      "body": {
+        "ru": "Исправлен импорт пользовательских RWD-модов с дисков FAT/exFAT при ошибке проверки атрибутов Windows. Проверки ссылок, типа файла и содержимого архива сохранены. Спасибо Ensrick за исправление.",
+        "en": "Fixed custom RWD mod import from FAT/exFAT drives when Windows rejects the file-attribute query. Link, file-type and archive-content validation remain in place. Thanks to Ensrick for the fix.",
+        "de": "Der Import eigener RWD-Mods von FAT/exFAT-Laufwerken bei einem Fehler der Windows-Dateiattributabfrage wurde korrigiert. Prüfungen von Verknüpfungen, Dateityp und Archivinhalt bleiben erhalten. Vielen Dank an Ensrick für die Korrektur.",
+        "fr": "Correction de l’import des mods RWD personnalisés depuis les lecteurs FAT/exFAT lorsque Windows refuse la requête des attributs du fichier. Les vérifications des liens, du type de fichier et du contenu de l’archive sont conservées. Merci à Ensrick pour ce correctif.",
+        "cs": "Opraven import vlastních RWD modů z disků FAT/exFAT při chybě dotazu na atributy souboru ve Windows. Kontroly odkazů, typu souboru a obsahu archivu zůstávají zachovány. Děkujeme Ensrickovi za opravu.",
+        "uk": "Виправлено імпорт користувацьких RWD-модів із дисків FAT/exFAT у разі помилки перевірки атрибутів Windows. Перевірки посилань, типу файлу та вмісту архіву збережено. Дякуємо Ensrick за виправлення."
+      }
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.4",
+      "publishedAt": "2026-10-20",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.4 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.4 — Arcane Wars",
+        "de": "Paw’s Patch 0.4.2-beta.4 — Arcane Wars",
+        "fr": "Paw’s Patch 0.4.2-beta.4 — Arcane Wars",
+        "cs": "Paw’s Patch 0.4.2-beta.4 — Arcane Wars",
+        "uk": "Paw’s Patch 0.4.2-beta.4 — Arcane Wars"
+      },
+      "body": {
+        "ru": "- Исправлена область над нижней панелью, где не работали выделение войск, зданий и кнопка Paw’s Patch.\n- Кнопка Paw’s Patch сохраняет квадратную форму и расположена ближе к нижней панели.\n- Исправлено масштабирование меню, лобби и стартовых роликов при широкоформатном интерфейсе.",
+        "en": "- Fixed blocked clicks above the bottom panel, including unit/building selection and the Paw’s Patch button.\n- The Paw’s Patch button keeps its square shape and sits closer to the bottom panel.\n- Fixed menu, lobby and intro-video scaling with the widescreen interface.",
+        "de": "- Blockierte Klicks oberhalb der unteren Leiste behoben, einschließlich der Auswahl von Einheiten und Gebäuden sowie der Paw’s-Patch-Schaltfläche.\n- Die Paw’s-Patch-Schaltfläche bleibt quadratisch und sitzt näher an der unteren Leiste.\n- Skalierung von Menüs, Lobby und Intro-Videos bei Breitbilddarstellung korrigiert.",
+        "fr": "- Correction des clics bloqués au-dessus du panneau inférieur, notamment la sélection des unités et bâtiments et le bouton Paw’s Patch.\n- Le bouton Paw’s Patch reste carré et se situe plus près du panneau inférieur.\n- Correction de la mise à l’échelle des menus, du salon et des vidéos d’introduction en écran large.",
+        "cs": "- Opraveno blokování kliknutí nad spodním panelem, včetně výběru jednotek a budov a tlačítka Paw’s Patch.\n- Tlačítko Paw’s Patch zůstává čtvercové a je blíže spodnímu panelu.\n- Opraveno škálování nabídek, lobby a úvodních videí v širokoúhlém rozhraní.",
+        "uk": "- Виправлено блокування натискань над нижньою панеллю, зокрема виділення військ, будівель і кнопки Paw’s Patch.\n- Кнопка Paw’s Patch зберігає квадратну форму та розташована ближче до нижньої панелі.\n- Виправлено масштабування меню, лобі та початкових роликів у широкоформатному інтерфейсі."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.6",
+      "publishedAt": "2026-10-20",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "- Исправлена область над нижней панелью, где не работали выделение войск, зданий и кнопка Paw’s Patch.\n- Кнопка Paw’s Patch сохраняет квадратную форму и расположена ближе к нижней панели.\n- Исправлено масштабирование меню, лобби и стартовых роликов при широкоформатном интерфейсе.",
+        "en": "- Fixed blocked clicks above the bottom panel, including unit/building selection and the Paw’s Patch button.\n- The Paw’s Patch button keeps its square shape and sits closer to the bottom panel.\n- Fixed menu, lobby and intro-video scaling with the widescreen interface.",
+        "de": "- Blockierte Klicks oberhalb der unteren Leiste behoben, einschließlich der Auswahl von Einheiten und Gebäuden sowie der Paw’s-Patch-Schaltfläche.\n- Die Paw’s-Patch-Schaltfläche bleibt quadratisch und sitzt näher an der unteren Leiste.\n- Skalierung von Menüs, Lobby und Intro-Videos bei Breitbilddarstellung korrigiert.",
+        "fr": "- Correction des clics bloqués au-dessus du panneau inférieur, notamment la sélection des unités et bâtiments et le bouton Paw’s Patch.\n- Le bouton Paw’s Patch reste carré et se situe plus près du panneau inférieur.\n- Correction de la mise à l’échelle des menus, du salon et des vidéos d’introduction en écran large.",
+        "cs": "- Opraveno blokování kliknutí nad spodním panelem, včetně výběru jednotek a budov a tlačítka Paw’s Patch.\n- Tlačítko Paw’s Patch zůstává čtvercové a je blíže spodnímu panelu.\n- Opraveno škálování nabídek, lobby a úvodních videí v širokoúhlém rozhraní.",
+        "uk": "- Виправлено блокування натискань над нижньою панеллю, зокрема виділення військ, будівель і кнопки Paw’s Patch.\n- Кнопка Paw’s Patch зберігає квадратну форму та розташована ближче до нижньої панелі.\n- Виправлено масштабування меню, лобі та початкових роликів у широкоформатному інтерфейсі."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.1",
+      "publishedAt": "2026-10-19",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.1",
+        "en": "Paw’s Launcher 1.0.1",
+        "de": "Paw’s Launcher 1.0.1",
+        "fr": "Paw’s Launcher 1.0.1",
+        "cs": "Paw’s Launcher 1.0.1",
+        "uk": "Paw’s Launcher 1.0.1"
+      },
+      "body": {
+        "ru": "Исправлен вылет при запуске Vanilla на Kohan II 1.3.68 после игры с расширенным числом королевств. Лаунчер восстанавливает несовместимые настройки лобби с учётом версии игры и сохраняет резервную копию. Общие настройки, управление и сохранения не изменяются. Спасибо Ensrick за исправление.",
+        "en": "Fixed a Vanilla startup crash on Kohan II 1.3.68 after playing with extra kingdoms. The launcher repairs incompatible lobby settings using defaults for the detected game version and keeps a backup. General preferences, keybindings and saved games are unchanged. Thanks to Ensrick for the fix.",
+        "de": "Ein Absturz beim Start von Vanilla unter Kohan II 1.3.68 nach Spielen mit zusätzlichen Königreichen wurde behoben. Der Launcher repariert inkompatible Lobby-Einstellungen passend zur Spielversion und erstellt eine Sicherung. Allgemeine Einstellungen, Tastenbelegung und Spielstände bleiben unverändert. Vielen Dank an Ensrick für die Korrektur.",
+        "fr": "Correction d’un plantage au lancement de Vanilla sur Kohan II 1.3.68 après une partie avec des royaumes supplémentaires. Le lanceur répare les paramètres de salon incompatibles selon la version du jeu et conserve une sauvegarde. Les préférences générales, les raccourcis clavier et les parties sauvegardées restent inchangés. Merci à Ensrick pour ce correctif.",
+        "cs": "Opraven pád při spuštění Vanilla v Kohan II 1.3.68 po hraní s rozšířeným počtem království. Launcher opraví nekompatibilní nastavení lobby podle verze hry a uchová zálohu. Obecná nastavení, klávesové zkratky a uložené hry zůstávají beze změny. Děkujeme Ensrickovi za opravu.",
+        "uk": "Виправлено виліт під час запуску Vanilla на Kohan II 1.3.68 після гри з розширеною кількістю королівств. Лаунчер відновлює несумісні налаштування лобі відповідно до версії гри та зберігає резервну копію. Загальні налаштування, керування та збереження не змінюються. Дякуємо Ensrick за виправлення."
+      }
+    },
+    {
+      "category": "launcher",
+      "version": "1.0.0",
+      "publishedAt": "2026-10-19",
+      "title": {
+        "ru": "Paw’s Launcher 1.0.0",
+        "en": "Paw’s Launcher 1.0.0",
+        "de": "Paw’s Launcher 1.0.0",
+        "fr": "Paw’s Launcher 1.0.0",
+        "cs": "Paw’s Launcher 1.0.0",
+        "uk": "Paw’s Launcher 1.0.0"
+      },
+      "body": {
+        "ru": "- Arcane Wars доступен всем пользователям, включая гостей.\n- Базовый мод загружается с ModDB, чтобы автор видел интерес к нему по счётчику скачиваний. Патч Даркана 0.82.1.8 fix v2 устанавливается отдельно и автоматически.\n- Если ModDB требует проверку в браузере, лаунчер поможет открыть сайт и выбрать скачанный RAR. Архивы и игровые файлы проверяются перед установкой.\n- Новое окно загрузки в стиле лаунчера. Тестовая кнопка повторной загрузки удалена.\n- Содержимое мода не изменено; сохранена сетевая совместимость с прежним пакетом.",
+        "en": "- Arcane Wars is available to everyone, including guests.\n- The base mod comes from ModDB so the author can see interest through its download count. Darquan’s 0.82.1.8 fix v2 patch is applied separately and automatically.\n- If ModDB requires a browser check, the launcher helps you open the site and select the downloaded RAR. Archives and game files are verified before installation.\n- A download dialog matching the launcher design. The test-only retry button has been removed.\n- Mod contents are unchanged; network compatibility with the previous package is preserved.",
+        "de": "- Arcane Wars ist für alle verfügbar, auch für Gäste.\n- Die Basismod wird von ModDB heruntergeladen, damit der Autor das Interesse am Downloadzähler ablesen kann. Darquans Patch 0.82.1.8 fix v2 wird separat und automatisch installiert.\n- Verlangt ModDB eine Browserprüfung, hilft der Launcher beim Öffnen der Seite und Auswählen des heruntergeladenen RAR-Archivs. Archive und Spieldateien werden vor der Installation geprüft.\n- Neuer Downloaddialog im Launcher-Stil; die Testschaltfläche zum erneuten Herunterladen wurde entfernt.\n- Mod-Inhalte bleiben unverändert; Netzwerkkompatibilität zum bisherigen Paket bleibt erhalten.",
+        "fr": "- Arcane Wars est accessible à tous, y compris aux invités.\n- Le mod de base provient de ModDB pour que l’auteur puisse suivre l’intérêt grâce au compteur de téléchargements. Le correctif 0.82.1.8 fix v2 de Darquan est appliqué séparément et automatiquement.\n- Si ModDB demande une vérification dans le navigateur, le lanceur aide à ouvrir le site et à sélectionner l’archive RAR téléchargée. Les archives et fichiers du jeu sont vérifiés avant installation.\n- Nouvelle fenêtre de téléchargement au style du lanceur ; le bouton de test a été supprimé.\n- Le contenu du mod est inchangé ; la compatibilité réseau avec l’ancien paquet est conservée.",
+        "cs": "- Arcane Wars je dostupný všem, včetně hostů.\n- Základní mod se stahuje z ModDB, aby autor mohl sledovat zájem podle počtu stažení. Darquanova oprava 0.82.1.8 fix v2 se instaluje samostatně a automaticky.\n- Pokud ModDB vyžaduje ověření v prohlížeči, launcher pomůže otevřít web a vybrat stažený archiv RAR. Archivy a herní soubory se před instalací ověřují.\n- Nové okno stahování ve stylu launcheru; testovací tlačítko opakovaného stahování bylo odstraněno.\n- Obsah modu se nezměnil; síťová kompatibilita s předchozím balíčkem je zachována.",
+        "uk": "- Arcane Wars доступний усім користувачам, включно з гостями.\n- Базовий мод завантажується з ModDB, щоб автор бачив інтерес за лічильником завантажень. Патч Даркана 0.82.1.8 fix v2 встановлюється окремо й автоматично.\n- Якщо ModDB потребує перевірки в браузері, лаунчер допоможе відкрити сайт і вибрати завантажений RAR. Архіви та ігрові файли перевіряються перед встановленням.\n- Нове вікно завантаження у стилі лаунчера. Тестову кнопку повторного завантаження прибрано.\n- Вміст моду не змінено; збережено мережеву сумісність із попереднім пакетом."
+      }
+    },
+    {
+      "category": "patch",
+      "version": "0.4.2-beta.3",
+      "publishedAt": "2026-10-18",
+      "title": {
+        "ru": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+        "en": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+        "de": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+        "fr": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+        "cs": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars",
+        "uk": "Paw’s Patch 0.4.2-beta.3 — Arcane Wars"
+      },
+      "body": {
+        "ru": "- Увеличен запас текстур местности при отдалённой камере, чтобы реже переносить их из видеопамяти в оперативную память.",
+        "en": "- Increased the terrain texture pool for the extended camera, reducing texture offloads from video memory to system memory.",
+        "de": "- Der Texturpool für das Gelände wurde für die erweiterte Kamera vergrößert, damit Texturen seltener vom Grafikspeicher in den Arbeitsspeicher ausgelagert werden.",
+        "fr": "- Augmentation du cache de textures du terrain pour la caméra étendue, afin de réduire les transferts de la mémoire vidéo vers la mémoire système.",
+        "cs": "- Zvětšena zásoba textur terénu pro oddálenou kameru, aby se textury méně často přesouvaly z grafické paměti do operační paměti.",
+        "uk": "- Збільшено запас текстур місцевості для віддаленої камери, щоб рідше переносити їх із відеопам’яті в оперативну пам’ять."
+      },
+      "mods": [
+        "arcane-wars"
+      ],
+      "channel": "beta"
+    },
+    {
+      "category": "patch",
+      "version": "0.4.1-beta.5",
+      "publishedAt": "2026-10-18",
+      "title": {
+        "ru": "Paw’s Patch 0.4.1-beta.5 — Vanilla / Immortals",
+        "en": "Paw’s Patch 0.4.1-beta.5 — Vanilla / Immortals",
+        "de": "Paw’s Patch 0.4.1-beta.5 — Vanilla / Immortals",
+        "fr": "Paw’s Patch 0.4.1-beta.5 — Vanilla / Immortals",
+        "cs": "Paw’s Patch 0.4.1-beta.5 — Vanilla / Immortals",
+        "uk": "Paw’s Patch 0.4.1-beta.5 — Vanilla / Immortals"
+      },
+      "body": {
+        "ru": "- Увеличен запас текстур местности при отдалённой камере, чтобы реже переносить их из видеопамяти в оперативную память.",
+        "en": "- Increased the terrain texture pool for the extended camera, reducing texture offloads from video memory to system memory.",
+        "de": "- Der Texturpool für das Gelände wurde für die erweiterte Kamera vergrößert, damit Texturen seltener vom Grafikspeicher in den Arbeitsspeicher ausgelagert werden.",
+        "fr": "- Augmentation du cache de textures du terrain pour la caméra étendue, afin de réduire les transferts de la mémoire vidéo vers la mémoire système.",
+        "cs": "- Zvětšena zásoba textur terénu pro oddálenou kameru, aby se textury méně často přesouvaly z grafické paměti do operační paměti.",
+        "uk": "- Збільшено запас текстур місцевості для віддаленої камери, щоб рідше переносити їх із відеопам’яті в оперативну пам’ять."
+      },
+      "mods": [
+        "vanilla",
+        "immortals"
+      ],
+      "channel": "beta"
+    },
     {
       "category": "launcher",
       "version": "0.9.7",

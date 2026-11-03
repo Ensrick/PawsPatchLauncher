@@ -137,7 +137,7 @@ public partial class MainWindow
         var installer = new ModuleInstaller(_game.Directory);
         var missing = packages.Where(p => !LocallyAvailable(installer, p)).ToList();
         ShowWorking(() => T("Подготавливаю мод и все его компоненты…", "Preparing the mod and all its components…"));
-        TransferText.Text = T("Всего к загрузке: ", "Total download: ") + FormatBytes(missing.Sum(p => p.Size));
+        TransferText.Text = T("Всего к загрузке: ", "Total download: ") + FormatBytes(missing.Sum(p => p.TransferSize));
         TransferText.Visibility = System.Windows.Visibility.Visible;
         var prepared = new Dictionary<string, InstalledModule>(StringComparer.OrdinalIgnoreCase);
         foreach (var package in packages)

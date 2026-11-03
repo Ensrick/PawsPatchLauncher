@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "1.0.6",
+  "publishedAt": "2026-10-29",
+  "title": {
+    "ru": "Paw’s Launcher 1.0.6",
+    "en": "Paw’s Launcher 1.0.6",
+    "de": "Paw’s Launcher 1.0.6",
+    "fr": "Paw’s Launcher 1.0.6",
+    "cs": "Paw’s Launcher 1.0.6",
+    "uk": "Paw’s Launcher 1.0.6"
+  },
+  "body": {
+    "ru": "- В общем чате теперь указаны дата и время сообщения.\n- Убрана всплывающая подсказка над полем ввода в общем и личном чате.\n- Предложение создать архив после вылета игры перенесено в настройки.\n- Добавлен переключатель «Игнорировать нулевой боевой дух» для новой беты Arcane Wars. Он требует включённого Paw’s Patch, не зависит от других опций и по умолчанию выключен.",
+    "en": "- Community messages now show their date and time.\n- Removed hover tooltips from community and private message input fields.\n- Moved the post-crash diagnostic archive prompt to Settings.\n- Added “Ignore zero morale” for the new Arcane Wars beta. It requires Paw’s Patch, is independent of other options and is off by default.",
+    "de": "- Nachrichten im allgemeinen Chat zeigen jetzt Datum und Uhrzeit.\n- Hover-Hinweise über den Eingabefeldern im allgemeinen und privaten Chat entfernt.\n- Die Aufforderung zum Diagnosearchiv nach einem Spielabsturz befindet sich jetzt nur in den Einstellungen.\n- Neue Option „Null Kampfmoral ignorieren“ für die Arcane-Wars-Beta. Sie benötigt Paw’s Patch, ist von anderen Optionen unabhängig und standardmäßig ausgeschaltet.",
+    "fr": "- Les messages du chat général affichent désormais la date et l’heure.\n- Suppression des infobulles au-dessus des champs de saisie des chats général et privé.\n- La proposition de créer une archive de diagnostic après un plantage est désormais limitée aux paramètres.\n- Nouvelle option « Ignorer le moral nul » pour la bêta Arcane Wars. Elle nécessite Paw’s Patch, est indépendante des autres options et désactivée par défaut.",
+    "cs": "- Zprávy ve společném chatu nyní zobrazují datum a čas.\n- Odstraněny vyskakovací nápovědy nad poli pro psaní ve společném i soukromém chatu.\n- Nabídka vytvoření diagnostického archivu po pádu hry je nyní pouze v nastavení.\n- Nová volba „Ignorovat nulovou morálku“ pro betu Arcane Wars. Vyžaduje zapnutý Paw’s Patch, je nezávislá na ostatních volbách a ve výchozím stavu vypnutá.",
+    "uk": "- У загальному чаті тепер указано дату й час повідомлення.\n- Прибрано спливні підказки над полем введення в загальному та приватному чаті.\n- Пропозицію створити архів після вильоту гри перенесено до налаштувань.\n- Додано перемикач «Ігнорувати нульовий бойовий дух» для нової бети Arcane Wars. Він потребує ввімкненого Paw’s Patch, не залежить від інших опцій і типово вимкнений."
+  }
+}

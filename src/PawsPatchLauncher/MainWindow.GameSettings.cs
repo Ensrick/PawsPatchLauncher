@@ -36,7 +36,7 @@ public partial class MainWindow
 
     private void OpenGameSettings()
     {
-        if (_busy || _launchStarting || ConfirmationActive || GameSettingsOverlay.IsVisible) return;
+        if (_busy || _customModsBusy || _launchStarting || ConfirmationActive || GameSettingsOverlay.IsVisible) return;
         _gameSettingsEdits.Clear(); _gameSettingsInputs.Clear(); _gameSettingsError = null;
         _gameUserSettings = null; GameSettingsBody.Children.Clear();
         ApplyGameSettingsLanguage();
@@ -211,7 +211,7 @@ public partial class MainWindow
     private void RefreshGameSettingsState(bool running)
     {
         if (GameSettingsButton is null) return;
-        GameSettingsButton.IsEnabled = !_busy && !_launchStarting;
+        GameSettingsButton.IsEnabled = !_busy && !_customModsBusy && !_launchStarting;
         RefreshCustomModsState(running);
         if (GameSettingsOverlay.Visibility != Visibility.Visible) return;
         string? invalid = null;

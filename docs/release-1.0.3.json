@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "1.0.3",
+  "publishedAt": "2026-10-22",
+  "title": {
+    "ru": "Paw’s Launcher 1.0.3",
+    "en": "Paw’s Launcher 1.0.3",
+    "de": "Paw’s Launcher 1.0.3",
+    "fr": "Paw’s Launcher 1.0.3",
+    "cs": "Paw’s Launcher 1.0.3",
+    "uk": "Paw’s Launcher 1.0.3"
+  },
+  "body": {
+    "ru": "Улучшены пользовательские RWD-моды: номера порядка загрузки, совпадения файлов между включёнными модами и список этих файлов в подсказке. Архив можно заменить с сохранением позиции и включения, в том числе при лимите 32 мода. Кнопка «Отменить изменения» возвращает сохранённый список. Изменения устанавливаются только после «Применить моды». Спасибо Ensrick за предложение.",
+    "en": "Improved custom RWD mods: load-order numbers, matching files between enabled mods, and resource paths in tooltips. Replace an archive while retaining its position and enabled state, including at the 32-mod limit. Undo changes restores the saved list. Changes are installed only after Apply mods. Thanks to Ensrick for the proposal.",
+    "de": "Eigene RWD-Mods wurden verbessert: Nummern für die Ladereihenfolge, übereinstimmende Dateien zwischen aktiven Mods und Dateipfade in Tooltips. Archive lassen sich ersetzen, ohne Position und Aktivierungsstatus zu verlieren, auch bei 32 Mods. Änderungen verwerfen stellt die gespeicherte Liste wieder her. Erst Mods anwenden installiert die Änderungen. Vielen Dank an Ensrick für den Vorschlag.",
+    "fr": "Amélioration des mods RWD personnalisés : numéros d’ordre de chargement, fichiers communs entre les mods activés et chemins dans les infobulles. Remplacez une archive en conservant sa position et son activation, même à la limite de 32 mods. Annuler les modifications restaure la liste enregistrée. Les changements sont installés uniquement après Appliquer les mods. Merci à Ensrick pour cette proposition.",
+    "cs": "Vylepšené vlastní RWD mody: čísla pořadí načítání, shodné soubory mezi zapnutými mody a cesty v nápovědě. Archiv lze nahradit se zachováním pozice a zapnutí, i při limitu 32 modů. Vrátit změny obnoví uložený seznam. Změny se instalují až po Použít mody. Děkujeme Ensrickovi za návrh.",
+    "uk": "Покращено користувацькі RWD-моди: номери порядку завантаження, збіги файлів між увімкненими модами та перелік файлів у підказці. Архів можна замінити зі збереженням позиції та стану ввімкнення, навіть за ліміту 32 моди. Кнопка «Скасувати зміни» відновлює збережений список. Зміни встановлюються лише після «Застосувати моди». Дякуємо Ensrick за пропозицію."
+  }
+}

@@ -16,6 +16,9 @@ class PresentationTests
         string root=Path.GetFullPath(args[0]);
         Directory.CreateDirectory(Path.Combine(root,"data/UI/Menus"));
         Directory.CreateDirectory(Path.Combine(root,"data/UI/Game"));
+        File.WriteAllBytes(Path.Combine(root,"uniform-phase.bin"),PawGamePresentation.UniformPhaseCode(0x460000));
+        File.WriteAllBytes(Path.Combine(root,"uniform-button.bin"),PawGamePresentation.UniformButtonCode(0x460000,0x10000000));
+        File.WriteAllBytes(Path.Combine(root,"hud-layout.bin"),PawGamePresentation.HudLayoutCode(0x460000,0x10000000));
         File.WriteAllText(Path.Combine(root,"data/UI/Menus/main.tgi"),"fixture");
         foreach(string name in new[]{"paws_patch_versions.ini","paws_launch_versions.ini"})
             File.WriteAllText(Path.Combine(root,name),"[Versions]\nMod=arcane-wars\nModVersion=0.82.1.8\nPawPatch=0.2.0\nPatchChannel=beta");
@@ -29,7 +32,7 @@ class PresentationTests
         {
             string png=Path.Combine(root,"data/UI/Game/PawGoldSound.png");
             if(icon)File.WriteAllBytes(png,new byte[]{1});else if(File.Exists(png))File.Delete(png);
-            File.WriteAllText(Path.Combine(root,"data/UI/Game/game_interface.tgi"),layout?"[PawGoldSoundButton Template=PushButtonWidget]":"old interface");
+            File.WriteAllText(Path.Combine(root,"data/UI/Game/game_interface.tgi"),layout?"[PawGoldSoundButton Template=PushButtonWidget]\n;; PawUniformButtonRevision2":"old interface");
             IntPtr image=VirtualAlloc(IntPtr.Zero,0x610000,0x3000,0x40),cave=IntPtr.Zero;
             Check(image!=IntPtr.Zero,"disposable image allocation");
             try
@@ -39,6 +42,8 @@ class PresentationTests
                 byte[] uniformGuard={0x8b,0x80,0xe8,0,0,0,0x80,0x38,0,0x74,0x39};
                 Marshal.Copy(new byte[]{0x8b,0x80,0xe8,0,0,0,0x8a,0},0,Add(image,0x13c856),8);
                 Marshal.Copy(new byte[]{0xf3,0x0f,0x11,0x4d,0xfc},0,Add(image,0x141688),5);
+                Marshal.Copy(new byte[]{0x8b,0x86,0x88,0,0,0},0,Add(image,0x2ac2cb),6);
+                Marshal.Copy(new byte[]{0xf3,0x0f,0x5c,0x44,0x24,0x0c},0,Add(image,0xdad14),6);
                 Marshal.Copy(uniformGuard,0,Add(image,0x141649),uniformGuard.Length);
                 using(var proc=Process.GetCurrentProcess())
                     install.Invoke(null,new object[]{proc.Handle,image,Path.Combine(root,"test.log"),root,menuOnly,pureBeta});
@@ -49,17 +54,34 @@ class PresentationTests
 #else
                 bool uniform=false;
 #endif
-                Check(Marshal.ReadByte(Add(image,0x13c85c))==(uniform?0xb0:0x8a),"stock layout detector observes effective setting");
+                Check(Marshal.ReadByte(Add(image,0x13c856))==(uniform?0xe8:0x8b),"stock layout detector observes active phase");
                 Check(Marshal.ReadByte(Add(image,0x141688))==(uniform?0xe9:0xf3),"narrow displays retain the complete stock panel");
+                Check(Marshal.ReadByte(Add(image,0x2ac2cb))==(uniform?0xe8:0x8b),"HUD anchor hook scoped to uniform builds");
+                Check(Marshal.ReadByte(Add(image,0xdad14))==(uniform?0xe8:0xf3),"compact group spacing scoped to uniform builds");
                 if(uniform)
                 {
+                    Check(Marshal.ReadInt32(Add(image,0xdad15))==unchecked(cave.ToInt32()+0x1600-image.ToInt32()-0xdad19),"group spacing branch target");
                     Check(Marshal.ReadInt32(Add(image,0x141689))==unchecked(cave.ToInt32()+0xc00-image.ToInt32()-0x14168d),"clamp branch target");
                     Check(Marshal.ReadInt32(Add(cave,0xc04))==unchecked(image.ToInt32()+0x4b2e38),"relocated stock minimum width");
                     Check(Marshal.ReadInt32(Add(cave,0xc0e))==unchecked(image.ToInt32()+0x14168d-cave.ToInt32()-0xc12),"clamp resumes native setter");
+                    Check(Marshal.ReadInt32(Add(image,0x14164a))==unchecked(cave.ToInt32()+0xd00-image.ToInt32()-0x14164e),"layout phase call");
+                    Check(Marshal.ReadInt32(Add(image,0x13c857))==unchecked(cave.ToInt32()+0xd00-image.ToInt32()-0x13c85b),"poll phase call");
+                    Check(Marshal.ReadInt32(Add(cave,0xd01))==unchecked(image.ToInt32()+0x5f92f4),"app state address relocation");
+                    Check(Marshal.ReadInt32(Add(cave,0xd0d))==unchecked(image.ToInt32()+0x5f92b4),"app state table relocation");
+                    Check(Marshal.ReadInt32(Add(cave,0xd17))==unchecked(image.ToInt32()+0x48d0dc),"GameAppState native type relocation");
+                    byte[] phase=PawGamePresentation.UniformPhaseCode((uint)image.ToInt32());
+                    for(int j=0;j<phase.Length;j++)Check(Marshal.ReadByte(Add(cave,0xd00+j))==phase[j],"phase machine code");
+                    if(button)
+                    {
+                        Check(Marshal.ReadByte(Add(cave,0xa57))==0xe8,"viewport-relative tooltip hook");
+                        Check(Marshal.ReadInt32(Add(cave,0xa58))==0xd80-0xa5c,"tooltip hook destination");
+                        Check(Marshal.ReadInt32(Add(cave,0xd8b))==unchecked(image.ToInt32()+0x5f94d0),"tooltip viewport relocation");
+                        Check(Marshal.ReadInt32(Add(cave,0xd9d))==unchecked(cave.ToInt32()+0xdf0),"tooltip inset relocation");
+                    }
                 }
-                Check(Marshal.ReadByte(Add(image,0x141652))==(uniform?0x90:0x74),"uniform UI scoped to full patch");
-                Check(Marshal.ReadByte(Add(image,0x141653))==(uniform?0x90:0x39),"uniform UI branch padding");
-                for(int j=0;j<9;j++)Check(Marshal.ReadByte(Add(image,0x141649+j))==uniformGuard[j],"flag read and flag storage untouched");
+                Check(Marshal.ReadByte(Add(image,0x141652))==0x74,"native conditional aspect branch retained");
+                Check(Marshal.ReadByte(Add(image,0x141653))==0x39,"native aspect branch destination retained");
+                if(!uniform)for(int j=0;j<9;j++)Check(Marshal.ReadByte(Add(image,0x141649+j))==uniformGuard[j],"legacy flag read untouched");
                 for(int i=0;i<sites.Length;i++)
                 {
                     bool changed=i==1 || (i==0 && !menuOnly) || (i>=2 && button);

@@ -51,7 +51,7 @@ public partial class MainWindow
     private async Task<Process?> StartGameProcessAsync(string executable)
     {
         if (!SandboxSelected || !string.Equals(Path.GetFileName(executable), "k2.exe", StringComparison.OrdinalIgnoreCase))
-            return _startProcess(new ProcessStartInfo(executable) { WorkingDirectory = _game!.Directory, UseShellExecute = true });
+            return _startGameProcess(new ProcessStartInfo(executable) { WorkingDirectory = _game!.Directory, UseShellExecute = true });
         // The copy is outside the Steam library: it reaches the running Steam client through the app id in its environment.
         if (!_steamRunningProbe())
             throw new IOException(T("Сначала запустите Steam: песочница запускает свою копию игры.", "Start Steam first: the sandbox starts its own copy of the game."));
@@ -60,7 +60,7 @@ public partial class MainWindow
         var copied = await sandbox.SyncAsync(new Progress<double>(value => SetOperationProgress(value)));
         ActionJournal.Record("sandbox.copy", copied.ToString(System.Globalization.CultureInfo.InvariantCulture));
         EnsureGameClosed();
-        return _startProcess(sandbox.StartInfo());
+        return _startGameProcess(sandbox.StartInfo());
     }
 
     private void ShowLaunchResult(bool sandbox) => ShowResult(() => sandbox

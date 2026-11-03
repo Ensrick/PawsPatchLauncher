@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$OutputDirectory, [switch]$CityAssistant, [string]$LegacyWorkDirectory, [switch]$LobbyCompatibility, [string]$NativeCompiler, [switch]$LairWoundedTest, [switch]$LairRecovery, [switch]$CameraZoom, [switch]$CompanyPositionRecovery, [switch]$ExhaustionRecovery, [switch]$AiPolicy, [switch]$BotLobby, [switch]$FractionalKingdomPoints, [switch]$GraphicsDiagnostics, [switch]$SettlementSlots, [switch]$AllyEconomy, [switch]$EngineCrashFixes, [switch]$FoundationCounts, [switch]$NightmareDifficulty, [string]$PatchVersion, [string]$LocalLargeMapsSource, [switch]$LargeMaps, [string]$GameExecutable, [switch]$UniformUi)
+param([Parameter(Mandatory=$true)][string]$OutputDirectory, [switch]$CityAssistant, [string]$LegacyWorkDirectory, [switch]$LobbyCompatibility, [string]$NativeCompiler, [switch]$LairWoundedTest, [switch]$LairRecovery, [switch]$CameraZoom, [switch]$CompanyPositionRecovery, [switch]$ExhaustionRecovery, [switch]$AiPolicy, [switch]$BotLobby, [switch]$FractionalKingdomPoints, [switch]$GraphicsDiagnostics, [switch]$SettlementSlots, [switch]$AllyEconomy, [switch]$EngineCrashFixes, [switch]$FoundationCounts, [switch]$NightmareDifficulty, [string]$PatchVersion, [string]$LocalLargeMapsSource, [switch]$LargeMaps, [string]$GameExecutable, [switch]$UniformUi, [switch]$TerrainTexturePool, [switch]$SelectionScroll, [switch]$GroupAttackRecovery, [switch]$CompanyBehavior)
 $ErrorActionPreference = 'Stop'
 if($LairWoundedTest){$LairRecovery=$true}
 $out = [IO.Path]::GetFullPath($OutputDirectory)
@@ -231,6 +231,64 @@ if($SettlementSlots){
     & $slotTests
     if($LASTEXITCODE -ne 0){throw 'Settlement slots transaction checks failed'}
 }
+if($CompanyBehavior){
+    if(!$ExhaustionRecovery){throw 'Company behavior requires ExhaustionRecovery for the optional enabled mode.'}
+    $companyBehavior=Join-Path $PSScriptRoot '../company-behavior'
+    & $python (Join-Path $companyBehavior 'test.py') --legacy $work --out (Join-Path $out 'company-behavior-tests')
+    if($LASTEXITCODE -ne 0){throw 'Company behavior tests failed.'}
+}
+if($GroupAttackRecovery){
+    $groupRecovery=Join-Path $PSScriptRoot '../group-attack-recovery'
+    $groupTests=Join-Path $out 'GroupAttackRecoveryTests.exe'
+    & $compiler /nologo /target:exe /platform:x86 /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /main:GroupAttackRecoveryTests "/out:$groupTests" (Join-Path $PSScriptRoot 'TerrainRuntime.cs') (Join-Path $PSScriptRoot 'ReleaseStartup.cs') (Join-Path $PSScriptRoot 'RandomMapPatch.cs') (Join-Path $PSScriptRoot 'RandomMapBundle.cs') (Join-Path $groupRecovery 'GroupAttackRecoveryPatch.cs') (Join-Path $groupRecovery 'TransactionTests.cs')
+    if($LASTEXITCODE -ne 0){throw 'Group attack recovery test compilation failed'}
+    & $groupTests
+    if($LASTEXITCODE -ne 0){throw 'Group attack recovery transaction checks failed'}
+    & $python (Join-Path $groupRecovery 'test_native.py') --legacy $work --emitter $groupTests
+    if($LASTEXITCODE -ne 0){throw 'Group attack recovery native checks failed'}
+    $groupSpeedNative=Join-Path $out 'group-speed-native'
+    & $python (Join-Path $groupRecovery 'build_speed.py') --legacy $work --out $groupSpeedNative
+    if($LASTEXITCODE -ne 0){throw 'Group movement speed build failed'}
+    $speedTests=Join-Path $out 'GroupMovementSpeedTests.exe'
+    & $compiler /nologo /target:exe /platform:x86 /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /main:GroupMovementSpeedTests "/out:$speedTests" (Join-Path $PSScriptRoot 'TerrainRuntime.cs') (Join-Path $PSScriptRoot 'ReleaseStartup.cs') (Join-Path $PSScriptRoot 'RandomMapPatch.cs') (Join-Path $PSScriptRoot 'RandomMapBundle.cs') (Join-Path $groupRecovery 'GroupMovementSpeedPatch.cs') (Join-Path $groupSpeedNative 'GroupMovementSpeedPayload.cs') (Join-Path $groupRecovery 'SpeedTransactionTests.cs')
+    if($LASTEXITCODE -ne 0){throw 'Group movement speed test compilation failed'}
+    & $speedTests
+    if($LASTEXITCODE -ne 0){throw 'Group movement speed transaction checks failed'}
+    & $python (Join-Path $groupRecovery 'test_speed.py') --legacy $work --emitter $speedTests
+    if($LASTEXITCODE -ne 0){throw 'Group movement speed native checks failed'}
+}
+if($SelectionScroll){
+    if(!$NativeCompiler){throw 'Selection scrolling requires the native compiler.'}
+    $selection=Join-Path $PSScriptRoot '../selection-scroll'
+    $selectionNative=Join-Path $out 'selection-native'
+    & $python (Join-Path $selection 'build_native.py') --legacy $work --out $selectionNative --compiler $NativeCompiler
+    if($LASTEXITCODE -ne 0){throw 'Selection scrolling native build failed'}
+    & $python (Join-Path $selection 'test_native.py') --legacy $work --native $selectionNative
+    if($LASTEXITCODE -ne 0){throw 'Selection scrolling native tests failed'}
+    $selectionTests=Join-Path $out 'SelectionScrollTests.exe'
+    & $compiler /nologo /target:exe /platform:x86 /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /main:SelectionScrollTests "/out:$selectionTests" (Join-Path $PSScriptRoot 'TerrainRuntime.cs') (Join-Path $PSScriptRoot 'ReleaseStartup.cs') (Join-Path $PSScriptRoot 'RandomMapPatch.cs') (Join-Path $PSScriptRoot 'RandomMapBundle.cs') (Join-Path $selection 'SelectionScrollPatch.cs') (Join-Path $selectionNative 'SelectionScrollPayload.cs') (Join-Path $selection 'TransactionTests.cs')
+    if($LASTEXITCODE -ne 0){throw 'Selection scrolling transaction compilation failed'}
+    & $selectionTests
+    if($LASTEXITCODE -ne 0){throw 'Selection scrolling transaction checks failed'}
+    & $python (Join-Path $selection 'build_formation.py') --legacy $work --out $selectionNative
+    if($LASTEXITCODE -ne 0){throw 'Group formation build failed'}
+    & $python (Join-Path $selection 'test_formation.py') --legacy $work --native $selectionNative
+    if($LASTEXITCODE -ne 0){throw 'Group formation native tests failed'}
+    $formationTests=Join-Path $out 'GroupFormationTests.exe'
+    & $compiler /nologo /target:exe /platform:x86 /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /main:GroupFormationTests "/out:$formationTests" (Join-Path $PSScriptRoot 'TerrainRuntime.cs') (Join-Path $PSScriptRoot 'ReleaseStartup.cs') (Join-Path $PSScriptRoot 'RandomMapPatch.cs') (Join-Path $PSScriptRoot 'RandomMapBundle.cs') (Join-Path $selection 'GroupFormationPatch.cs') (Join-Path $selectionNative 'GroupFormationPayload.cs') (Join-Path $selection 'FormationTransactionTests.cs')
+    if($LASTEXITCODE -ne 0){throw 'Group formation transaction compilation failed'}
+    & $formationTests
+    if($LASTEXITCODE -ne 0){throw 'Group formation transaction checks failed'}
+    & $python (Join-Path $selection 'build_radius.py') --legacy $work --out $selectionNative --compiler $NativeCompiler
+    if($LASTEXITCODE -ne 0){throw 'Group formation radius build failed'}
+    & $python (Join-Path $selection 'test_radius.py') --legacy $work --native $selectionNative
+    if($LASTEXITCODE -ne 0){throw 'Group formation radius native tests failed'}
+    $radiusTests=Join-Path $out 'GroupFormationRadiusTests.exe'
+    & $compiler /nologo /target:exe /platform:x86 /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /main:GroupFormationRadiusTests "/out:$radiusTests" (Join-Path $PSScriptRoot 'TerrainRuntime.cs') (Join-Path $PSScriptRoot 'ReleaseStartup.cs') (Join-Path $PSScriptRoot 'RandomMapPatch.cs') (Join-Path $PSScriptRoot 'RandomMapBundle.cs') (Join-Path $selection 'GroupFormationRadiusPatch.cs') (Join-Path $selectionNative 'GroupFormationRadiusPayload.cs') (Join-Path $selection 'RadiusTransactionTests.cs')
+    if($LASTEXITCODE -ne 0){throw 'Group formation radius transaction compilation failed'}
+    & $radiusTests
+    if($LASTEXITCODE -ne 0){throw 'Group formation radius transaction checks failed'}
+}
 if($AllyEconomy){
     if(!$NativeCompiler){throw 'Ally economy requires the native compiler.'}
     $ally=Join-Path $PSScriptRoot '../ally-economy'
@@ -332,9 +390,13 @@ foreach ($variant in $variants.PSObject.Properties) {
     if($FractionalKingdomPoints){$arguments += '/define:FRACTIONAL_KINGDOM_POINTS';$arguments += (Join-Path $fractions 'FractionalPointsPatch.cs'),(Join-Path $fractionsNative 'FractionalPointsPayload.cs')}
     if($GraphicsDiagnostics){$arguments += '/define:GRAPHICS_DIAGNOSTICS';$arguments += (Join-Path $graphics 'GraphicsDiagnostics.cs');$arguments += '/resource:'+$graphicsExe+',PawsGraphicsRecorder'}
     if($SettlementSlots){$arguments += '/define:SETTLEMENT_SLOTS';$arguments += (Join-Path $slots 'SettlementSlotsPatch.cs'),(Join-Path $slotsNative 'SettlementSlotsPayload.cs')}
+    if($CompanyBehavior){$arguments += '/define:COMPANY_BEHAVIOR';$arguments += (Join-Path $companyBehavior 'GroupRetreatPriorityPatch.cs'),(Join-Path $companyBehavior 'CompanyExhaustionPatch.cs'),(Join-Path $companyBehavior 'PawCompanyOptions.cs')}
+    if($GroupAttackRecovery){$arguments += '/define:GROUP_ATTACK_RECOVERY';$arguments += (Join-Path $groupRecovery 'GroupAttackRecoveryPatch.cs'),(Join-Path $groupRecovery 'GroupMovementSpeedPatch.cs'),(Join-Path $groupSpeedNative 'GroupMovementSpeedPayload.cs')}
+    if($SelectionScroll){$arguments += '/define:SELECTION_SCROLL';$arguments += (Join-Path $selection 'SelectionScrollPatch.cs'),(Join-Path $selectionNative 'SelectionScrollPayload.cs'),(Join-Path $selection 'GroupFormationPatch.cs'),(Join-Path $selectionNative 'GroupFormationPayload.cs'),(Join-Path $selection 'GroupFormationRadiusPatch.cs'),(Join-Path $selectionNative 'GroupFormationRadiusPayload.cs')}
     if($AllyEconomy){$arguments += '/define:ALLY_ECONOMY';$arguments += (Join-Path $ally 'AllyEconomyPatch.cs'),(Join-Path $allyNative 'AllyEconomyPayload.cs')}
     if($FoundationCounts){$arguments += '/define:FOUNDATION_COUNTS';$arguments += (Join-Path $foundation 'FoundationCountsPatch.cs'),(Join-Path $foundationNative 'FoundationCountsPayload.cs')}
-    if($EngineCrashFixes){$arguments += '/define:ENGINE_CRASH_FIXES';$arguments += (Join-Path $crashFixes 'EngineCrashFixesPatch.cs'),(Join-Path $crashNative 'EngineCrashPayload.cs')}
+    if($EngineCrashFixes){$arguments += '/define:ENGINE_CRASH_FIXES';$arguments += (Join-Path $crashFixes 'EngineCrashFixesPatch.cs'),(Join-Path $crashFixes 'TaskStatusPatch.cs'),(Join-Path $crashNative 'EngineCrashPayload.cs')}
+    if($TerrainTexturePool){if(!$CameraZoom){throw 'Terrain texture pool requires the camera feature'};$arguments += '/define:TERRAIN_TEXTURE_POOL'}
     if($CameraZoom){$arguments += '/define:CAMERA_ZOOM_2';$arguments += (Join-Path $camera 'CameraZoomPatch.cs'),(Join-Path $cameraNative 'CameraZoomPayload.cs')}
     if($LairRecovery){$arguments += (Join-Path $lair 'LairRecoveryPatch.cs'),(Join-Path $lairNative 'LairRecoveryPayload.cs')}
     foreach ($resource in $resources) { $arguments += '/resource:' + (Join-Path $PSScriptRoot "$resource.bin") + ',' + $resource }

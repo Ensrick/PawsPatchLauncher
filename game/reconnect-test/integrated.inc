@@ -3,6 +3,8 @@ static Host recoveryHost;
 static wchar_t recoveryLog[MAX_PATH];
 static BOOL (WINAPI *originalCounter)(LARGE_INTEGER*);
 static DWORD recoveryLastTick;
+static PawRecoveryConfig recoveryPrepared;
+static int recoveryIsPrepared,recoveryAnnounce;
 static void __cdecl RecoveryLog(const char *category,const char *format,...) {
     char message[1400],body[1024];DWORD written;SYSTEMTIME t;va_list args;
     HANDLE file;int n;(void)category;
@@ -14,7 +16,15 @@ static void __cdecl RecoveryLog(const char *category,const char *format,...) {
 }
 static BOOL WINAPI RecoveryCounter(LARGE_INTEGER *value) {
     DWORD error=GetLastError(),now=GetTickCount();
-    if(GetCurrentThreadId()==g_thread&&now-recoveryLastTick>=50){recoveryLastTick=now;K2Plugin_Tick();}
+    if(GetCurrentThreadId()==g_thread&&now-recoveryLastTick>=50){
+        recoveryLastTick=now;
+        if(recoveryAnnounce){
+            recoveryAnnounce=0;
+            Log("READY r2: 1.3.72 verified; native save completion; lobby recovery; auto_vote=%d; backup=2f4, disconnecting=2ed",g_autoVote);
+            Log("INTEGRATED: Pure helper owns R2 and null-player guard; main_thread=%lu",g_thread);
+        }
+        K2Plugin_Tick();
+    }
     SetLastError(error);return originalCounter(value);
 }
 static int ExecutableCounter(uintptr_t address) {
@@ -49,15 +59,24 @@ static uintptr_t *CounterImport(uintptr_t base) {
         }
     }return 0;
 }
-DWORD PawRecoveryInstall(const PawRecoveryConfig *config,uintptr_t image) {
-    uintptr_t *counter;DWORD old,ignored;unsigned n;
-    if(!config||!config->mainThread||config->autoVote>1||g_active)return 60;
+/* Filesystem and synchronization setup can take the process heap lock. Do this
+ * before the rendezvous advertises readiness, while existing threads run. */
+DWORD PawRecoveryPrepare(const PawRecoveryConfig *config) {
+    unsigned n;
+    if(!config||!config->mainThread||config->autoVote>1||g_active||recoveryIsPrepared)return 60;
     for(n=0;n<MAX_PATH&&config->data[n];++n){}if(!n||n>=MAX_PATH-130)return 61;
     for(n=0;n<MAX_PATH&&config->log[n];++n){}if(!n||n==MAX_PATH)return 62;
     if(GetFileAttributesW(config->data)==INVALID_FILE_ATTRIBUTES)return 63;
+    if(!InitializeCriticalSectionAndSpinCount(&g_lock,0))return 69;
+    memcpy(&recoveryPrepared,config,sizeof(recoveryPrepared));
+    recoveryIsPrepared=1;g_installQuiet=1;return 0;
+}
+DWORD PawRecoveryInstall(const PawRecoveryConfig *config,uintptr_t image) {
+    uintptr_t *counter;DWORD old,ignored;
+    if(!recoveryIsPrepared||!config||memcmp(config,&recoveryPrepared,sizeof(recoveryPrepared))||g_active)return 68;
     memcpy(recoveryLog,config->log,sizeof(recoveryLog));
     counter=CounterImport(image);if(!counter||!ExecutableCounter(*counter)){
-        RecoveryLog("install","REFUSED counter import: slot=%p actual=%p image=%p",counter,counter?*counter:0,image);return 64;}
+        return 64;}
     originalCounter=(void*)*counter;
     if(!VirtualProtect(counter,4,PAGE_READWRITE,&old))return 65;
     memcpy(g_data,config->data,sizeof(g_data));memcpy(recoveryLog,config->log,sizeof(recoveryLog));
@@ -66,6 +85,6 @@ DWORD PawRecoveryInstall(const PawRecoveryConfig *config,uintptr_t image) {
     if(K2Plugin_Start(&recoveryHost)){VirtualProtect(counter,4,old,&ignored);return 66;}
     InterlockedExchange((LONG*)counter,(LONG)RecoveryCounter);
     if(!VirtualProtect(counter,4,old,&ignored)){g_active=0;return 67;}
-    Log("INTEGRATED: Pure helper owns R2 and null-player guard; main_thread=%lu",g_thread);
+    recoveryAnnounce=1;g_installQuiet=0;
     return 0;
 }

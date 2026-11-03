@@ -16,7 +16,9 @@ static FILE *record;
 static WCHAR session[1024];
 static FILETIME expectedStart;
 static WCHAR expectedImage[1024];
-static int attached=0;
+#ifdef RECORDER_TEST
+static int detachAfterArm=0;
+#endif
 static void logline(const char *fmt,...) {
     va_list args; SYSTEMTIME t; GetLocalTime(&t);
     if (!record) return;
@@ -85,7 +87,7 @@ static int run(DWORD pid,const char *watch) {
     if(!mutex || GetLastError()==ERROR_ALREADY_EXISTS) return error("Diagnostics already attached to this game");
     swprintf(path,L"%ls.log",session); record=_wfopen(path,L"wb");
     if(!record) {CloseHandle(mutex); CloseHandle(process); return error("Cannot open diagnostic log");}
-    logline("START r2 pid=%lu watch=%s recorder=%lu",pid,watch,GetCurrentProcessId());
+    logline("START r3 pid=%lu watch=%s recorder=%lu",pid,watch,GetCurrentProcessId());
     if(module_range(pid,watch,&low,&high,image))
         logline("MODULE %s base=%08lX end=%08lX",watch,low,high);
     GetSystemDirectoryW(path,1024); lstrcatW(path,L"\\dbghelp.dll");
@@ -93,13 +95,26 @@ static int run(DWORD pid,const char *watch) {
     writeDump=dbghelp?(WriteDump)GetProcAddress(dbghelp,"MiniDumpWriteDump"):NULL;
     if(!writeDump) return error("System MiniDumpWriteDump is unavailable");
     if(!DebugActiveProcess(pid)) {CloseHandle(process); return error("Cannot attach diagnostics");}
-    attached=1;
     if(!DebugSetProcessKillOnExit(FALSE)) {DebugActiveProcessStop(pid); CloseHandle(process); return error("Cannot enable safe debugger exit");}
     logline("ATTACHED kill_on_recorder_exit=false");
     while(!done) {
         if(!WaitForDebugEvent(&event,1000)) {
-            if(GetLastError()==ERROR_SEM_TIMEOUT) continue;
-            logline("WAIT_FAILED error=%lu",GetLastError()); result=1; break;
+            DWORD waitError=GetLastError();
+            DWORD state=WaitForSingleObject(process,0);
+            /* Some game shutdown paths leave the debug queue without an
+             * EXIT_PROCESS event. The verified handle remains bound to this
+             * exact process even if its PID is reused. Only check after an
+             * empty/failed wait: pending exceptions must still be continued. */
+            if(state==WAIT_OBJECT_0) {
+                DWORD exitCode=0;
+                if(GetExitCodeProcess(process,&exitCode))
+                    logline("TARGET_EXIT_HANDLE code=%lu captured=%d",exitCode,captured);
+                else logline("TARGET_EXIT_HANDLE captured=%d code_unavailable=%lu",captured,GetLastError());
+                break;
+            }
+            if(state==WAIT_FAILED) {result=error("Cannot wait for game exit"); break;}
+            if(waitError==ERROR_SEM_TIMEOUT) continue;
+            logline("WAIT_FAILED error=%lu",waitError); result=1; break;
         }
         code=DBG_CONTINUE;
         if(event.dwDebugEventCode==EXCEPTION_DEBUG_EVENT) {
@@ -139,6 +154,14 @@ static int run(DWORD pid,const char *watch) {
         if(!ContinueDebugEvent(event.dwProcessId,event.dwThreadId,code)) {
             logline("CONTINUE_FAILED error=%lu",GetLastError()); result=1; break;
         }
+#ifdef RECORDER_TEST
+        /* Reproduce a lost debug-event stream while the target stays alive.
+         * Production builds cannot request this fault injection. */
+        if(detachAfterArm && !initialBreak && !done) {
+            if(!DebugActiveProcessStop(pid)) {result=error("Test detach failed"); break;}
+            logline("TEST_DETACHED"); detachAfterArm=0;
+        }
+#endif
         if(captured && !done) {
             BOOL detached=DebugActiveProcessStop(pid);
             logline("DETACH result=%u error=%lu",detached,detached?0:GetLastError());
@@ -153,15 +176,19 @@ int WINAPI WinMain(HINSTANCE instance,HINSTANCE previous,LPSTR command,int show)
     int argc,result; LPWSTR *argv; ULARGE_INTEGER stamp; char watch[128]="nvd3dum.dll";
     (void)instance;(void)previous;(void)command;(void)show;
     argv=CommandLineToArgvW(GetCommandLineW(),&argc);
-    if(!argv || argc<5 || argc>6) return 2;
+    if(!argv || argc<5 || argc>7) return 2;
     if(wcslen(argv[3])>=1024 || wcslen(argv[4])>=1024) {LocalFree(argv);return 2;}
     stamp.QuadPart=_wcstoui64(argv[2],NULL,16);
     expectedStart.dwLowDateTime=stamp.LowPart;expectedStart.dwHighDateTime=stamp.HighPart;
     lstrcpyW(expectedImage,argv[3]);lstrcpyW(session,argv[4]);
 #ifdef RECORDER_TEST
-    if(argc==6) {
+    if(argc>=6) {
         unsigned int i; for(i=0;i<sizeof(watch)-1 && argv[5][i];i++) watch[i]=(char)argv[5][i];
         watch[i]=0;
+    }
+    if(argc==7) {
+        if(lstrcmpW(argv[6],L"detach-after-arm")) {LocalFree(argv);return 2;}
+        detachAfterArm=1;
     }
 #else
     if(argc!=5) {LocalFree(argv);return 2;}

@@ -22,6 +22,11 @@ class IdentityTests {
         foreach(var name in new[]{"language","gameTextLanguage","gameVoiceLanguage","notificationSoundName","gamePath"}){settings[name]="different-local-value";Check(Token(s,h,helper)==original);settings.Remove(name);}
         settings["russianLocalization"]=true;Check(Token(s,h,helper)==original);bool ru;PawLobbyCompatibility.Identity(Json.Serialize(s),new string('A',64),helper,h,out ru);Check(ru);
         settings["russianLocalization"]=false;
+#if COMPANY_BEHAVIOR
+        settings["ignoreZeroMorale"]=false;Check(Token(s,h,helper)==original);
+        settings["ignoreZeroMorale"]=true;Check(Token(s,h,helper)!=original);
+        settings.Remove("ignoreZeroMorale");Check(Token(s,h,helper)==original);
+#endif
         foreach(var key in new[]{"customPlayerColors","independentHostility","additionalRoamingCompanies","siegeBalance","disablePowersAndShards","largeMapSizes"}){settings[key]=false;Check(Token(s,h,helper)!=original);settings[key]=true;}
         settings["roamingSpawnMode"]="x2";Check(Token(s,h,helper)!=original);settings["roamingSpawnMode"]="x4";
         settings["desyncMode"]="stop";Check(Token(s,h,helper)!=original);settings["desyncMode"]="continue";

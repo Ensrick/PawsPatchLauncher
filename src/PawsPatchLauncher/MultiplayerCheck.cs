@@ -94,7 +94,7 @@ public static class MultiplayerCheck
         var errors = new List<string>();
         var details = new MultiplayerManifest { Configuration = ConfigurationCode.Create(settings), GameBuild = build,
             Executable = Path.GetFileName(executable), Modules = state.Modules.Select(x => new MultiplayerModule {
-                Id = x.Key, Version = x.Value.Version, Sha256 = x.Value.ArchiveSha256, Enabled = x.Value.Enabled, Priority = x.Value.Priority }).ToList() };
+                Id = x.Key, Version = x.Value.Version, Sha256 = ArcaneSourceAssembly.CompatibilityHash(x.Key, x.Value.ArchiveSha256), Enabled = x.Value.Enabled, Priority = x.Value.Priority }).ToList() };
         using var digest = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         void Add(string line) => digest.AppendData(Encoding.UTF8.GetBytes(line + "\n"));
         Add("PAW-MP1");
@@ -102,7 +102,7 @@ public static class MultiplayerCheck
         Add(build);
         Add(Path.GetFileName(executable).ToLowerInvariant());
         foreach (var module in state.Modules.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
-            Add($"{module.Key.ToLowerInvariant()}|{module.Value.Version}|{module.Value.ArchiveSha256.ToUpperInvariant()}");
+            Add($"{module.Key.ToLowerInvariant()}|{module.Value.Version}|{ArcaneSourceAssembly.CompatibilityHash(module.Key, module.Value.ArchiveSha256).ToUpperInvariant()}");
         foreach (var relative in paths.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
         {
             ct.ThrowIfCancellationRequested();

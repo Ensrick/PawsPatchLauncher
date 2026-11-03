@@ -10,11 +10,14 @@ public static class OfficialFeedConfigurationTests
         var root = OfficialFeedConfiguration.Root;
         var c = new LauncherConfiguration { PublicKeyPem = key, FeedUrls = [root + "stable.json", "https://mirror.example/feed.json"], BetaFeedUrls = [root + "beta.json"], CacheRoot = "custom-cache" };
         OfficialFeedConfiguration.Upgrade(c);
-        Check(c.FeedUrls.SequenceEqual([root + "v2/stable.json", "https://mirror.example/feed.json"]));
-        Check(c.BetaFeedUrls.SequenceEqual([root + "v2/beta.json"]));
+        Check(c.FeedUrls.SequenceEqual([root + "v3/stable.json", "https://mirror.example/feed.json"]));
+        Check(c.BetaFeedUrls.SequenceEqual([root + "v3/beta.json"]));
         Check(c.CacheRoot == "custom-cache" && c.PublicKeyPem == key && c.RequireSignedRemoteFeed);
         OfficialFeedConfiguration.Upgrade(c);
-        Check(c.FeedUrls[0] == root + "v2/stable.json");
+        Check(c.FeedUrls[0] == root + "v3/stable.json");
+        var v2 = new LauncherConfiguration { PublicKeyPem = key, FeedUrls = [root + "v2/stable.json"], BetaFeedUrls = [root + "v2/beta.json"] };
+        OfficialFeedConfiguration.Upgrade(v2);
+        Check(v2.FeedUrls[0] == root + "v3/stable.json" && v2.BetaFeedUrls[0] == root + "v3/beta.json");
         foreach (var customKey in new[] { "", "test-key" })
         {
             var custom = new LauncherConfiguration { PublicKeyPem = customKey, FeedUrls = [root + "stable.json"] };

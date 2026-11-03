@@ -22,6 +22,8 @@ public static class Program
     {
         if (args.Contains("--icon-checks")) { IconChecks.Run(args[0]); return; }
         var language = args.FirstOrDefault(arg => arg.StartsWith("--language="))?.Split('=')[1] ?? "ru";
+        var idleCpuProbe = args.Contains("--idle-cpu-probe");
+        var lobbyLaunchFixture = args.FirstOrDefault(a => a.StartsWith("--lobby-launch-fixture="))?["--lobby-launch-fixture=".Length..];
         var pureOptionsConfig = args.FirstOrDefault(a=>a.StartsWith("--pure-options-config="))?["--pure-options-config=".Length..];
         var compactConfig = args.FirstOrDefault(arg => arg.StartsWith("--compact-config="))?["--compact-config=".Length..];
         var compactGame = args.FirstOrDefault(arg => arg.StartsWith("--compact-game="))?["--compact-game=".Length..];
@@ -52,6 +54,7 @@ public static class Program
         var launcherUpdateChecks = args.Contains("--launcher-update-checks");
         var gameSettingsChecks = args.Contains("--game-settings-checks");
         var customModsChecks = args.Contains("--custom-mods-checks");
+        var backgroundInstallChecks = args.Contains("--background-install-checks");
         var compactTransferChecks = args.Contains("--compact-transfer-checks");
         var languageReliabilityConfig = args.FirstOrDefault(a => a.StartsWith("--language-reliability-config="))?["--language-reliability-config=".Length..];
         var progressMotionChecks=args.Contains("--progress-motion-checks");
@@ -76,6 +79,7 @@ public static class Program
         var launcher074Checks = args.Contains("--launcher-074-checks");
         var modePerf = args.FirstOrDefault(a=>a.StartsWith("--mode-perf="))?["--mode-perf=".Length..];
         var modeGame = args.FirstOrDefault(a=>a.StartsWith("--mode-game="))?["--mode-game=".Length..];
+        var modDbDialogPreview = args.Contains("--moddb-dialog-preview");
         args = args.Where(arg => !arg.StartsWith("--")).ToArray();
         if (args.Length is < 1 or > 3) throw new ArgumentException("Pass the output PNG path, an optional page name, and an optional vertical offset.");
         var app = new App();
@@ -83,6 +87,9 @@ public static class Program
         // Avoid a second real MainWindow during deferred Application startup. Use an inert invisible fixture.
         app.StartupUri = new Uri("pack://application:,,,/PreviewRenderer;component/PreviewBootstrap.xaml");
         app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        if (idleCpuProbe) { IdleCpuProbe.Run(args[0]); app.Shutdown(); return; }
+        if (lobbyLaunchFixture is not null) { LobbyLaunchChecks.Run(lobbyLaunchFixture); app.Shutdown(); return; }
+        if (modDbDialogPreview) { ModDbDialogPreview.Run(language, args[0]); app.Shutdown(); return; }
         if (pureOptionsConfig is not null) { PureOptionsUiChecks.Run(pureOptionsConfig); app.Shutdown(); return; }
         if (popupScrollChecks) { PopupScrollChecks.Run(Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (launcher074Checks) { Launcher074Checks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
@@ -132,6 +139,7 @@ public static class Program
         else if (launcherUpdateChecks) LauncherUpdateChecks.Run();
         if (gameSettingsChecks) { GameSettingsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (customModsChecks) { CustomModsChecks.Run(language, Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
+        if (backgroundInstallChecks) { BackgroundInstallChecks.Run(Path.GetDirectoryName(Path.GetFullPath(args[0]))!); app.Shutdown(); return; }
         if (languageReliabilityConfig is not null) { LanguageReliabilityChecks.Run(languageReliabilityConfig, language); app.Shutdown(); return; }
         if (diagnosticsChecks) DiagnosticsUiChecks.Run(language);
         if (windowChecks) WindowExperienceChecks.Run(language);

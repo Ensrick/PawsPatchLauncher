@@ -1,0 +1,34 @@
+	;; PawUniformButtonRevision2: square on the uniform match canvas.
+	;; Six units above the visible lower bar (top=576).
+	[PawGoldSoundButton Template=PushButtonWidget]
+	{
+		;; PawUniformButtonRevision2
+		tooltip_name = "Paw's Patch"
+		tooltip = ""
+		set_sound = paws_gold_button_select
+		unset_sound = NULL
+		[View Template=GroupVE]
+		{
+			L = 52r
+			T = 246b
+			R = 4r
+			B = 198b
+			[Child Template=DecalVE]
+			when = UNFOCUSED + UNPRESSED
+			texture = /UI/%s/Game/SharedTextures/ActionButtonBorderUnpressed.png
+			[Child Template=DecalVE]
+			when = FOCUSED + UNPRESSED
+			texture = /UI/%s/Game/SharedTextures/ActionButtonBorderPressed.png
+			[Child Template=DecalVE]
+			when = PRESSED
+			texture = /UI/%s/Game/SharedTextures/ActionButtonBorderPressed.png
+			[Child Template=DecalVE]
+			{
+				L = 1.333333
+				T = 1.333333
+				R = 46.666667
+				B = 46.666667
+				texture = /UI/Game/PawGoldSound.png
+			}
+		}
+	}

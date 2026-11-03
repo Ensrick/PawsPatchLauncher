@@ -14,6 +14,7 @@ public static class EffectiveSettings
         active.SuspendedArcaneComponents = null;
         active.CustomPlayerColors = preferences.CustomPlayerColors && colorsAvailable;
         active.LargeMapSizes = active.PawPatchEnabled;
+        active.IgnoreZeroMorale &= GameMod.IsArcaneWars(active) && active.PawPatchEnabled && !active.DataOnly;
         active.ImprovedAi &= GameMod.IsArcaneWars(active) && active.PawPatchEnabled && !active.DataOnly;
         if (GameMod.IsArcaneWars(active) && !active.PawPatchEnabled) GameMod.DisableArcaneComponents(active);
         if (active.DataOnly)
@@ -65,6 +66,7 @@ public static class EffectiveSettings
             active.RoamingSpawnMode = options.RoamingSpawnMode is "x2" or "x4" ? options.RoamingSpawnMode : "standard";
             active.LargeMapSizes = true;
         }
+        active.IgnoreZeroMorale &= feed?.Channel == active.Channel && GameMod.HasIgnoreZeroMorale(feed, active.Mod);
         active.ImprovedAi &= GameMod.HasImprovedAi(feed, active.Mod);
         if (!GameMod.IsArcaneWars(active) && !active.PureBetaFeatures)
         {

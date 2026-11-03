@@ -40,8 +40,12 @@ def read_entry(archive, wanted):
             offset, size, _unused, repeated = struct.unpack_from('<qqQq', raw, 64)
             if offset < 12 or size < 0 or offset > table or size > table - offset or repeated != size:
                 raise ValueError('section %r lies outside the archive' % name)
+            if name in sections:
+                raise ValueError('duplicate section %r' % name)
             sections[name] = (offset, size)
         files, footer = sections['Files'], sections['Footer']
+        if footer[1] < 4:
+            raise ValueError('footer lacks entry count')
         f.seek(footer[0])
         end = footer[0] + footer[1]
         (entries,) = struct.unpack('<I', f.read(4))
@@ -64,6 +68,8 @@ def read_entry(archive, wanted):
             raise ValueError('unexpected footer trailing bytes')
         if not found:
             raise ValueError('%s not found' % wanted)
+        if found[1] > 1024 * 1024:
+            raise ValueError('configuration entry exceeds 1 MiB')
         f.seek(files[0] + found[0])
         return f.read(found[1])
 
@@ -77,20 +83,32 @@ def overlay(stock):
     return stock[:-3] + LINE + stock[-3:]
 
 
+def prepare_game(game, out):
+    if out.resolve().is_relative_to(game.resolve()):
+        raise ValueError('Output must be separate from the game directory.')
+    if out.exists():
+        raise ValueError('Choose a new output directory.')
+    stock = read_entry(game / 'Data.rwd', SOURCE)
+    # A mod's UVars.tgi is a separate layer and must remain untouched. An
+    # unknown loose UVars_k2.tgi, however, would be hidden by this overlay.
+    loose = game / TARGET
+    if loose.exists() and loose.read_bytes() != stock:
+        raise ValueError('Custom data/UVars_k2.tgi found; review its settings before preparing an overlay.')
+    after = overlay(stock)
+    out.mkdir(parents=True, exist_ok=False)
+    (out / 'data').mkdir()
+    (out / TARGET).write_bytes(after)
+    manifest = [{'path': TARGET, 'before': STOCK_SHA256, 'after': hashlib.sha256(after).hexdigest()}]
+    (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+    print('TERRAIN_POOL_PREPARED %s entries=%d after=%s' % (TARGET, ENTRIES, manifest[0]['after']))
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--game', type=Path, required=True)
     p.add_argument('--out', type=Path, required=True)
     a = p.parse_args()
-    if a.out.exists():
-        raise SystemExit('Choose a new output directory.')
-    stock = read_entry(a.game / 'Data.rwd', SOURCE)
-    after = overlay(stock)
-    (a.out / 'data').mkdir(parents=True)
-    (a.out / TARGET).write_bytes(after)
-    manifest = [{'path': TARGET, 'before': STOCK_SHA256, 'after': hashlib.sha256(after).hexdigest()}]
-    (a.out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-    print('TERRAIN_POOL_PREPARED %s entries=%d after=%s' % (TARGET, ENTRIES, manifest[0]['after']))
+    prepare_game(a.game, a.out)
 
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
 {
   "feedUrls": [
-    "https://raw.githubusercontent.com/VasiliyPaw/PawsPatchLauncher/main/feed/v2/stable.json"
+    "https://raw.githubusercontent.com/VasiliyPaw/PawsPatchLauncher/main/feed/v3/stable.json"
   ],
   "betaFeedUrls": [
-    "https://raw.githubusercontent.com/VasiliyPaw/PawsPatchLauncher/main/feed/v2/beta.json"
+    "https://raw.githubusercontent.com/VasiliyPaw/PawsPatchLauncher/main/feed/v3/beta.json"
   ],
   "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELTU21+pvKiNCLqG44ge7vyZH5J8C\n3eOJEpo428Jn2eH14PLmcOHoOCxYuqxXPppg4U7Me2+E8h5WXxTltcEumQ==\n-----END PUBLIC KEY-----",
   "cacheRoot": null,

@@ -49,6 +49,7 @@ internal static class GameLobbyPreferencesTests
     {
         var checks = 0;
         void Check(bool ok, string why) { if (!ok) throw new Exception(why); checks++; }
+        foreach (var defaults in new[] { GameLobbyPreferences.Vanilla1372, GameLobbyPreferences.Vanilla1368 })
         foreach (var mod in new[] { GameMod.Vanilla, GameMod.Immortals, GameMod.ArcaneWars })
         foreach (var paw in new[] { false, true })
         foreach (var dataOnly in new[] { false, true })
@@ -57,7 +58,7 @@ internal static class GameLobbyPreferencesTests
         {
             var input = Fixture(single, multi); var copy = input.ToArray();
             var settings = new UserSettings { Mod = mod, PawPatchEnabled = paw, DataOnly = dataOnly };
-            var output = GameLobbyPreferences.Repair(input, settings);
+            var output = GameLobbyPreferences.Repair(input, settings, defaults);
             var shouldRepair = (single || multi) && !(mod == GameMod.ArcaneWars && paw && !dataOnly);
             Check((output is not null) == shouldRepair, "Incorrect compatibility decision");
             Check(input.SequenceEqual(copy), "Input mutated");
@@ -67,7 +68,10 @@ internal static class GameLobbyPreferencesTests
             foreach (var name in before.Keys.Except(new[] { "RMCPreferences", single ? "SingleLaunchSettings" : "", multi ? "MultiLaunchSettings" : "" }))
                 Check(before[name].SequenceEqual(after[name]), "Unrelated preference data modified: " + name);
             Check(after["RMCPreferences"].SequenceEqual(new byte[4]), "Map cache not cleared");
-            Check(GameLobbyPreferences.Repair(output, settings) is null, "Repeated launch resets preferences again");
+            foreach (var name in new[] { "SingleLaunchSettings", "MultiLaunchSettings" })
+                if (name == "SingleLaunchSettings" ? single : multi)
+                    Check(after[name].SequenceEqual(GameLobbyPreferences.Default(name, defaults)), "Wrong build defaults: " + name);
+            Check(GameLobbyPreferences.Repair(output, settings, defaults) is null, "Repeated launch resets preferences again");
         }
         var badInputs = new List<byte[]> { Array.Empty<byte>(), new byte[12], Fixture(true,true)[..^1] };
         foreach (var offset in new[] { 0,4,8,12 }) {var bytes=Fixture(true,true);bytes[offset]=255;badInputs.Add(bytes);}
@@ -117,6 +121,13 @@ internal static class GameLobbyPreferencesTests
         Check(await GameLobbyPreferences.DefaultsForGameAsync(unknownGame, default) is null, "Game without k2.exe selected defaults");
         File.WriteAllBytes(Path.Combine(unknownGame, "k2.exe"), [0x4d, 0x5a, 1, 2, 3]);
         Check(await GameLobbyPreferences.DefaultsForGameAsync(unknownGame, default) is null, "Unknown k2.exe selected defaults");
+        var documents = Path.Combine(root, "isolated-documents");
+        var unknownPreferences = Path.Combine(unknownGame, "Userdata", "User", "Preferences.rup");
+        Directory.CreateDirectory(Path.GetDirectoryName(unknownPreferences)!);
+        File.WriteAllBytes(unknownPreferences, lobby68);
+        await GameLobbyPreferences.PrepareForLaunchAsync(unknownGame, vanilla, documents);
+        Check(File.ReadAllBytes(unknownPreferences).SequenceEqual(lobby68), "Unknown game preferences changed through launch path");
+        Check(!Directory.Exists(documents), "Unknown game touched Documents");
         Console.WriteLine($"LOBBY PREFERENCES PASS {checks}: mode/component transitions, both launch caches, general preferences, unknown chunks/formats, backup and repeated launch, per-build defaults (1.3.72, 1.3.68, unknown).");
         return checks;
     }

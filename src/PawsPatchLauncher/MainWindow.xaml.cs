@@ -75,6 +75,7 @@ public partial class MainWindow : Window
         AdditionalRoamingToggle.IsChecked = GameMod.IsArcaneWars(_settings) ? _settings.AdditionalRoamingCompanies : GameMod.PureComponents(_settings).AdditionalRoamingCompanies;
         SiegeBalanceToggle.IsChecked = _settings.SiegeBalance;
         ImprovedAiToggle.IsChecked = GameMod.ImprovedAiSelected(_settings);
+        IgnoreZeroMoraleToggle.IsChecked = GameMod.IsArcaneWars(_settings) && _settings.IgnoreZeroMorale;
         PowersShardsToggle.IsChecked = _settings.DisablePowersAndShards;
         SelectOosMode(_settings.DesyncMode);
         SelectSpawnMode(_settings.RoamingSpawnMode);
@@ -88,7 +89,7 @@ public partial class MainWindow : Window
         Closing += (_, e) =>
         {
             if (ConfirmationActive) { e.Cancel = true; _ = CompleteConfirmationAsync(false); }
-            else if (_busy) { e.Cancel = true; ShowToast(() => T("Дождитесь окончания операции или приостановите загрузку.", "Wait for the operation or pause the download.")); }
+            else if (_busy || _customModsBusy) { e.Cancel = true; ShowToast(() => T("Дождитесь окончания операции или приостановите загрузку.", "Wait for the operation or pause the download.")); }
         };
         _initializing = false;
         Loaded += async (_, _) => { try { await InitializeAsync(); } finally { _initialized.TrySetResult(); } };
@@ -199,7 +200,9 @@ public partial class MainWindow : Window
         SiegeBalanceTitleText.Text = _text["modules.siege"];
         SiegeBalanceDescriptionText.Text = _text["modules.siege.desc"];
         ImprovedAiTitleText.Text = _text["modules.ai"];
+        IgnoreZeroMoraleTitleText.Text = _text["modules.exhaustion"];
         ImprovedAiDescriptionText.Text = _text["modules.ai.desc"];
+        IgnoreZeroMoraleDescriptionText.Text = _text["modules.exhaustion.desc"];
         PowersShardsTitleText.Text = _text["modules.powers"];
         System.Windows.Automation.AutomationProperties.SetName(PowersShardsToggle, _text["modules.powers"]);
         RefreshPowersShardsOption();
@@ -414,6 +417,7 @@ public partial class MainWindow : Window
         AdditionalRoamingToggle.IsEnabled = !_busy;
         SiegeBalanceToggle.IsEnabled = !_busy;
         ImprovedAiToggle.IsEnabled = !_busy && GameMod.PawPatchSelected(_settings) && !DataOnlyMode && GameMod.HasImprovedAi(_channel, _settings.Mod);
+        IgnoreZeroMoraleToggle.IsEnabled = !_busy && GameMod.PawPatchSelected(_settings) && !DataOnlyMode && GameMod.HasIgnoreZeroMorale(_channel, _settings.Mod);
         RefreshPowersShardsOption();
         CopyConfigurationButton.IsEnabled = !_busy;
         DiagnosticsButton.IsEnabled = !_busy;
@@ -555,7 +559,7 @@ public partial class MainWindow : Window
         _downloadCancellation = cancellation;
         CancelDownloadButton.Visibility = Visibility.Visible;
         var progress = TransferProgress(ChannelPresentation.PlainPunctuation(package.Name.Get(_text.Language)));
-        try { return await _feedClient.DownloadVerifiedAsync(package, progress, cancellation.Token); }
+        try { return await _feedClient.DownloadVerifiedAsync(package, progress, cancellation.Token, ChooseModDbArchiveAsync); }
         finally
         {
             FinishTransfer();
@@ -592,7 +596,7 @@ public partial class MainWindow : Window
 
     private async Task LaunchGameAsync()
     {
-        if (_game is null || _busy || _launchStarting || ArcaneAccessBlocked) return;
+        if (_game is null || _busy || _customModsBusy || _customModsDirty || _launchStarting || ArcaneAccessBlocked) return;
         if (_settingsPending || !_patchInstalled)
         {
             ShowToast(() => T("Сначала установите мод или примените выбранные настройки.", "Install the mod or apply the selected settings first."));
@@ -611,7 +615,7 @@ public partial class MainWindow : Window
                     .Concat(await vanillaInstaller.VerifyAsync(allowCustomHotkeys: true)).ToList();
                 if (check.Count != 0) throw new IOException(string.Join("; ", check));
                 EnsureGameClosed();
-                await GameLobbyPreferences.PrepareForLaunchAsync(_game.Directory, vanillaInstaller.LoadState().AppliedSettings ?? GetEffectiveSettings());
+                await _prepareGameLobby(_game.Directory, vanillaInstaller.LoadState().AppliedSettings ?? GetEffectiveSettings());
                 EnsureGameClosed();
                 var sandboxStart = SandboxSelected;
                 var original = await StartGameProcessAsync(vanilla) ?? throw new IOException("Cannot start Kohan II.");
@@ -650,7 +654,7 @@ public partial class MainWindow : Window
                 await GameMenuMetadata.WriteAsync(_game.Directory, channel, GetEffectiveSettings());
             EnsureGameClosed();
             EnsureModAccess(_settings.Mod);
-            await GameLobbyPreferences.PrepareForLaunchAsync(_game.Directory, state.AppliedSettings ?? GetEffectiveSettings());
+            await _prepareGameLobby(_game.Directory, state.AppliedSettings ?? GetEffectiveSettings());
             EnsureGameClosed();
             var sandbox = SandboxSelected && Path.GetFileName(executable).Equals("k2.exe", StringComparison.OrdinalIgnoreCase);
             var process = await StartGameProcessAsync(executable) ?? throw new IOException("Cannot start Kohan II.");
@@ -661,6 +665,8 @@ public partial class MainWindow : Window
         finally { _launchStarting=false; SetBusy(false); RefreshStatus(); }
     }
 
+    private Func<string, UserSettings, Task> _prepareGameLobby = GameLobbyPreferences.PrepareForLaunchAsync;
+    private Func<ProcessStartInfo, Process?> _startGameProcess = Process.Start;
     private Func<bool> _gameRunningProbe = DetectGameRunning;
     private bool IsGameRunning() => _gameRunningProbe();
 
@@ -825,6 +831,7 @@ public partial class MainWindow : Window
         _settings.AdditionalRoamingCompanies = AdditionalRoamingToggle.IsChecked == true;
         _settings.SiegeBalance = SiegeBalanceToggle.IsChecked == true;
         if (ReferenceEquals(sender, ImprovedAiToggle)) _settings.ImprovedAi = ImprovedAiToggle.IsChecked == true;
+        if (ReferenceEquals(sender, IgnoreZeroMoraleToggle)) _settings.IgnoreZeroMorale = IgnoreZeroMoraleToggle.IsChecked == true;
         _settings.DisablePowersAndShards = PowersShardsToggle.IsChecked == true;
         _settingsStore.Save(_settings);
         InvalidateReadiness();
@@ -863,6 +870,7 @@ public partial class MainWindow : Window
         AdditionalRoamingToggle.IsChecked = _settings.AdditionalRoamingCompanies;
         SiegeBalanceToggle.IsChecked = _settings.SiegeBalance;
         ImprovedAiToggle.IsChecked = GameMod.ImprovedAiSelected(_settings);
+        IgnoreZeroMoraleToggle.IsChecked = GameMod.IsArcaneWars(_settings) && _settings.IgnoreZeroMorale;
         IndependentHostilityToggle.IsEnabled = !_busy && CanChangeHostilityWithSelectedColors;
         ColorsDescriptionText.Text = _colorsAvailable ? _text.ColorText("modules.colors.desc", _channel) : UiLanguages.Text(_text.Language, "Недоступно в выбранном старом выпуске. Выберите последнюю версию патча.", "Unavailable in this older release. Select the latest patch version.");
         }
@@ -1139,6 +1147,13 @@ public partial class MainWindow : Window
     private void SetActivePage(string page)
     {
         if (page is not ("home" or "modules" or "modmanager" or "settings")) page = "home";
+        if (_activePage == "modmanager" && page != _activePage && (_customModsBusy || _customModsDirty))
+        {
+            if (!_customModsBusy) _customModsError = T("Сначала примените или отмените изменения модов.", "Apply or undo your mod changes first.");
+            RefreshCustomModsState(IsGameRunning());
+            return;
+        }
+        if (page == "modmanager" && (_busy || _launchStarting || ConfirmationActive || GameSettingsOverlay.IsVisible)) return;
         if (_activePage != page) ActionJournal.Record("navigation", page);
         var changed = _activePage != page;
         _activePage = page;

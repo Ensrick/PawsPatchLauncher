@@ -1,0 +1,25 @@
+{
+  "category": "patch",
+  "version": "0.4.2-beta.5",
+  "publishedAt": "2026-10-23",
+  "title": {
+    "ru": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+    "en": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+    "de": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+    "fr": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+    "cs": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars",
+    "uk": "Paw’s Patch 0.4.2-beta.5 — Arcane Wars"
+  },
+  "body": {
+    "ru": "- Исправлена найденная причина зависания при уходе хоста: начальное состояние сетевой задачи теперь задаётся до входа в лобби.\n- Проверки сетевых ошибок и защита сохранений сохранены. Прямое подключение к уже идущему матчу в это обновление не входит.",
+    "en": "- Fixed an identified cause of hangs when the host leaves: the initial network task state is now set before entering the lobby.\n- Network error checks and save protections remain enabled. Direct joining of an already running match is not part of this update.",
+    "de": "- Eine Ursache für Hänger beim Verlassen des Hosts wurde behoben: Der anfängliche Netzwerkaufgabenstatus wird jetzt vor dem Betreten der Lobby gesetzt.\n- Netzwerkfehlerprüfungen und Schutzmaßnahmen für Spielstände bleiben aktiv. Der direkte Beitritt zu einer laufenden Partie ist nicht Teil dieses Updates.",
+    "fr": "- Correction d’une cause de blocage lorsque l’hôte quitte la partie : l’état initial de la tâche réseau est désormais défini avant l’entrée dans le salon.\n- Les contrôles des erreurs réseau et les protections des sauvegardes restent actifs. Cet ajout ne permet pas de rejoindre directement une partie en cours.",
+    "cs": "- Opravena zjištěná příčina zamrznutí při odchodu hostitele: počáteční stav síťové úlohy se nyní nastaví před vstupem do lobby.\n- Kontroly síťových chyb a ochrana uložených her zůstávají aktivní. Přímé připojení k probíhající hře není součástí této aktualizace.",
+    "uk": "- Виправлено знайдену причину зависання після виходу хоста: початковий стан мережевого завдання тепер задається до входу в лобі.\n- Перевірки мережевих помилок і захист збережень залишаються активними. Пряме приєднання до матчу, що вже триває, не входить до цього оновлення."
+  },
+  "mods": [
+    "arcane-wars"
+  ],
+  "channel": "beta"
+}

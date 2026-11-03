@@ -3429,16 +3429,20 @@ internal static class K2PawFamilyPostgen1372
         if (target == Add(imageBase, InitialKingdomStoreRva))
             stockJumps.Add(AddJump(code));
 
-        // Materialization also occurs after loading (spawns/replacements).
-        // SessionSource kind 2 is a saved game; leave its ownership untouched
-        // for the whole session. Read native state on every call so a later
-        // new match in the same process regains normal family assignment.
+        // Source kind 2 includes both saved games and recorded films. Native
+        // session state 4 identifies playback before actors materialize: films
+        // must repeat fresh-map family assignment or denizens/diplomacy desync.
+        // Real loaded games retain their owners, including later replacements.
+        // Read both fields on every call; never latch state across sessions.
         code.Add(0xA1);                                                        // mov eax,[GSession]
         code.AddRange(BitConverter.GetBytes(Add(imageBase, 0x5F3FE4).ToInt32()));
         code.AddRange(new byte[] { 0x85, 0xC0 });                              // no session: preserve
         stockJumps.Add(AddConditionalJump(code, 0x84));
-        code.AddRange(new byte[] { 0x83, 0x78, 0x64, 0x02 });                  // saved source
-        stockJumps.Add(AddConditionalJump(code, 0x84));
+        code.AddRange(new byte[] { 0x83, 0x78, 0x64, 0x02 });                  // loaded source
+        int freshSourceJump = AddConditionalJump(code, 0x85);
+        code.AddRange(new byte[] { 0x83, 0xB8, 0xF0, 0x00, 0x00, 0x00, 0x04 }); // film playback
+        stockJumps.Add(AddConditionalJump(code, 0x85));                         // actual save: preserve
+        PatchConditionalJump(code, stub, freshSourceJump, Add(stub, code.Count));
 
         code.AddRange(new byte[] { 0x8B, 0x0C, 0x24 });                        // mov ecx,[esp] saved EDI actor
         code.AddRange(new byte[] { 0x85, 0xC9 });

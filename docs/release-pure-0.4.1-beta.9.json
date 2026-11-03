@@ -1,0 +1,26 @@
+{
+  "category": "patch",
+  "version": "0.4.1-beta.9",
+  "publishedAt": "2026-10-25",
+  "title": {
+    "ru": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+    "en": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+    "de": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+    "fr": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+    "cs": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals",
+    "uk": "Paw’s Patch 0.4.1-beta.9 — Vanilla / Immortals"
+  },
+  "body": {
+    "ru": "Исправлена возможная блокировка подготовки восстановления матча в Vanilla и Immortals. Подготовка файлов теперь выполняется до приостановки потоков игры, а запись диагностики — после их возобновления. Проверки совместимости и сохранений сохранены. Общий установщик лобби проверен также с Arcane Wars.",
+    "en": "Fixed a possible recovery initialization deadlock in Vanilla and Immortals. File preparation now runs before game threads are paused, and diagnostic logging runs after they resume. Compatibility and save checks remain enabled. The shared lobby installer was also verified with Arcane Wars.",
+    "de": "Eine mögliche Blockierung bei der Initialisierung der Wiederherstellung in Vanilla und Immortals wurde behoben. Dateien werden vor dem Anhalten der Spielthreads vorbereitet, Diagnosemeldungen nach dem Fortsetzen geschrieben. Kompatibilitäts- und Speicherstandprüfungen bleiben aktiv. Der gemeinsame Lobby-Installer wurde auch mit Arcane Wars geprüft.",
+    "fr": "Correction d’un blocage possible lors de l’initialisation de la récupération dans Vanilla et Immortals. Les fichiers sont préparés avant la suspension des threads du jeu et les diagnostics sont écrits après leur reprise. Les vérifications de compatibilité et de sauvegarde restent actives. L’installation commune du lobby a aussi été vérifiée avec Arcane Wars.",
+    "cs": "Opraveno možné zablokování inicializace obnovy ve Vanilla a Immortals. Příprava souborů probíhá před pozastavením herních vláken a zápis diagnostiky po jejich obnovení. Kontroly kompatibility a uložených her zůstávají aktivní. Společná instalace lobby byla ověřena také s Arcane Wars.",
+    "uk": "Виправлено можливе блокування підготовки відновлення матчу у Vanilla та Immortals. Файли готуються до призупинення потоків гри, а діагностика записується після їх відновлення. Перевірки сумісності та збережень залишаються активними. Спільний установник лобі також перевірено з Arcane Wars."
+  },
+  "mods": [
+    "vanilla",
+    "immortals"
+  ],
+  "channel": "beta"
+}

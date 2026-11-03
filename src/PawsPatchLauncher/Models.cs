@@ -50,6 +50,7 @@ public sealed class UserSettings
     public string RoamingSpawnMode { get; set; } = "x4";
     public bool AdditionalRoamingCompanies { get; set; } = true;
     public bool SiegeBalance { get; set; } = true;
+    public bool IgnoreZeroMorale { get; set; }
     public bool ImprovedAi { get; set; } = true;
     public bool DisablePowersAndShards { get; set; } = true;
     public bool LargeMapSizes { get; set; } = true;
@@ -81,6 +82,7 @@ public sealed class ChannelManifest
     public List<ReleaseReference> PreviousReleases { get; set; } = [];
     public bool ColorDesyncContinue { get; set; }
     public bool IndependentColorHostility { get; set; }
+    public int CompanyBehaviorRevision { get; set; }
     public bool PureRuntimeOptions { get; set; }
     public bool PureLairRecoveryBuiltIn { get; set; }
     public int PlayerColorCount { get; set; } = PawsPatchLauncher.PatchGuide.PlayerColorCount;
@@ -146,6 +148,9 @@ public sealed class GameRequirement
 
 public sealed class PackageRelease
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ArcaneSourceRecipe? SourceRecipe { get; set; }
+    [JsonIgnore] public long TransferSize => SourceRecipe is { } r ? checked(r.Base.Size + r.Patch.Size) : Size;
     public List<string> Mods { get; set; } = [];
     public bool ExecutableIndependent { get; set; }
     public string Id { get; set; } = "";
@@ -159,6 +164,20 @@ public sealed class PackageRelease
     public List<string> DependsOn { get; set; } = [];
     public LocalizedText Name { get; set; } = new();
     public LocalizedText Description { get; set; } = new();
+}
+
+public sealed class ArcaneSourceRecipe
+{
+    public string Kind { get; set; } = "arcane-moddb-v1";
+    public SourceArtifact Base { get; set; } = new();
+    public SourceArtifact Patch { get; set; } = new();
+}
+
+public sealed class SourceArtifact
+{
+    public string Url { get; set; } = "";
+    public string Sha256 { get; set; } = "";
+    public long Size { get; set; }
 }
 
 public sealed class LocalizedText

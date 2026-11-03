@@ -85,6 +85,9 @@ internal static class PawLobbyCompatibility
         }
         foreach(var key in new[]{"customPlayerColors","desyncMode","independentHostility","roamingSpawnMode","additionalRoamingCompanies","siegeBalance","disablePowersAndShards","largeMapSizes"})
             lines.Add("setting="+key+":"+Text(settings,key).ToLowerInvariant());
+#if COMPANY_BEHAVIOR
+        lines.Add("setting=ignoreZeroMorale:"+(Flag(settings,"ignoreZeroMorale")?"true":"false"));
+#endif
         // Game message language follows game text, never affects the identity.
         russian=Flag(settings,"russianLocalization");
 #if LOCAL_LARGE_MAPS || LARGE_MAPS

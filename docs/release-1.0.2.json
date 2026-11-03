@@ -1,0 +1,21 @@
+{
+  "category": "launcher",
+  "version": "1.0.2",
+  "publishedAt": "2026-10-21",
+  "title": {
+    "ru": "Paw’s Launcher 1.0.2",
+    "en": "Paw’s Launcher 1.0.2",
+    "de": "Paw’s Launcher 1.0.2",
+    "fr": "Paw’s Launcher 1.0.2",
+    "cs": "Paw’s Launcher 1.0.2",
+    "uk": "Paw’s Launcher 1.0.2"
+  },
+  "body": {
+    "ru": "Исправлен импорт пользовательских RWD-модов с дисков FAT/exFAT при ошибке проверки атрибутов Windows. Проверки ссылок, типа файла и содержимого архива сохранены. Спасибо Ensrick за исправление.",
+    "en": "Fixed custom RWD mod import from FAT/exFAT drives when Windows rejects the file-attribute query. Link, file-type and archive-content validation remain in place. Thanks to Ensrick for the fix.",
+    "de": "Der Import eigener RWD-Mods von FAT/exFAT-Laufwerken bei einem Fehler der Windows-Dateiattributabfrage wurde korrigiert. Prüfungen von Verknüpfungen, Dateityp und Archivinhalt bleiben erhalten. Vielen Dank an Ensrick für die Korrektur.",
+    "fr": "Correction de l’import des mods RWD personnalisés depuis les lecteurs FAT/exFAT lorsque Windows refuse la requête des attributs du fichier. Les vérifications des liens, du type de fichier et du contenu de l’archive sont conservées. Merci à Ensrick pour ce correctif.",
+    "cs": "Opraven import vlastních RWD modů z disků FAT/exFAT při chybě dotazu na atributy souboru ve Windows. Kontroly odkazů, typu souboru a obsahu archivu zůstávají zachovány. Děkujeme Ensrickovi za opravu.",
+    "uk": "Виправлено імпорт користувацьких RWD-модів із дисків FAT/exFAT у разі помилки перевірки атрибутів Windows. Перевірки посилань, типу файлу та вмісту архіву збережено. Дякуємо Ensrick за виправлення."
+  }
+}

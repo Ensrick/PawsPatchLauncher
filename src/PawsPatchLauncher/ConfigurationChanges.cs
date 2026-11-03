@@ -35,6 +35,7 @@ public static class ConfigurationChanges
   Change(ru?"Враждебность независимых":"Independent hostility",Flag(before.IndependentHostility),Flag(after.IndependentHostility));
   Change(ru?"Дополнительные отряды":"Additional roaming",Flag(before.AdditionalRoamingCompanies),Flag(after.AdditionalRoamingCompanies));
   Change(ru?"Баланс осады":"Siege balance",Flag(before.SiegeBalance),Flag(after.SiegeBalance));
+  Change(ru?"Игнорировать нулевой боевой дух":"Ignore zero morale",Flag(before.IgnoreZeroMorale),Flag(after.IgnoreZeroMorale));
   Change(ru?"Улучшения ботов":"AI improvements",Flag(before.ImprovedAi),Flag(after.ImprovedAi));
   if(before.PureBetaFeatures || after.PureBetaFeatures)
    Change(ru?"Защитники логов":"Lair defenders",Flag(before.PureBetaFeatures && GameMod.PureComponents(before).WoundedLairDefenders),Flag(after.PureBetaFeatures && GameMod.PureComponents(after).WoundedLairDefenders));

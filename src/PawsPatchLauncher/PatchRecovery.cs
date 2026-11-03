@@ -127,7 +127,9 @@ public sealed class PatchRecovery(string gameRoot)
         await CryptoAndIO.AtomicWriteTextAsync(Path.Combine(Control, "state.json"), JsonSerializer.Serialize(journal.Before, LauncherJsonContext.Default.InstallState));
     }
 
-    public async Task<int> RecoverInterruptedAsync()
+    public Task<int> RecoverInterruptedAsync() => Task.Run(RecoverInterruptedCoreAsync);
+
+    private async Task<int> RecoverInterruptedCoreAsync()
     {
         var root = Path.Combine(Control, "transactions");
         if (!Directory.Exists(root)) return 0;
@@ -148,7 +150,9 @@ public sealed class PatchRecovery(string gameRoot)
         return recovered;
     }
 
-    public async Task<InstallState> RollbackAsync(InstallState current)
+    public Task<InstallState> RollbackAsync(InstallState current) => Task.Run(() => RollbackCoreAsync(current));
+
+    private async Task<InstallState> RollbackCoreAsync(InstallState current)
     {
         await RecoverInterruptedAsync();
         if (!CanRollback) throw new InvalidOperationException("No previous patch installation is available.");

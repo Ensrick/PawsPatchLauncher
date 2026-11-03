@@ -53,6 +53,7 @@ public partial class MainWindow
     private void ReloadCustomMods()
     {
         _customModsState = null; _customModsDraft = new(); _customModsError = _customModsNotice = null; _customModsDirty = false;
+        _customModResources.Clear();
         _customModsGame = _settings.Mod;
         try
         {
@@ -83,7 +84,7 @@ public partial class MainWindow
     }
 
     // A null order marks the base game row, which shows the game icon instead of a load position.
-    private Border CustomModRow(string? order, bool active, UIElement? toggle, string title, string details, string? overrides, StackPanel? actions)
+    private Border CustomModRow(string? order, bool active, UIElement? toggle, string title, string details, string? overrides, StackPanel? actions, string? overridesTip = null)
     {
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });
@@ -110,7 +111,7 @@ public partial class MainWindow
             Foreground = (Brush)FindResource("TextMutedBrush"), Margin = new Thickness(0, 4, 0, 0) });
         if (overrides is not null)
             description.Children.Add(new TextBlock { Text = overrides, FontSize = 11, TextWrapping = TextWrapping.Wrap,
-                Foreground = (Brush)FindResource("GoldBrightBrush"), Margin = new Thickness(0, 4, 0, 0) });
+                Foreground = (Brush)FindResource("GoldBrightBrush"), Margin = new Thickness(0, 4, 0, 0), ToolTip = overridesTip });
         Grid.SetColumn(description, toggle is null ? 1 : 2);
         if (toggle is null) Grid.SetColumnSpan(description, 2);
         grid.Children.Add(description);
@@ -134,7 +135,8 @@ public partial class MainWindow
             CustomModsBody.Children.Add(empty);
             return;
         }
-        var overrides = CustomRwdMods.Overrides(list.Select(m => m.Enabled ? (IReadOnlySet<string>?)CustomModResources(m) : null).ToList());
+        var resources = list.Select(m => m.Enabled ? (IReadOnlySet<string>?)CustomModResources(m) : null).ToList();
+        var overrides = CustomRwdMods.Overrides(resources);
         int position = 0;
         for (int i = 0; i < list.Count; i++)
         {
@@ -153,11 +155,17 @@ public partial class MainWindow
             }
             Action("↑", T("Выше", "Move up"), () => MoveCustomMod(index, -1), i > 0);
             Action("↓", T("Ниже", "Move down"), () => MoveCustomMod(index, 1), i + 1 < list.Count);
+            Action("↻", T("Заменить архив…", "Replace archive…"), async () => await ImportCustomModAsync(index));
             Action("×", T("Убрать из списка", "Remove from list"), () => { CurrentCustomMods.RemoveAt(index); CustomModsChanged(); });
             var details = T("Файлов: ", "Files: ") + $"{mod.Files:N0} · " + FormatBytes(mod.Size) + " · SHA-256 " + mod.Sha256[..8].ToLowerInvariant();
-            var replaced = overrides[i].Count == 0 ? null : T("Заменяет файлы: ", "Overrides files from: ")
+            var replaced = mod.Enabled && resources[i] is null ? T("Не удалось проверить пересечения файлов.", "Could not check file overlaps.")
+                : overrides[i].Count == 0 ? null : T("Заменяет файлы: ", "Overrides files from: ")
                 + string.Join(", ", overrides[i].Select(o => $"{list[o.Earlier].Name} ({o.Files:N0})"));
-            CustomModsBody.Children.Add(CustomModRow(mod.Enabled ? (++position).ToString() : "–", mod.Enabled, check, mod.Name, details, replaced, actions));
+            // Advisory only: normalized names are not proof of identical game content.
+            var overlapPaths = overrides[i].Count == 0 || resources[i] is null ? new List<string>()
+                : resources[i]!.Where(p => overrides[i].Any(o => resources[o.Earlier]!.Contains(p))).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
+            var overlapTip = overlapPaths.Count == 0 ? null : string.Join("\n", overlapPaths.Take(20)) + (overlapPaths.Count > 20 ? "\n…" : "");
+            CustomModsBody.Children.Add(CustomModRow(mod.Enabled ? (++position).ToString() : "–", mod.Enabled, check, mod.Name, details, replaced, actions, overlapTip));
         }
     }
 
@@ -184,7 +192,8 @@ public partial class MainWindow
         var editable = CanEditCustomMods && !running && !_customModsBusy;
         CustomModsBody.IsEnabled = editable;
         RefreshBaseGameButtons(running);
-        CustomModsAdd.IsEnabled = editable && CurrentCustomMods.Count < CustomRwdMods.MaximumMods;
+        // At capacity the picker still permits replacing an existing archive.
+        CustomModsAdd.IsEnabled = editable;
         var gated = _customModsState is not null && !CanEditCustomMods;
         ModManagerComponentsButton.Visibility = gated ? Visibility.Visible : Visibility.Collapsed;
         ModManagerStatusText.Text = _customModsError ?? (_customModsBusy ? T("Проверяю и применяю моды…", "Checking and applying mods…")
@@ -197,6 +206,9 @@ public partial class MainWindow
     }
 
     private async void CustomModsAdd_Click(object sender, RoutedEventArgs e)
+        => await ImportCustomModAsync();
+
+    private async Task ImportCustomModAsync(int? replaceIndex = null)
     {
         if (_customModsBusy || !CustomModsAdd.IsEnabled || _game is null) return;
         _customModsBusy = true; _customModsError = null; RefreshCustomModsState(IsGameRunning());
@@ -207,17 +219,18 @@ public partial class MainWindow
             var service = new CustomRwdMods(_game.Directory);
             var entry = await Task.Run(() => service.Import(path));
             if (!_customModsDraft.TryGetValue(_customModsGame, out var list)) _customModsDraft[_customModsGame] = list = [];
-            var sameName = list.FindIndex(m => m.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase));
+            var sameName = list.Select((m, index) => (m, index)).Where(p => p.m.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+            var target = replaceIndex ?? (sameName.Count == 1 ? sameName[0].index : -1);
             if (list.Any(m => m.Sha256.Equals(entry.Sha256, StringComparison.OrdinalIgnoreCase)))
                 _customModsError = T("Этот архив уже добавлен.", "This archive is already in the list.");
-            else if (sameName >= 0)
+            else if (target >= 0)
             {
-                // A rebuilt archive with the same file name replaces its entry in place: same position, same switch.
-                list[sameName] = entry with { Enabled = list[sameName].Enabled };
-                _customModsNotice = T("Заменён новым файлом: ", "Replaced with the new file: ") + entry.Name + ". "
-                    + T("Нажмите «Отменить», чтобы вернуть прежний.", "Use Undo to keep the previous one.");
+                list[target] = entry with { Enabled = list[target].Enabled };
+                _customModsNotice = T("Архив заменён в списке. Примените изменения или отмените их.", "Archive replaced in the list. Apply or undo the changes.");
                 CustomModsChanged(keepNotice: true);
             }
+            else if (list.Count >= CustomRwdMods.MaximumMods)
+                _customModsError = T("Можно добавить не более 32 модов. Удалите один или замените его архив.", "You can add up to 32 mods. Remove one or replace its archive.");
             else { list.Add(entry); CustomModsChanged(); }
         }
         catch (Exception ex) { ActivityStore.Log(ex); _customModsError = T("Не удалось добавить архив. Нужен исправный RWD для Kohan II размером до 2 ГБ.", "Could not add the archive. Choose a valid Kohan II RWD up to 2 GB."); }
@@ -245,9 +258,11 @@ public partial class MainWindow
             _customModsDraft = CustomRwdMods.Copy(_customModsState.CustomMods);
             InvalidateReadiness(); _fileCheckFailed = false;
             _customModsBusy = false;
+            RefreshCustomModsState(IsGameRunning());
+            _customModsDraft = CustomRwdMods.Copy(_customModsState.CustomMods);
+            _customModsNotice = T("Пользовательские моды применены.", "Custom mods applied.");
             BuildCustomMods();
             RefreshStatus();
-            ShowToast(() => T("Пользовательские моды применены.", "Custom mods applied."));
         }
         catch (Exception ex) { ActivityStore.Log(ex); _customModsError = T("Не удалось применить моды. Проверьте файлы и попробуйте ещё раз.", "Could not apply mods. Check the files and try again."); }
         finally { _customModsBusy = false; SetBusy(false); RefreshCustomModsState(IsGameRunning()); }

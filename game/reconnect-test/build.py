@@ -77,6 +77,9 @@ def main():
     subprocess.run([str(a.out/'ReconnectTests.exe')],check=True)
     subprocess.run(common+[str(HERE/'integrated_tests.c'),'-o',str(a.out/'IntegratedTests.exe'),'-lkernel32','-luser32'],check=True)
     subprocess.run([str(a.out/'IntegratedTests.exe')],check=True)
+    subprocess.run(common+[str(HERE/'install_lock_tests.c'),'-o',str(a.out/'RecoveryLockTests.exe'),'-lkernel32','-luser32'],check=True)
+    for mode in ('none','loader','peb','heap','heap-guard','heap-counter','heap-config'):
+        subprocess.run([str((a.out/'RecoveryLockTests.exe').resolve()),mode],cwd=a.out,check=True,timeout=15)
     subprocess.run(common+['-shared','-DPAW_RECOVERY_INTEGRATED',str(HERE/'reconnect.c'),
         str(HERE.parent/'lobby-compatibility/lobby_compatibility.c'),
         '-o',str(a.out/'paws_recovery_integrated.dll'),'-lkernel32','-luser32'],check=True)

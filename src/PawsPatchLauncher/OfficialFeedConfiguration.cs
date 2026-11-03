@@ -19,8 +19,8 @@ public static class OfficialFeedConfiguration
 
     private static List<string> UpgradeSources(List<string> sources) => sources.Select(source => source switch
     {
-        Root + "stable.json" => Root + "v2/stable.json",
-        Root + "beta.json" => Root + "v2/beta.json",
+        Root + "stable.json" or Root + "v2/stable.json" => Root + "v3/stable.json",
+        Root + "beta.json" or Root + "v2/beta.json" => Root + "v3/beta.json",
         _ => source
     }).ToList();
 }

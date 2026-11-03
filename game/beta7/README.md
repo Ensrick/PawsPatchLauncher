@@ -44,11 +44,15 @@ See [assistant sources, controls and validation](../city-assistant/README.md). D
 The serialized-owner store at RVA 22C7CC always retains the exact owner resolved
 from the save, including old independent kingdoms and multiplayer host snapshots.
 The materialization hook also skips family reassignment while native SessionSource
-kind is 2 (loaded game), including later spawns and upgrades in that session.
+kind is 2 (loaded game), except native playback state 4. Films use that same
+source kind but must repeat fresh-map family assignment; treating them as saves
+changes independent owners, diplomacy and denizen deployment, causing desync.
+Real saves still preserve ownership, including later spawns and upgrades.
 Starting a fresh match restores the existing family assignment policy. No saved
 file is rewritten, and already misassigned ownership in a later save is not
 silently reversed. Test with `test_saved_owners.py` against all built helpers;
-the test executes the emitted x86 stubs at three relocated image bases.
+the test executes the emitted x86 stubs at three relocated image bases, including
+film playback, serialized snapshots, captured owners and session transitions.
 
 For lobby-enabled builds, `PawLobbyCompatibility.Version` also supplies the
 startup label and feature version. The builder rejects a different version in

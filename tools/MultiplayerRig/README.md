@@ -1,66 +1,116 @@
-# Multiplayer test rig (Kohan II 1.3.72)
+# Multiplayer regression rig (developer tool)
 
-A developer tool: two copies of the game play a LAN match against each other on one PC, driven by the game's own
-script commands, with the multiplayer saves module (`game/multiplayer-saves`) installed in each copy by the same
-installer code the pure helper uses. It tests multiplayer changes without a second player or PC.
+Adapted from Ensrick's PR #12, head `c94cd8f85f4a4a7520272276aa51f79990030f0c`.
+Copyright and MIT license: [LICENSE.Ensrick](LICENSE.Ensrick).
+Local integration adds an isolated stock fixture, per-run retained evidence,
+strict process ownership and resource/path guards. Not included in launcher or
+patch packages and never started automatically or by CI.
 
-It starts the real game. Never run it while someone is playing; it refuses to start when `k2.exe` is running.
-Steam must run (the game's copy protection). The copies play over LAN loopback, not Steam, so the rig shows what
-two peers do, not network conditions: a dropped peer there causes a socket error that removes it at once, whereas
-over Steam the game waits in its connection dialog for a vote.
+## Start on this PC
+
+Run `D:\PawsMultiplayerRig\Start multiplayer tests.cmd`, then select a scenario.
+Steam must be running. Close an ordinary game first; the rig refuses to interrupt
+it. Two windowed, muted game processes run off screen. There is no VM recording.
+Use Ctrl+C to interrupt: Windows closes the test process job and stops its children.
+An interrupted run can leave temporary fixture files; inspect those before retrying.
+
+Results and saves are retained under `D:\PawsMultiplayerRig\runs\<timestamp-scenario>`.
+`result.json` contains checks; `game-logs`, `Host/Logs` and `Client/Logs` contain
+supporting evidence. Saves are in each peer's `Documents/Kohan2/data/Save`.
+Old runs are never emptied or reused. `run.json` also records incomplete setup.
+
+## Prepare another workstation
+
+From the repository, with an x86 TCC compiler and Steam Kohan II 1.3.72:
 
 ```powershell
-tools/MultiplayerRig/build.ps1 -OutputDirectory .local/rig -NativeCompiler <x86-tcc>
-tools/MultiplayerRig/Run-Rig.ps1 -RigBuild .local/rig -Scenario SaveCopy   # also Autosave, LoadCopy, HostLeaves
+./tools/MultiplayerRig/Prepare-Rig.ps1 -Stock 'D:\SteamLibrary\steamapps\common\Kohan II' -OutputDirectory 'D:\PawsMultiplayerRig' -NativeCompiler '<x86-tcc.exe>'
+./tools/MultiplayerRig/Start-Tests.ps1 -Configuration 'D:\PawsMultiplayerRig\rig.json'
 ```
 
-The exit code is the number of failed checks. The output lists both modules' logs and the checks. `Run-Rig.ps1`'s
-header describes each scenario. A peer counts as having survived only when its game log was closed normally (renamed
-`-ok`, not `-crash`) and holds no failed assertion, desync, unhandled exception or lock timeout.
+Optional `-MappedImage` validates native instruction sites against the pinned
+1.3.72 analysis snapshot. `Prepare-Rig` accepts a fresh destination only. It copies
+an explicit stock-runtime list and pinned loose/skin files; it excludes installed
+helper executables, graphics proxies, loose mods and user Documents. Compilation
+runs the production multiplayer-save module's native and installer tests.
 
-Two more scripts use the same launcher (`RigLauncher.ps1`) and stand-in, one copy at a time:
+## Scenarios
 
-| Script | What it reports |
-| --- | --- |
-| `Test-Startup.ps1 -RigBuild .local/rig` | Starts the game as installed, waits for the main menu and quits: every `ERROR` line, failed assertion and warning from start-up. For checking an applied package without playing. |
-| `Probe-Precedence.ps1 -RigBuild .local/rig -RwdTool <RwdTool.exe>` | Which copy of a data file the game uses when several depots hold it (see below). Needs `tools/RwdTool` (pull request #1). |
+| Name | Checks | Approximate duration |
+| --- | --- | --- |
+| SaveCopy | Host save, nonempty client copy, copy log, both peers exit normally | 5 min |
+| Autosave | Two alternating autosaves and client copies; client does not autosave | 7 min |
+| LoadCopy | Receive a supplied client copy, load it, original host exits, client takes over | 10 min |
+| HostLeaves | Client takes over after host leaves the LAN lobby; reports assertions/crashes | 5 min |
 
-`Probe-Precedence.ps1` packs two one-file archives, mounts them with `addmod` from a startup script, and starts the
-game with `+Exec pawsprobe/order.txt`; each candidate copy of that script echoes its own source and quits. Result on
-1.3.72:
+Pass `-Scenario SaveCopy` for noninteractive use. `LoadCopy` additionally accepts
+`-LoadSave '<full path to client .RSG>'`; it reads but does not modify the source.
+The low-level `Run-Rig.ps1` also accepts port/timing options with bounded values.
+Save names cannot contain script commands or path separators.
 
-| Depots holding `pawsprobe/order.txt` | The game used |
-| --- | --- |
-| `addmod A`, then `addmod B` | archive B |
-| `addmod B`, then `addmod A` | archive A |
-| both archives and `<game>\data` | the archive mounted last |
-| both archives, `<game>\data` and `Documents\Kohan2\data` | `Documents\Kohan2\data` |
-| only `<game>\data` (control) | `<game>\data` |
+Exit code 0 means the scenario's checks passed. A failed assertion, unhandled
+exception, desync, missing normal exit, timeout or missing expected save is a
+failure, even if a process remained alive. A setup error is also nonzero.
+HostLeaves intentionally exercises a known engine problem: a reported failure
+is useful evidence, not a reason to silently skip that assertion.
 
-So the archive mounted last wins over earlier archives and over the game's `data` folder, and the player's
-`Documents\Kohan2\data` wins over all of them. The probe ran twice with the same result.
+## Isolation and ownership
 
-## How it works
+- Only a fixture created by Prepare-Rig is accepted; the installed game is read
+  during preparation and never modified by a scenario.
+- Each run uses fresh host/client profiles. No personal settings or saves are
+  copied, and previous results cannot produce a false positive.
+- A fixture lock prevents concurrent runs. At least 4 GiB free RAM and 6 GiB free
+  commit are required. Only one pair runs at a time.
+- Processes start suspended, enter a kill-on-close Windows Job Object, and then
+  resume. Retained process handles prevent cleanup of an unrelated reused PID.
+  Injection additionally verifies executable path, hash and creation time.
+- Generated scripts/DLL are refused if already present; cleanup removes only
+  files created by the current run. Nested filesystem redirects are rejected.
+- Private Documents redirection handles both ANSI and Unicode calls and fails
+  closed for an absent/invalid private folder. Other shell-folder calls use Windows.
 
-| Step | How |
-| --- | --- |
-| Start a copy with its script | `k2.exe +Exec PawsRig/host.txt` (`+command` on the command line runs a script command), `SteamAppId` in its environment, shown without activation and moved past the right edge of the desktop (not minimized: a minimized windowed game gets a 0x0 client area and its renderer fails). |
-| Keep both running in the background | `RunWhenInactive = true` in each copy's settings; otherwise a copy that is not in front nearly stops. |
-| Own Documents folder per copy | The stand-in `shfolder.dll` (`rig_shfolder.c`): the game finds its user folder with `LoadLibrary("shfolder.dll")` + `SHGetFolderPathW`, Windows takes that DLL from the game folder first, and the stand-in answers with `K2_RIG_DOCUMENTS`. The game frees the DLL after the first call and asks again later, so the stand-in pins itself; without that, a later call reached the system DLL and the game's `%USERDATA%` string turned back to the real Documents folder while its saves still went to the copy's own. |
-| Host a LAN game | `RequestMultiplayer`, `RequestLobbyLAN`, `LobbySetLANNickname`, `InternetGameCreate <name> <port> <players>` (a fourth argument is the password), `SelectLaunchType RANDOM_MAP`, `StagingLaunch`. Readiness comes from Windows (the host listens on UDP 5860), because the game buffers its log. |
-| Join by address | `LobbyJoinDirect`, `JoinDirectJoin`. No script command fills an editbox, so with `K2_RIG_JOIN=<ip>:<port>` the stand-in answers the Direct IP dialog's two editbox reads (1.3.72 RVAs `EF184`, `EF1A6`, calls of the widget text getter `29FC02`). |
-| Install the module | `RigInject.exe <pid> <rig folder> <autosave minutes>`: `MultiplayerSaves.Prepare` + `Install`, with the module and its log (`Logs\paws_recovery.log`) in the copy's own rig folder. The module's save-data directory is the copy's own Documents, through the private-profile mechanism `Prepare` reads (`reconnect-test.marker` in the rig folder plus `PAWS_TEST_DOCUMENTS`). |
-| Quit | `ReallyQuit` (no confirmation). |
+`Test-Safety.ps1 -OutputDirectory <fresh directory>` tests refusal rules, locking,
+owned-process cleanup and child termination when its owner is killed, with
+lightweight sleeping programs rather than game instances. `Start-Tests.ps1
+-TestSetupFailure -Scenario SaveCopy` deliberately fails after starting the host;
+a nonzero result plus no remaining game/script/DLL proves cleanup worked.
 
-`WaitState <state>` before the main menu crashes the game, so the scripts start with a plain `Wait 45`.
+## What this does and does not verify
 
-## Keeping the player's game untouched
+### Task-status initialization candidate
 
-| Risk | Prevention |
-| --- | --- |
-| A setting given to a copy ends up in the player's settings, replays or saves | Each copy has its own Documents folder under `%LOCALAPPDATA%\PawsMultiplayerRig`, holding a copy of the player's game data (hand-installed mods included, so both copies load the same data) and none of the player's own files. |
-| A test window holds the mouse or plays sound | Each copy's own settings: windowed 800x600, `MouseClipCursor = false`, muted. |
-| The player's newest match logs are deleted (the game keeps about ten) | `<game>\Logs` is copied to `%LOCALAPPDATA%\PawsMultiplayerRigLogBackup` before each run. |
-| A test overwrites or removes a file it did not create | Every path a script creates in the game folder (`shfolder.dll`, `PawsRig\host.txt` and `client.txt`, the probe's archives, startup script and data file) must not exist before; a leftover from an interrupted run included, so check it and remove it by hand. Afterwards the script removes only those files, file by file, once no copy runs, and a folder only if it created it and it is empty. |
-| A copy outlives the run | Each copy is recorded the moment it starts (process id, creation time, executable). After a normal run the rig waits up to 5 minutes for them to close, after a failed setup not at all, and then stops only processes that still match that record. `-TestSetupFailure` checks this: the run fails right after the host copy starts. |
-| A save given to LoadCopy is lost | `-LoadSave` is read before the rig empties its copies' Save folders, so a copy from an earlier run (which lies in one of them) can be passed. |
+`Build-TaskStatusCandidate.ps1 -BaselineBuild <verified rig build> -OutputDirectory <new folder>`
+reuses the exact baseline save DLL and private-folder DLL. It compiles the real
+`TaskStatusPatch.cs` with the identity-checked process-memory implementation used
+by the Pure helper. Pass this new build to `Run-Rig.ps1 -RigBuild ...`.
+Its `candidate.json`, per-peer `Logs/task-status.log` and two mandatory report
+checks distinguish this experiment from the saves-only baseline. The patch is
+installed while the fresh game is paused, before the lobby script starts.
+No native enum-reader assertion is bypassed. This still is not a whole-patch run.
+
+`HostLeavesLaunch` extends the lobby-takeover check: the surviving client starts
+a new match and writes `After takeover.RSG`. This checks the transition from the
+initialized idle status into normal world-loading callbacks, rather than only
+survival in the lobby. It does not test direct joining of an already running match.
+
+The [2026-10-22 regression](../../docs/verification-multiplayer-rig-2026-10-22.md)
+passed dedicated Autosave and LoadCopy runs, including the received-save guard
+after host takeover. LoadCopy now requires these guard paths to be exercised.
+The HostLeaves series reproduced the network enum assertion on its second run;
+the report records the actual task-status request, decoded value and stack.
+
+This initial integration uses stock Vanilla data and injects the current production
+`multiplayer-saves` module through its normal installer. It does not inject the
+entire Paw's Patch, the recovery-to-lobby module or the experimental enum assertion
+skip. Therefore success is not full beta acceptance or proof of direct rejoining
+into a running simulation. Immortals/Arcane fixtures and whole-patch recovery
+scenarios can be added explicitly later.
+
+Both peers use loopback LAN on one PC. Steam disconnection votes, real latency,
+packet loss and two-machine conditions still need separate testing. Different
+localizations/keybinds are not admission checks here.
+
+The upstream installed-game startup probe and Documents precedence probe were
+not imported; the latter work remains deferred. This tool does not change feeds,
+production services, public versions or end-user launch behavior.

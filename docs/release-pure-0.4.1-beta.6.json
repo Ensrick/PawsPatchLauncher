@@ -1,0 +1,26 @@
+{
+  "category": "patch",
+  "version": "0.4.1-beta.6",
+  "publishedAt": "2026-10-20",
+  "title": {
+    "ru": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+    "en": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+    "de": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+    "fr": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+    "cs": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals",
+    "uk": "Paw’s Patch 0.4.1-beta.6 — Vanilla / Immortals"
+  },
+  "body": {
+    "ru": "- Исправлена область над нижней панелью, где не работали выделение войск, зданий и кнопка Paw’s Patch.\n- Кнопка Paw’s Patch сохраняет квадратную форму и расположена ближе к нижней панели.\n- Исправлено масштабирование меню, лобби и стартовых роликов при широкоформатном интерфейсе.",
+    "en": "- Fixed blocked clicks above the bottom panel, including unit/building selection and the Paw’s Patch button.\n- The Paw’s Patch button keeps its square shape and sits closer to the bottom panel.\n- Fixed menu, lobby and intro-video scaling with the widescreen interface.",
+    "de": "- Blockierte Klicks oberhalb der unteren Leiste behoben, einschließlich der Auswahl von Einheiten und Gebäuden sowie der Paw’s-Patch-Schaltfläche.\n- Die Paw’s-Patch-Schaltfläche bleibt quadratisch und sitzt näher an der unteren Leiste.\n- Skalierung von Menüs, Lobby und Intro-Videos bei Breitbilddarstellung korrigiert.",
+    "fr": "- Correction des clics bloqués au-dessus du panneau inférieur, notamment la sélection des unités et bâtiments et le bouton Paw’s Patch.\n- Le bouton Paw’s Patch reste carré et se situe plus près du panneau inférieur.\n- Correction de la mise à l’échelle des menus, du salon et des vidéos d’introduction en écran large.",
+    "cs": "- Opraveno blokování kliknutí nad spodním panelem, včetně výběru jednotek a budov a tlačítka Paw’s Patch.\n- Tlačítko Paw’s Patch zůstává čtvercové a je blíže spodnímu panelu.\n- Opraveno škálování nabídek, lobby a úvodních videí v širokoúhlém rozhraní.",
+    "uk": "- Виправлено блокування натискань над нижньою панеллю, зокрема виділення військ, будівель і кнопки Paw’s Patch.\n- Кнопка Paw’s Patch зберігає квадратну форму та розташована ближче до нижньої панелі.\n- Виправлено масштабування меню, лобі та початкових роликів у широкоформатному інтерфейсі."
+  },
+  "mods": [
+    "vanilla",
+    "immortals"
+  ],
+  "channel": "beta"
+}

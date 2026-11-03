@@ -85,7 +85,7 @@ public partial class MainWindow
     }
 
     private Border[] ArcaneComponentCards() => [CoreModuleCard, ColorsModuleCard,
-        OosModuleCard, IndependentHostilityCard, RoamingSpawnCard, AdditionalRoamingCard, SiegeBalanceCard, ImprovedAiCard, PowersShardsCard];
+        OosModuleCard, IndependentHostilityCard, RoamingSpawnCard, AdditionalRoamingCard, SiegeBalanceCard, ImprovedAiCard, IgnoreZeroMoraleCard, PowersShardsCard];
 
     private void RefreshPawComponentDependency()
     {
@@ -93,7 +93,7 @@ public partial class MainWindow
         var enabled = GameMod.PawPatchSelected(_settings) && (arcane || GameMod.HasPureOptions(_channel));
         foreach (var card in ArcaneComponentCards().Skip(1).Append(PureLairCard))
         {
-            var needsExe = !arcane || card == ColorsModuleCard || card == OosModuleCard || card == IndependentHostilityCard || card == ImprovedAiCard;
+            var needsExe = !arcane || card == ColorsModuleCard || card == OosModuleCard || card == IndependentHostilityCard || card == ImprovedAiCard || card == IgnoreZeroMoraleCard;
             card.Opacity = !enabled || needsExe && DataOnlyMode ? .42 : 1;
             card.ToolTip = !enabled ? T("Включите Paw's Patch, чтобы выбрать этот компонент.", "Enable Paw's Patch to select this component.")
                 : needsExe && DataOnlyMode ? T("Недоступно: требуется совместимая версия EXE игры.", "Unavailable: a supported game executable is required.") : null;
@@ -103,6 +103,8 @@ public partial class MainWindow
         IgnoreDesyncToggle.IsChecked = enabled && !DataOnlyMode && GameMod.DesyncSelected(_settings);
         AdditionalRoamingToggle.IsChecked = enabled && _settings.AdditionalRoamingCompanies;
         SiegeBalanceToggle.IsChecked = enabled && _settings.SiegeBalance;
+        IgnoreZeroMoraleToggle.IsChecked = enabled && !DataOnlyMode && GameMod.HasIgnoreZeroMorale(_channel, _settings.Mod) && _settings.IgnoreZeroMorale;
+        IgnoreZeroMoraleToggle.IsEnabled = enabled && !_busy && !DataOnlyMode && GameMod.HasIgnoreZeroMorale(_channel, _settings.Mod);
         ImprovedAiToggle.IsChecked = enabled && !DataOnlyMode && GameMod.HasImprovedAi(_channel, _settings.Mod) && GameMod.ImprovedAiSelected(_settings);
         ImprovedAiToggle.IsEnabled = enabled && !_busy && !DataOnlyMode && GameMod.HasImprovedAi(_channel, _settings.Mod);
         PowersShardsToggle.IsChecked = enabled && _settings.DisablePowersAndShards;
@@ -172,6 +174,7 @@ public partial class MainWindow
             VanillaEmptyCard.Visibility = modules && !arcane && !pureAvailable ? Visibility.Visible : Visibility.Collapsed;
             MultiplayerNoteCard.Visibility = modules ? Visibility.Visible : Visibility.Collapsed;
             foreach (var card in ArcaneComponentCards()) card.Visibility = modules && arcane ? Visibility.Visible : Visibility.Collapsed;
+            IgnoreZeroMoraleCard.Visibility = modules && GameMod.HasIgnoreZeroMorale(_channel, _settings.Mod) ? Visibility.Visible : Visibility.Collapsed;
             ImprovedAiCard.Visibility = modules && GameMod.HasImprovedAi(_channel, _settings.Mod) ? Visibility.Visible : Visibility.Collapsed;
             CoreModuleCard.Visibility = modules && (arcane || pureAvailable) ? Visibility.Visible : Visibility.Collapsed;
             if (modules && !arcane && GameMod.HasPureOptions(_channel))

@@ -60,6 +60,11 @@ static wchar_t g_name[128],g_data[MAX_PATH],g_path[MAX_PATH];
 static unsigned g_serial;
 static Leave g_pendingLeave;
 static int g_pending,g_pendingReported;
+#ifdef PAW_RECOVERY_INTEGRATED
+/* Commit runs while other game threads may own CRT/heap locks. Even formatting
+ * an install diagnostic must wait; the installer reports numeric failures. */
+static int g_installQuiet;
+#endif
 static ULONGLONG g_pendingSince,g_pendingProbe;
 static ULONGLONG Now(void) {
     typedef ULONGLONG (WINAPI *Fn)(void);
@@ -68,7 +73,11 @@ static ULONGLONG Now(void) {
 }
 
 static void Log(const char *fmt,...) {
-    char text[1024];va_list ap;va_start(ap,fmt);vsnprintf(text,sizeof(text),fmt,ap);va_end(ap);
+    char text[1024];va_list ap;
+#ifdef PAW_RECOVERY_INTEGRATED
+    if(g_installQuiet)return;
+#endif
+    va_start(ap,fmt);vsnprintf(text,sizeof(text),fmt,ap);va_end(ap);
     text[sizeof(text)-1]=0;if(g_host&&g_host->log)g_host->log("paws-recovery", "%s",text);
 }
 static int Readable(uintptr_t p,unsigned n) {
@@ -385,7 +394,9 @@ EXPORT int __cdecl K2Plugin_Start(const Host *host) {
     g_worldGlobal=Ptr(g_base+0x162ac1+1);g_app=Ptr(g_base+0xc3efb+14);
     g_leave=(LeaveFn)(g_base+0x14b7c5);g_request=(RequestFn)(g_base+0x151cb5);g_create=(CreateFn)(g_base+0x16a9f6);g_wanted=(WantedFn)(g_base+0x150009);
     g_fromResource=(FromResourceFn)(g_base+0x16bf8f);
+#ifndef PAW_RECOVERY_INTEGRATED
     InitializeCriticalSection(&g_lock);
+#endif
     for(i=0;i<count;++i)if(CallTarget(g_base+hooks[i].site)!=g_base+hooks[i].target){Log("REFUSED: existing hook at %x",hooks[i].site);return 1;}
     for(i=0;i<count;++i){if(!Redirect(hooks[i].site,g_base+hooks[i].target,hooks[i].hook))break;++done;}
     if(done!=count){while(done){--done;Redirect(hooks[done].site,hooks[done].hook,g_base+hooks[done].target);}Log("REFUSED: could not install all hooks");return 1;}

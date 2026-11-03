@@ -1,4 +1,4 @@
-"""Verify a tagged CI launcher and stage its four signed catalogs, without gameplay changes.
+"""Verify a tagged CI launcher and stage its signed catalogs, without gameplay changes.
 
 Publishing the Git tag, promoting catalogs and pushing them remain separate steps.
 Release notes come from docs/release-VERSION.json. No credentials are printed.
@@ -7,10 +7,11 @@ import argparse, copy, hashlib, io, json, shutil, subprocess, zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from cryptography.hazmat.primitives import serialization
-from PrepareRelease081 import FEEDS, RAW, API, key, sign, fetch, normalize
+from PrepareRelease081 import FEEDS as LEGACY_FEEDS, RAW, API, key, sign, fetch, normalize
 from PrepareRelease070 import read, write, sha, verify
 
 ROOT = Path(__file__).resolve().parents[1]
+FEEDS = {**LEGACY_FEEDS, 'v3-stable':'feed/v3/stable.json', 'v3-beta':'feed/v3/beta.json'}
 DOWNLOAD = 'https://github.com/VasiliyPaw/PawsPatchLauncher/releases/download/'
 ALLOWED = {'launcher', 'publishedAt', 'changelog', 'newsTitle', 'newsBody'}
 
@@ -96,7 +97,7 @@ def stage(a):
     (out / zip_name).write_bytes(archive)
     write(out / 'preparation.json', dict(version=a.version, commit=a.commit, before=before_hashes,
         notesSha256=sha(notes_path), historyBefore=sha(ROOT / 'feed/changelog.history.json'), launcher=launcher))
-    print('STAGED: public EXE/ZIP verified against tagged CI; four signatures; gameplay unchanged', flush=True)
+    print(f'STAGED: public EXE/ZIP verified against tagged CI; {len(FEEDS)} signatures; gameplay unchanged', flush=True)
 
 
 def promote(a):
@@ -129,7 +130,7 @@ def readback(a):
         scoped(verify(read(a.out / 'previous' / (name + '.json')), key()), public)
     assert json.loads(fetch(base + 'feed/changelog.history.json')) == read(ROOT / 'feed/changelog.history.json')
     write(a.out / 'readback.json', dict(passed=True, launcher=proof['version'], catalogCommit=head))
-    print('PUBLICATION PASS: launcher ' + proof['version'] + ', four signed catalogs, unchanged game packages; ' + head)
+    print('PUBLICATION PASS: launcher ' + proof['version'] + f', {len(FEEDS)} signed catalogs, unchanged game packages; ' + head)
 
 
 if __name__ == '__main__':

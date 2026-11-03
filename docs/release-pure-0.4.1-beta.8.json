@@ -1,0 +1,26 @@
+{
+  "category": "patch",
+  "version": "0.4.1-beta.8",
+  "publishedAt": "2026-10-25",
+  "title": {
+    "ru": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+    "en": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+    "de": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+    "fr": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+    "cs": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals",
+    "uk": "Paw’s Patch 0.4.1-beta.8 — Vanilla / Immortals"
+  },
+  "body": {
+    "ru": "- Исправлено зависание сборщика диагностики после закрытия игры: теперь он завершается, даже если уведомление о выходе не пришло.\n- Сбор дампов при ошибках сохранён. Игровая механика не изменена.",
+    "en": "- Fixed the diagnostic recorder remaining in the background after the game closes when an exit notification is missing.\n- Crash dump collection is preserved. Gameplay is unchanged.",
+    "de": "- Der Diagnoserekorder bleibt nach dem Schließen des Spiels nicht mehr im Hintergrund hängen, wenn die Beendigungsbenachrichtigung fehlt.\n- Absturzabbilder werden weiterhin erstellt. Die Spielmechanik bleibt unverändert.",
+    "fr": "- Correction du collecteur de diagnostic qui pouvait rester en arrière-plan après la fermeture du jeu en l’absence de notification de fin.\n- La collecte des dumps de plantage est conservée. Le gameplay reste inchangé.",
+    "cs": "- Opraveno zablokování diagnostického procesu na pozadí po zavření hry, pokud chybělo oznámení o ukončení.\n- Vytváření výpisů paměti při pádu zůstává zachováno. Herní mechaniky se nemění.",
+    "uk": "- Виправлено зависання збирача діагностики після закриття гри: тепер він завершується, навіть якщо сповіщення про вихід не надійшло.\n- Збирання дампів під час помилок збережено. Ігрову механіку не змінено."
+  },
+  "mods": [
+    "vanilla",
+    "immortals"
+  ],
+  "channel": "beta"
+}

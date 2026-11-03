@@ -67,8 +67,18 @@ internal static class ReleaseStartup
         return found[0];
     }
 
+    internal static void ValidateTerrainTexturePool(string root)
+    {
+#if TERRAIN_TEXTURE_POOL
+        string path = Path.Combine(root, @"data\UVars_k2.tgi");
+        if (!File.Exists(path) || Hash(path) != "BB73F2CDF722024F89B7C57865A9D33FFE855D80637D7F3FCADEAD8089D25FCA")
+            throw new InvalidDataException("Terrain texture pool data differs. Apply the current patch in the launcher.");
+#endif
+    }
+
     internal static void GuardData(string root)
     {
+        ValidateTerrainTexturePool(root);
         string[][] files = {
             new[] { @"data\Game\world_rules_k2.tgi", "22282E6C584F37B697FC919EA16126FFE15327248B9A8E1B9965FE3568DD146C" },
             new[] { @"data\Templates\template_rmc_k2.tgi", TemplateDataHash },
@@ -78,6 +88,9 @@ internal static class ReleaseStartup
             if (!File.Exists(Path.Combine(root, f[0])) || Hash(Path.Combine(root, f[0])) != f[1])
                 throw new InvalidDataException("Нужны файлы текущего выпуска патча. Отличается " + f[0] + ". Выполните проверку файлов в лаунчере. Игра не запущена.");
         RandomMapPatch.GuardData(root);
+#if COMPANY_BEHAVIOR
+        PawCompanyOptions.IgnoreZeroMorale = PawCompanyOptions.Read(root);
+#endif
 #if AI_POLICY
         PawAiOptions.Enabled = PawAiOptions.Read(root);
         Console.WriteLine("AI_IMPROVEMENTS " + (PawAiOptions.Enabled ? "on" : "off"));
@@ -113,6 +126,7 @@ internal static class ReleaseStartup
 #endif
 #if ENGINE_CRASH_FIXES
                 EngineCrashFixesPatch.Validate(memory, address);
+                TaskStatusPatch.Validate(memory, address);
 #endif
 #if CAMERA_ZOOM_2
                 CameraZoomPatch.Validate(memory, address);
@@ -120,8 +134,12 @@ internal static class ReleaseStartup
 #if COMPANY_POSITION_RECOVERY
                 CompanyPositionPatch.Validate(memory, address);
 #endif
-#if EXHAUSTION_RECOVERY
-                #if AI_POLICY
+#if COMPANY_BEHAVIOR
+                GroupRetreatPriorityPatch.Validate(memory, address);
+                if (PawCompanyOptions.IgnoreZeroMorale) CompanyExhaustionPatch.Validate(memory, address);
+                else ExhaustionRecoveryPatch.Validate(memory, address);
+#elif EXHAUSTION_RECOVERY
+#if AI_POLICY
                 if (PawAiOptions.Enabled)
 #endif
                 ExhaustionRecoveryPatch.Validate(memory, address);
@@ -144,6 +162,15 @@ internal static class ReleaseStartup
 #if ALLY_ECONOMY
                 AllyEconomyPatch.Validate(memory, address);
 #endif
+#if SELECTION_SCROLL
+                SelectionScrollPatch.Validate(memory, address);
+                GroupFormationPatch.Validate(memory, address);
+                GroupFormationRadiusPatch.Validate(memory, address);
+#endif
+#if GROUP_ATTACK_RECOVERY
+                GroupAttackRecoveryPatch.Validate(memory, address);
+                GroupMovementSpeedPatch.Validate(memory, address);
+#endif
                 uint terrain = TerrainPatch.Install(memory, address, log);
                 uint map = RandomMapPatch.Install(memory, address, log);
                 TerrainPatch.Expect(memory, address + TerrainPatch.HookRva,
@@ -159,6 +186,7 @@ internal static class ReleaseStartup
 #if ENGINE_CRASH_FIXES
                 uint crashGuard = EngineCrashFixesPatch.Install(memory, address, addProbeHandler, log);
                 EngineCrashFixesPatch.Monitor(game.Id, crashGuard, log);
+                TaskStatusPatch.Install(memory, address, log);
 #endif
 #if LAIR_RECOVERY
                 LairRecoveryPatch.Install(memory, address, log);
@@ -169,8 +197,12 @@ internal static class ReleaseStartup
 #if COMPANY_POSITION_RECOVERY
                 CompanyPositionPatch.Install(memory, address, log);
 #endif
-#if EXHAUSTION_RECOVERY
-                #if AI_POLICY
+#if COMPANY_BEHAVIOR
+                GroupRetreatPriorityPatch.Install(memory, address, log);
+                if (PawCompanyOptions.IgnoreZeroMorale) CompanyExhaustionPatch.Install(memory, address, log);
+                else ExhaustionRecoveryPatch.Install(memory, address, log);
+#elif EXHAUSTION_RECOVERY
+#if AI_POLICY
                 if (PawAiOptions.Enabled)
 #endif
                 ExhaustionRecoveryPatch.Install(memory, address, log);
@@ -196,6 +228,15 @@ internal static class ReleaseStartup
 #endif
 #if ALLY_ECONOMY
                 AllyEconomyPatch.Install(memory, address, log);
+#endif
+#if SELECTION_SCROLL
+                SelectionScrollPatch.Install(memory, address, log);
+                GroupFormationPatch.Install(memory, address, log);
+                GroupFormationRadiusPatch.Install(memory, address, log);
+#endif
+#if GROUP_ATTACK_RECOVERY
+                GroupAttackRecoveryPatch.Install(memory, address, log);
+                GroupMovementSpeedPatch.Install(memory, address, log);
 #endif
             }
             finally { memory.Resume(); }

@@ -42,7 +42,10 @@ public sealed class ModuleInstaller
         return new InstallState();
     }
 
-    public async Task RememberLegacyConfigurationAsync(UserSettings settings, string releaseId)
+    public Task RememberLegacyConfigurationAsync(UserSettings settings, string releaseId)
+        => Task.Run(() => RememberLegacyConfigurationCoreAsync(settings, releaseId));
+
+    private async Task RememberLegacyConfigurationCoreAsync(UserSettings settings, string releaseId)
     {
         var state = LoadState();
         if (state.AppliedSettings is not null || state.Modules.Count == 0) return;
@@ -62,7 +65,10 @@ public sealed class ModuleInstaller
     public Task<InstalledModule> ReadPreparedAsync(PackageRelease package, CancellationToken cancellationToken = default)
         => PrepareAsync(package, "", cancellationToken);
 
-    public async Task<InstalledModule> PrepareAsync(PackageRelease package, string archivePath, CancellationToken cancellationToken = default, bool force = false)
+    public Task<InstalledModule> PrepareAsync(PackageRelease package, string archivePath, CancellationToken cancellationToken = default, bool force = false)
+        => Task.Run(() => PrepareCoreAsync(package, archivePath, cancellationToken, force), cancellationToken);
+
+    private async Task<InstalledModule> PrepareCoreAsync(PackageRelease package, string archivePath, CancellationToken cancellationToken = default, bool force = false)
     {
         var directory = Path.Combine(_packageRoot, Sanitize(package.Id), Sanitize(package.Version));
         var readyMarker = Path.Combine(directory, ".verified");
@@ -114,7 +120,13 @@ public sealed class ModuleInstaller
         };
     }
 
-    public async Task ReconcileAsync(IReadOnlyDictionary<string, InstalledModule> desired, CancellationToken cancellationToken = default,
+    public Task ReconcileAsync(IReadOnlyDictionary<string, InstalledModule> desired, CancellationToken cancellationToken = default,
+        UserSettings? settings = null, string? releaseId = null, bool resetOriginals = false, bool preserveVanillaBootstrap = false,
+        GameRequirement? gameRequirement = null, string? baseGameSha256 = null,
+        Dictionary<string, List<CustomRwdMod>>? customMods = null, string? expectedState = null, Action? ensureGameClosed = null)
+        => Task.Run(() => ReconcileCoreAsync(desired, cancellationToken, settings, releaseId, resetOriginals, preserveVanillaBootstrap, gameRequirement, baseGameSha256, customMods, expectedState, ensureGameClosed), cancellationToken);
+
+    private async Task ReconcileCoreAsync(IReadOnlyDictionary<string, InstalledModule> desired, CancellationToken cancellationToken = default,
         UserSettings? settings = null, string? releaseId = null, bool resetOriginals = false, bool preserveVanillaBootstrap = false,
         GameRequirement? gameRequirement = null, string? baseGameSha256 = null,
         Dictionary<string, List<CustomRwdMod>>? customMods = null, string? expectedState = null, Action? ensureGameClosed = null)
@@ -264,7 +276,10 @@ public sealed class ModuleInstaller
         }
     }
 
-    public async Task UninstallAsync(CancellationToken cancellationToken = default, UserSettings? settings = null, string? releaseId = null)
+    public Task UninstallAsync(CancellationToken cancellationToken = default, UserSettings? settings = null, string? releaseId = null)
+        => Task.Run(() => UninstallCoreAsync(cancellationToken, settings, releaseId), cancellationToken);
+
+    private async Task UninstallCoreAsync(CancellationToken cancellationToken = default, UserSettings? settings = null, string? releaseId = null)
     {
         RemovalSafety.CheckNoLinks(_controlRoot);
         await new PatchRecovery(_gameRoot).RecoverInterruptedAsync();
@@ -361,7 +376,10 @@ public sealed class ModuleInstaller
         state.Originals[relative] = new OriginalFile { Existed = true, Sha256 = file.Sha256, BackupRelativePath = backupName };
     }
 
-    public async Task<IReadOnlyList<string>> VerifyAsync(CancellationToken cancellationToken = default, bool allowCustomHotkeys = false)
+    public Task<IReadOnlyList<string>> VerifyAsync(CancellationToken cancellationToken = default, bool allowCustomHotkeys = false)
+        => Task.Run(() => VerifyCoreAsync(cancellationToken, allowCustomHotkeys), cancellationToken);
+
+    private async Task<IReadOnlyList<string>> VerifyCoreAsync(CancellationToken cancellationToken = default, bool allowCustomHotkeys = false)
     {
         var state = LoadState();
         var errors = new List<string>();

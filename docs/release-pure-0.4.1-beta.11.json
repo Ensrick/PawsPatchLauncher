@@ -1,0 +1,18 @@
+{
+  "category": "patch",
+  "version": "0.4.1-beta.11",
+  "publishedAt": "2026-10-29",
+  "title": {
+    "ru": "Paw’s Patch 0.4.1-beta.11 — Vanilla and Immortals",
+    "en": "Paw’s Patch 0.4.1-beta.11 — Vanilla and Immortals"
+  },
+  "body": {
+    "ru": "Исправлено воспроизведение повторов: владельцы нейтральных объектов и обработка маршрутов ботов теперь восстанавливаются согласованно с записью. Проверки синхронизации повторов сохранены.",
+    "en": "Fixed replay playback: independent object ownership and bot path handling now reproduce the recorded state. Replay synchronization checks remain enabled."
+  },
+  "mods": [
+    "vanilla",
+    "immortals"
+  ],
+  "channel": "beta"
+}

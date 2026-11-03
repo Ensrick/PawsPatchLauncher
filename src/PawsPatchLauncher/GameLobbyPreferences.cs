@@ -146,9 +146,15 @@ internal static class GameLobbyPreferences
     internal static async Task PrepareForLaunchAsync(string game, UserSettings settings)
     {
         if (ActivityStore.IsSmokeTest) return;
+        await PrepareForLaunchAsync(game, settings, Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+    }
+
+    // Explicit root keeps integration fixtures out of the player's Documents.
+    internal static async Task PrepareForLaunchAsync(string game, UserSettings settings, string documents)
+    {
         var defaults = await DefaultsForGameAsync(game, default);
         if (defaults is null) return;
-        await PrepareAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Kohan2", "data", "User", "Preferences.rup"), settings, defaults);
+        await PrepareAsync(Path.Combine(documents, "Kohan2", "data", "User", "Preferences.rup"), settings, defaults);
         await PrepareAsync(Path.Combine(game, "Userdata", "User", "Preferences.rup"), settings, defaults);
     }
 

@@ -1,0 +1,17 @@
+{
+  "category": "patch",
+  "version": "0.4.2-beta.9",
+  "publishedAt": "2026-10-29",
+  "title": {
+    "ru": "Paw’s Patch 0.4.2-beta.9 — Arcane Wars",
+    "en": "Paw’s Patch 0.4.2-beta.9 — Arcane Wars"
+  },
+  "body": {
+    "ru": "Исправлено воспроизведение повторов: владельцы нейтральных объектов и обработка маршрутов ботов теперь восстанавливаются согласованно с записью. Проверки синхронизации повторов сохранены. Восстановлен видимый значок Гробницы теней и других особых объектов Arcane Wars на миникарте вместо полностью прозрачного изображения.",
+    "en": "Fixed replay playback: independent object ownership and bot path handling now reproduce the recorded state. Replay synchronization checks remain enabled. Restored the minimap marker for Shadow Sepulcher and other Arcane Wars special sites whose shared icon was fully transparent."
+  },
+  "mods": [
+    "arcane-wars"
+  ],
+  "channel": "beta"
+}

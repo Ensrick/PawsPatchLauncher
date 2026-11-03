@@ -639,6 +639,20 @@
                                         <CheckBox x:Name="ImprovedAiToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center" Click="GameplayOptionChanged"/>
                                     </Grid>
                                 </Border>
+                                <Border x:Name="IgnoreZeroMoraleCard" Style="{StaticResource Card}" Margin="0,0,0,9" Visibility="Collapsed">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="10" Background="#24394B" BorderBrush="#566477" BorderThickness="1"><local:LauncherIcon Kind="Settings" Width="21" Height="21" Foreground="{StaticResource GoldBrightBrush}"/></Border>
+                                        <StackPanel Grid.Column="1" Margin="10,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock x:Name="IgnoreZeroMoraleTitleText" Style="{StaticResource FieldTitle}" VerticalAlignment="Center"/>
+                                                <Button Style="{StaticResource HelpButton}" Tag="modules.exhaustion" Margin="8,0,0,0" Click="HelpButton_Click"/>
+                                            </StackPanel>
+                                            <TextBlock x:Name="IgnoreZeroMoraleDescriptionText" Style="{StaticResource CardDescription}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <CheckBox x:Name="IgnoreZeroMoraleToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center" Click="GameplayOptionChanged"/>
+                                    </Grid>
+                                </Border>
 
                                 <Border x:Name="PureLairCard" Style="{StaticResource Card}" Margin="0,0,0,9" Visibility="Collapsed">
                                     <Grid>

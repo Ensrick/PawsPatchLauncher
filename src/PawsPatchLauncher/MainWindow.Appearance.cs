@@ -40,6 +40,7 @@ public partial class MainWindow
         [IndependentHostilityCard] = (GameMod.IsArcaneWars(_settings) ? _settings.IndependentHostility : GameMod.PureComponents(_settings).IndependentHostility).ToString(),
         [AdditionalRoamingCard] = (GameMod.IsArcaneWars(_settings) ? _settings.AdditionalRoamingCompanies : GameMod.PureComponents(_settings).AdditionalRoamingCompanies).ToString(),
         [SiegeBalanceCard] = _settings.SiegeBalance.ToString(),
+        [IgnoreZeroMoraleCard] = _settings.IgnoreZeroMorale.ToString(),
         [ImprovedAiCard] = GameMod.ImprovedAiSelected(_settings).ToString(),
         [PureLairCard] = GameMod.PureComponents(_settings).WoundedLairDefenders.ToString(),
         [PowersShardsCard] = _settings.DisablePowersAndShards.ToString(),

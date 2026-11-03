@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 internal static class BuildFeatures
 {
@@ -77,7 +77,7 @@ internal static class BuildFeatures
         const string fractions="";
 #endif
 #if GRAPHICS_DIAGNOSTICS
-        const string graphics=",\"builtInGraphicsDiagnosticsRevision\":2";
+        const string graphics=",\"builtInGraphicsDiagnosticsRevision\":3";
 #else
         const string graphics="";
 #endif
@@ -97,7 +97,7 @@ internal static class BuildFeatures
         const string foundationCounts="";
 #endif
 #if ENGINE_CRASH_FIXES
-        const string crashFixes=",\"sharedAnimationTargetGuardRevision\":1,\"animationStopControllerGuardRevision\":1,\"missingNetworkClientGuardRevision\":1,\"observerTeamCommandGuardRevision\":1";
+        const string crashFixes=",\"sharedAnimationTargetGuardRevision\":1,\"animationStopControllerGuardRevision\":1,\"missingNetworkClientGuardRevision\":1,\"observerTeamCommandGuardRevision\":1,\"taskStatusInitializationRevision\":1";
 #else
         const string crashFixes="";
 #endif
@@ -112,11 +112,35 @@ internal static class BuildFeatures
         const string largeMaps="";
 #endif
 #if PAW_UNIFORM_UI
-        string uniformUi=commonFixes ? ",\"widescreenUniformUiRevision\":1" : "";
+        string uniformUi=commonFixes ? ",\"widescreenUniformUiRevision\":3" : "";
 #else
         const string uniformUi="";
 #endif
-        Console.WriteLine("{\"colors\":" + colors.ToString().ToLowerInvariant() + largeMaps + uniformUi +
+#if TERRAIN_TEXTURE_POOL
+        const string terrainPool = ",\"terrainTexturePoolEntries\":1024";
+#else
+        const string terrainPool = "";
+#endif
+#if SELECTION_SCROLL
+        const string selectionScroll = ",\"selectionScrollRevision\":3,\"selectionCardsAdaptive\":true,\"selectionDestinationFlagsAll\":true,\"groupFormationRevision\":1,\"groupFormationRadiusRevision\":1";
+#else
+        const string selectionScroll = "";
+#endif
+#if GROUP_ATTACK_RECOVERY
+        const string groupAttackRecovery = ",\"groupAttackRecoveryRevision\":1,\"groupMovementSpeedRevision\":2";
+#else
+        const string groupAttackRecovery = "";
+#endif
+#if COMPANY_BEHAVIOR
+#if PAW_PURE_EXTENDED
+        const string companyBehavior = ",\"companyBehaviorRevision\":1,\"groupRetreatPriorityRevision\":1";
+#else
+        const string companyBehavior = ",\"companyBehaviorRevision\":1,\"ignoreZeroMoraleOptionalRevision\":1,\"groupRetreatPriorityRevision\":1";
+#endif
+#else
+        const string companyBehavior = "";
+#endif
+        Console.WriteLine("{\"colors\":" + colors.ToString().ToLowerInvariant() + largeMaps + uniformUi + terrainPool + selectionScroll + groupAttackRecovery + companyBehavior +
             ",\"bypass\":" + bypass.ToString().ToLowerInvariant() + syncDiagnostics +
             ",\"hostility\":" + hostility.ToString().ToLowerInvariant() +
             ",\"commonFixes\":" + commonFixes.ToString().ToLowerInvariant() + ",\"quiet\":true,\"cityAssistant\":" + cityAssistant.ToString().ToLowerInvariant() +

@@ -42,10 +42,14 @@ public static class GameMod
     public static void DisableArcaneComponents(UserSettings settings)
     {
         settings.CustomPlayerColors = settings.IndependentHostility = settings.AdditionalRoamingCompanies = false;
+        settings.IgnoreZeroMorale = false;
         settings.SiegeBalance = settings.DisablePowersAndShards = settings.LargeMapSizes = settings.ImprovedAi = false;
         settings.DesyncMode = "official";
         settings.RoamingSpawnMode = "standard";
     }
+    public static bool HasIgnoreZeroMorale(ChannelManifest? channel, string mod)
+        => mod == ArcaneWars && channel?.CompanyBehaviorRevision >= 1;
+
     public static bool HasImprovedAi(ChannelManifest? channel, string mod = ArcaneWars)
         => channel is not null
             && channel.Packages.Any(p => p.Id == (mod == ArcaneWars ? "ai-improvements" : "pure-ai-improvements") && p.Mods.Contains(mod));

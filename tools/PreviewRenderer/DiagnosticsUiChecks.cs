@@ -32,6 +32,16 @@ internal static class DiagnosticsUiChecks
         async Task Scenario()
         {
             await Refresh(first);
+            Set(first, "_incident", "Synthetic game crash");
+            foreach (var page in new[] { "home", "modules", "friends", "about", "settings" })
+            {
+                Invoke(first, "SetActivePage", page);
+                Invoke(first, "RefreshReliabilityVisibility");
+                var incident = Field<Border>(first, "_incidentCard");
+                Check(incident.Parent == first.FindName("RecoveryHost") &&
+                    incident.Visibility == (page == "settings" ? Visibility.Visible : Visibility.Collapsed),
+                    "Crash recovery escaped Settings on " + page);
+            }
             Check(!Button(first).IsEnabled, "Show archive is enabled before creation.");
             var path = CreateFixture();
             Check(await (Task<bool>)Invoke(first, "RememberCreatedDiagnosticsAsync", path)!, "Completed archive was not saved.");
